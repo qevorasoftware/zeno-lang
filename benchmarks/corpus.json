@@ -1,0 +1,135 @@
+{
+  "name": "zeno-density-corpus",
+  "version": "0.2.0",
+  "description": "Paired natural-language / Zeno payloads used to measure token density. `human` is a realistic dispatch of the kind that flows between agents (framing, politeness and format requirements included). `terse` is the same intent compressed by a human writing as densely as they can while still hoping to be understood; the protocol should beat it, and where it does not, the benchmark says so. `zeno` is what the encoder should produce: symbols and structure, never English prose, because expanding symbols back into prose is the decoder's job. Cases tagged `variant: long` are multi-constraint agent dispatches of one to three sentences per requirement — the traffic shape Zeno is designed for.",
+  "cases": [
+    {
+      "id": "weather-branch",
+      "intent": "weather lookup with a conditional plan",
+      "variant": "reference",
+      "human": "Hi! Could you please check the current weather conditions in Tokyo for me? I would like to know whether it is raining right now, and if it is raining, please suggest three indoor activities that would work well on a rainy day. Otherwise, if it is not raining, suggest three outdoor activities instead. Thanks so much!",
+      "terse": "Check the weather in Tokyo. If it is raining, suggest 3 indoor activities, otherwise suggest 3 outdoor activities.",
+      "zeno": "@LOC[TYO] -> ?WX : { $WX.state == RAIN => !GEN[INDOOR, 3] | !GEN[OUTDOOR, 3] }"
+    },
+    {
+      "id": "invoice-total",
+      "intent": "arithmetic plus threshold decision",
+      "variant": "short",
+      "human": "Please help me total up this invoice. We have 3 units at 129.99 each and 2 units at 45.50 each. Once you have the total, I need to know whether we have gone over the 500 budget threshold, and please be sure to tell me the final number along with your verdict. Thank you!",
+      "terse": "Total 3*129.99 + 2*45.50 and say if over 500.",
+      "zeno": "$T = 3 * 129.99 + 2 * 45.5\n: { $T > 500 => !RET[$T, BUDGET=OVER] | !RET[$T, BUDGET=UNDER] }"
+    },
+    {
+      "id": "research-handoff",
+      "intent": "agent-to-agent research delegation",
+      "variant": "medium",
+      "human": "As the planning agent I am delegating to you, the researcher agent: I need you to search for the most important recent academic papers about the Zeno Protocol for inter-agent communication, then produce a summary of the top five results in a form that I can forward to the writing team without further editing.",
+      "terse": "Search papers on Zeno Protocol, summarise top 5.",
+      "zeno": "@AGENT[Researcher] -> ?SEARCH[\"Zeno Protocol\"] -> !SUMMARIZE[$PREV, 5]"
+    },
+    {
+      "id": "deploy-gate",
+      "intent": "monitoring with an escalation branch",
+      "variant": "medium",
+      "human": "Please monitor the deployment pipeline for me and let me know the moment it finishes. If the deployment has failed for any reason, immediately open a support ticket so that somebody picks it up, but if everything went through fine then simply record that the deployment succeeded in the log.",
+      "terse": "Monitor deploy; if failed open ticket else log ok.",
+      "zeno": "?DEPLOY : { $DEPLOY ~= FAIL => !RUN[ticket] | !LOG[ok] }"
+    },
+    {
+      "id": "code-review",
+      "intent": "diff review request to a peer agent",
+      "variant": "medium",
+      "human": "Hey, when you get a chance could you take a look at the pull request that was just opened against the main branch? I would really appreciate a review focused specifically on the error handling paths, and if you do find anything that looks broken or risky, please generate a fix suggestion for each problem you spot.",
+      "terse": "Review the open PR for error handling, suggest fixes.",
+      "zeno": "?PR[open] -> !REVIEW[FOCUS=errors] : { $REVIEW.issues > 0 => !GEN[FIX, $REVIEW.issues] }"
+    },
+    {
+      "id": "translate-multi",
+      "intent": "multi-target translation",
+      "variant": "short",
+      "human": "I need the standard greeting message translated into both Japanese and French as quickly as possible. Please produce both translations in one go and give me the results together so that I can paste them straight into the onboarding email that goes out tomorrow morning.",
+      "terse": "Translate the greeting into Japanese and French.",
+      "zeno": "!TRANSLATE[greeting, [JA, FR]] -> !RET[OUT=$PREV]"
+    },
+    {
+      "id": "data-extract",
+      "intent": "structured extraction from a document",
+      "variant": "medium",
+      "human": "Please read the contract document that I have attached and extract the key commercial terms from it: specifically the payment amount, the renewal date, and the name of the counterparty organisation. Once you have pulled those out, return them as structured fields so that our finance system can consume them directly.",
+      "terse": "Extract payment, renewal date, counterparty from the contract.",
+      "zeno": "?DOC[contract] -> !EXTRACT[$PREV, [AMOUNT, RENEWAL, PARTY]]"
+    },
+    {
+      "id": "stock-alert",
+      "intent": "price check with alert",
+      "variant": "medium",
+      "human": "Keep an eye on the share price for me please. I want to be told immediately if it drops below the threshold of 120 dollars, because in that case I want an alert raised to my phone, and if it stays at or above 120 then there is nothing that needs to happen at all.",
+      "terse": "Alert me if the stock drops below 120.",
+      "zeno": ": { ?PRICE[ACME].price < 120 => !ALERT[phone, LOW] | !NOOP }"
+    },
+    {
+      "id": "triage-router",
+      "intent": "support triage routing",
+      "variant": "medium",
+      "human": "A new support ticket has arrived and I would like you to triage it for me. If the message mentions that the customer cannot log in, route the ticket to the identity team with a high priority. In every other case, please route it to the general support queue with a normal priority instead.",
+      "terse": "Triage ticket: login issue -> identity/high else general/normal.",
+      "zeno": ": { ?TICKET ~= login => !ROUTE[identity, HIGH] | !ROUTE[general, NORMAL] }"
+    },
+    {
+      "id": "batch-summarise",
+      "intent": "batch summarisation pipeline",
+      "variant": "medium",
+      "human": "There are a number of meeting transcripts sitting in the archive folder from last week and I would like every single one of them summarised. Please keep each summary to a maximum of three bullet points, and when they are all done, combine the whole set into one consolidated weekly briefing for the leadership team.",
+      "terse": "Summarise last week's transcripts (3 bullets each), then merge.",
+      "zeno": "?DOCS[transcripts, last] -> !MAP[SUMMARIZE, 3] -> !MERGE[$PREV]"
+    },
+    {
+      "id": "math-answer",
+      "intent": "single computation",
+      "variant": "short",
+      "human": "What is the total of 24 multiplied by 365? I need the exact figure please, so don't round it or approximate it in any way.",
+      "terse": "24 * 365 = ?",
+      "zeno": "!RET[24 * 365]"
+    },
+    {
+      "id": "calendar-booking",
+      "intent": "scheduling with fallback",
+      "variant": "medium",
+      "human": "Please book a thirty minute catch-up with Amara some time next week. If she does not have any free slots available at all in that window, then just send her a message asking her to propose a time that suits her, and let me know which of those two things happened.",
+      "terse": "Book 30 min with Amara next week, else ask her to propose.",
+      "zeno": "?SLOTS[week, 30] : { ?COUNT[$SLOTS] > 0 => !BOOK[$SLOTS.first] | !MSG[propose] }"
+    },
+    {
+      "id": "region-report",
+      "intent": "multi-constraint reporting dispatch",
+      "variant": "long",
+      "human": "You are the reporting agent for the EU region. Please pull the weekly sales figures for the last complete week for every country in the region, reconcile them against the finance system's own numbers, and if any country shows a variance of more than 2 percent, flag that country for follow-up with the regional controller. Then produce a one page executive summary for the leadership team that highlights the three largest movers, is formatted in markdown, and ends with a clear recommendation. Please do not include raw data in the summary, only the aggregates.",
+      "terse": "Reconcile last week's EU sales vs finance; flag >2% variance; exec summary, top 3 movers, markdown, recommendation.",
+      "zeno": "@ORG[EU] -> ?SALES[week=last] -> !RECON[$PREV, ?FINANCE]\n: { $RECON.var > 2 => !FLAG[$RECON.country] | !NOOP }\n!SUMMARY[$SALES, md, REC, TOP=3]"
+    },
+    {
+      "id": "support-escalation",
+      "intent": "support handling with escalation policy",
+      "variant": "long",
+      "human": "Act as the first-line support agent. A customer has written in complaining that their order has not arrived and that this is now the second time it has happened. Please check the order status and the delivery estimate, apologise using our standard tone of voice, and if the order is more than five days overdue then issue a full refund and escalate the case to a human supervisor. Otherwise, send the customer the tracking link and close the ticket with a resolution note.",
+      "terse": "Check the late order; if over 5 days late refund and escalate, else send tracking and close.",
+      "zeno": "@AGENT[Support] -> ?ORDER[latest] -> ?ETA[$ORDER] : { $ETA.overdue > 5 => !REFUND[$ORDER, full] -> !ESCALATE | !SEND[$ORDER.tracking] -> !CLOSE }"
+    },
+    {
+      "id": "security-triage",
+      "intent": "on-call alert triage with compound condition",
+      "variant": "long",
+      "human": "You are the on-call security agent. A new alert has fired on the production cluster. Look at the severity of the alert and the service that it affects, and if the severity is critical, or if the affected service is one of the payment services, then page the on-call engineer straight away and open an incident channel. For anything else, simply append the alert to the daily digest and acknowledge it so that the pager stays quiet overnight.",
+      "terse": "If alert severity is critical or it hits payments: page on-call and open an incident, else digest and ack.",
+      "zeno": "?ALERT[latest, ?CLUSTER[prod]] : { $ALERT.severity == CRITICAL || $ALERT.service ~= payment => !PAGE -> !OPEN[incident] | !APPEND[digest] -> !ACK }"
+    },
+    {
+      "id": "content-localisation",
+      "intent": "localisation with hard constraints",
+      "variant": "long",
+      "human": "Please localise the product launch announcement for our Japanese and German markets. Keep the headline under sixty characters in each language, preserve the legal disclaimer exactly as it is written in the source, and adapt the call to action so that it sounds natural to a local reader rather than like a literal translation. When you are finished, give me both versions side by side with a short note explaining any adaptation choices that you made along the way.",
+      "terse": "Localise the launch announcement for JA and DE: headline <=60 chars, keep legal verbatim, natural CTA, return both with notes.",
+      "zeno": "?LAUNCH -> !LOCALISE[$PREV, [JA, DE], MAXLEN=60, KEEP=legal, CTA=natural]"
+    }
+  ]
+}

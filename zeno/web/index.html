@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Zeno Protocol — playground</title>
+<style>
+  :root {
+    --bg: #0b1020; --panel: #121931; --panel2: #0e152a; --line: #22304f;
+    --text: #e6ecff; --dim: #93a2c8; --accent: #57e0b0; --accent2: #7aa2ff;
+    --warn: #ffc46b; --err: #ff7b8a; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: radial-gradient(1200px 600px at 20% -10%, #16224a 0%, var(--bg) 55%);
+    color: var(--text); font: 15px/1.55 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  header {
+    padding: 22px 24px 16px; border-bottom: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: baseline; justify-content: space-between;
+  }
+  h1 { font-size: 19px; margin: 0; letter-spacing: .2px; }
+  h1 span { color: var(--accent); }
+  .tag { color: var(--dim); font-size: 13px; }
+  main { padding: 20px 24px 60px; max-width: 1180px; margin: 0 auto; }
+  .grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .panel {
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel2) 100%);
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+  }
+  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); margin: 0 0 10px; }
+  textarea, input[type=text] {
+    width: 100%; background: #0a1122; color: var(--text); border: 1px solid var(--line);
+    border-radius: 9px; padding: 11px 12px; font-family: var(--mono); font-size: 13.5px; resize: vertical;
+  }
+  textarea:focus, input:focus { outline: 2px solid #2b4270; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+  button {
+    background: #1b2745; color: var(--text); border: 1px solid var(--line); border-radius: 9px;
+    padding: 9px 14px; font-size: 13.5px; cursor: pointer; transition: .15s;
+  }
+  button:hover { border-color: var(--accent2); transform: translateY(-1px); }
+  button.primary { background: linear-gradient(180deg, #2dd4a7 0%, #1aa07c 100%); color: #05231b; border: none; font-weight: 600; }
+  button.ghost { background: transparent; }
+  pre {
+    background: #0a1122; border: 1px solid var(--line); border-radius: 9px; padding: 11px 12px;
+    overflow: auto; font-family: var(--mono); font-size: 13px; margin: 0; white-space: pre-wrap; word-break: break-word;
+  }
+  .stats { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; }
+  .stat { background: #0a1122; border: 1px solid var(--line); border-radius: 10px; padding: 9px 13px; min-width: 108px; }
+  .stat b { display: block; font-size: 19px; font-family: var(--mono); }
+  .stat small { color: var(--dim); font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; }
+  .good { color: var(--accent); } .mid { color: var(--warn); } .bad { color: var(--err); }
+  .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip {
+    background: #16203c; border: 1px solid var(--line); color: var(--dim);
+    border-radius: 999px; padding: 5px 11px; font-size: 12.5px; cursor: pointer;
+  }
+  .chip:hover { color: var(--text); border-color: var(--accent2); }
+  .muted { color: var(--dim); font-size: 12.5px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .tab { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; font-size: 13px; color: var(--dim); }
+  .tab.active { background: #1b2745; color: var(--text); border-color: var(--accent2); }
+  footer { color: var(--dim); font-size: 12.5px; padding: 18px 24px 40px; text-align: center; }
+  code { font-family: var(--mono); color: var(--accent2); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>ZENO <span>PROTOCOL</span> · playground</h1>
+    <div class="tag">dense A2A language · grammar v0.1 · <code>@LOC[TYO] -&gt; ?WX : { $WX.state == RAIN =&gt; !GEN[INDOOR, 3] | !GEN[OUTDOOR, 3] }</code></div>
+  </div>
+  <div class="tag" id="status">connecting…</div>
+</header>
+
+<main>
+  <div class="panel">
+    <h2>Natural language request</h2>
+    <div class="examples" id="examples"></div>
+    <textarea id="nl" rows="3">Hi! Could you please check the current weather conditions in Tokyo for me? I would like to know whether it is raining right now, and if it is raining, please suggest three indoor activities that would work well on a rainy day. Otherwise, if it is not raining, suggest three outdoor activities instead. Thanks so much!</textarea>
+    <div class="row">
+      <button class="primary" id="ask">Run full round trip</button>
+      <button id="encode">Encode only</button>
+      <button class="ghost" id="run">Execute payload</button>
+      <span class="muted" id="hint">encode → execute → decode, all local</span>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid" style="margin-top:16px">
+    <div class="panel">
+      <h2>Zeno payload</h2>
+      <textarea id="zeno" rows="4" spellcheck="false">@LOC[TYO] -> ?WX : { $WX.state == RAIN => !GEN[INDOOR, 3] | !GEN[OUTDOOR, 3] }</textarea>
+      <div class="row">
+        <button id="check">Validate</button>
+        <span class="muted" id="check-out"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Human answer (decoder)</h2>
+      <pre id="answer">—</pre>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <div class="tabs">
+      <div class="tab active" data-tab="frame">result frame</div>
+      <div class="tab" data-tab="trace">execution trace</div>
+      <div class="tab" data-tab="transcript">transcript</div>
+      <div class="tab" data-tab="bench">benchmarks</div>
+    </div>
+    <pre id="out">—</pre>
+  </div>
+</main>
+
+<footer>
+  Zeno Protocol · MIT · <span id="provider">provider: …</span>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let last = null;
+
+const EXAMPLES = [
+  "Hi! Could you please check the current weather conditions in Tokyo for me? I would like to know whether it is raining right now, and if it is raining, please suggest three indoor activities that would work well on a rainy day. Otherwise, if it is not raining, suggest three outdoor activities instead. Thanks so much!",
+  "Please help me total up this invoice. We have 3 units at 129.99 each and 2 units at 45.50 each. Once you have the total, I need to know whether we have gone over the 500 budget threshold, and please be sure to tell me the final number along with your verdict. Thank you!",
+  "As the planning agent I am delegating to you, the researcher agent: I need you to search for the most important recent academic papers about the Zeno Protocol for inter-agent communication, then produce a summary of the top five results in a form that I can forward to the writing team without further editing.",
+  "Please monitor the deployment pipeline for me and let me know the moment it finishes. If the deployment has failed for any reason, immediately open a support ticket so that somebody picks it up, but if everything went through fine then simply record that the deployment succeeded in the log.",
+  "[terse] Alert me if the stock drops below 120.",
+];
+EXAMPLES.forEach((text) => {
+  const chip = document.createElement("span");
+  chip.className = "chip";
+  const label = text.replace(/^\[terse\]\s*/, "");
+  chip.textContent = label.length > 52 ? label.slice(0, 49) + "…" : label;
+  if (text.startsWith("[terse]")) chip.textContent = "(terse) " + chip.textContent;
+  chip.title = text;
+  chip.onclick = () => { $("nl").value = text; };
+  $("examples").appendChild(chip);
+});
+
+async function api(path, body) {
+  const response = await fetch(path, {
+    method: body === undefined ? "GET" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data = await response.json();
+  if (!response.ok) throw data;
+  return data;
+}
+
+function show(payload) {
+  const value = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
+  $("out").textContent = value;
+  return value;
+}
+
+function setStats(items) {
+  $("stats").innerHTML = items.map(([value, label, cls]) =>
+    `<div class="stat"><b class="${cls || ""}">${value}</b><small>${label}</small></div>`).join("");
+}
+
+function errorText(payload) {
+  const error = payload.error || payload;
+  return (error.rendered || error.message || JSON.stringify(error));
+}
+
+async function doEncode() {
+  const text = $("nl").value.trim();
+  if (!text) return;
+  try {
+    const data = await api("/api/encode", { text });
+    $("zeno").value = data.payload;
+    last = { encode: data };
+    setStats([
+      [data.nl_tokens, "NL tokens"],
+      [data.zeno_tokens, "Zeno tokens"],
+      [data.token_reduction_pct.toFixed(1) + "%", "reduction",
+        data.token_reduction_pct >= 75 ? "good" : data.token_reduction_pct > 0 ? "mid" : "bad"],
+      [data.fell_back ? "rules" : "model", "encoder"],
+      [data.attempts, "attempts"],
+    ]);
+    show({ payload: data.payload, warnings: data.warnings, validation: data.validation });
+  } catch (error) { show(errorText(error)); }
+}
+
+async function doRun() {
+  const payload = $("zeno").value.trim();
+  if (!payload) return;
+  try {
+    const data = await api("/api/run", { payload });
+    last = { ...(last || {}), run: data };
+    setStats([
+      [data.duration_ms.toFixed(2) + " ms", "kernel time"],
+      [data.steps.length, "steps"],
+      [data.calls.length, "tool calls"],
+      [data.returned ? "yes" : "no", "!RET reached"],
+    ]);
+    show(data.frame + "\n\n" + data.context);
+  } catch (error) { show(errorText(error)); }
+}
+
+async function doAsk() {
+  const text = $("nl").value.trim();
+  if (!text) return;
+  try {
+    const data = await api("/api/ask", { text });
+    $("zeno").value = data.payload;
+    $("answer").textContent = data.response || "—";
+    last = { ask: data };
+    setStats([
+      [data.encode.nl_tokens, "NL tokens"],
+      [data.encode.zeno_tokens, "Zeno tokens"],
+      [data.encode.token_reduction_pct.toFixed(1) + "%", "reduction",
+        data.encode.token_reduction_pct >= 75 ? "good" : data.encode.token_reduction_pct > 0 ? "mid" : "bad"],
+      [data.total_ms.toFixed(1) + " ms", "total latency"],
+      [data.decode && data.decode.fell_back ? "deterministic" : "model", "decoder"],
+    ]);
+    show(data.transcript);
+  } catch (error) { show(errorText(error)); }
+}
+
+async function doCheck() {
+  try {
+    const data = await api("/api/run", { payload: $("zeno").value.trim(), state: {} });
+    const diagnostics = (data.validation.diagnostics || []);
+    const ok = data.validation.ok;
+    $("check-out").innerHTML = ok
+      ? '<span class="good">valid Zeno Grammar v0.1</span>'
+      : '<span class="bad">' + diagnostics.map((d) => d.code + ": " + d.message).join("; ") + "</span>";
+  } catch (error) {
+    $("check-out").innerHTML = '<span class="bad">' + errorText(error).split("\n")[0] + "</span>";
+  }
+}
+
+async function doBench() {
+  try {
+    const data = await api("/api/benchmark");
+    const density = data.density.reduction;
+    const conversation = data.conversation.reduction;
+    show({
+      per_message_density: {
+        pooled_reduction_pct: density.pooled_pct,
+        mean_reduction_pct: density.mean_pct,
+        target_pct: data.density.target_reduction_pct,
+        meets_target: density.meets_target,
+      },
+      multi_turn_a2a: {
+        per_hop_reduction_pct: conversation.per_hop_pct,
+        cold_start_pct: conversation.cold_start_pct,
+        steady_state_pct_10_workflows: conversation.steady_state_pct_10_workflows,
+        break_even_hops: conversation.break_even_hops,
+        meets_target: conversation.meets_target,
+      },
+      encoder_system_prompt_tokens: data.density.encoder.system_prompt_tokens,
+    });
+  } catch (error) { show(errorText(error)); }
+}
+
+document.querySelectorAll(".tab").forEach((tab) => {
+  tab.onclick = () => {
+    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    const which = tab.dataset.tab;
+    if (which === "bench") return doBench();
+    if (!last) return show("run something first");
+    if (which === "frame" && last.run) return show(last.run.frame + "\n\n" + last.run.context);
+    if (which === "trace" && last.run) return show(last.run.calls);
+    if (which === "transcript" && last.ask) return show(last.ask.transcript);
+    return show(JSON.stringify(last, null, 2));
+  };
+});
+
+$("encode").onclick = doEncode;
+$("run").onclick = doRun;
+$("ask").onclick = doAsk;
+$("check").onclick = doCheck;
+
+api("/api/health").then((data) => {
+  $("status").innerHTML = data.online
+    ? '<span class="good">● live model</span> · ' + data.provider + " · " + data.model
+    : '<span class="mid">● offline mode</span> · deterministic demo tools';
+  $("provider").textContent = "provider: " + data.provider + " · tokenizer: " + data.tokenizer;
+}).catch(() => { $("status").textContent = "server unreachable"; });
+
+doAsk();
+</script>
+</body>
+</html>

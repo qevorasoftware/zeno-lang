@@ -1,0 +1,13 @@
+# Zeno Protocol — runtime dependencies.
+#
+# The library itself is standard-library only: `pip install .` needs nothing.
+# The two extras below are optional and never required at import time.
+#
+#   tiktoken    exact BPE token counts for the benchmark ("tiktoken:o200k_base")
+#   pytest      the test-suite
+#
+# Without tiktoken, `zeno.tokens.count_tokens` falls back to a sub-word
+# estimator and every report says so (`estimator:subword`).
+
+tiktoken>=0.5
+pytest>=7.0

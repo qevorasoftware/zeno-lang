@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zeno-lang"
+version = "0.1.0"
+description = "Zeno — a dense, unambiguous protocol language for agent-to-agent communication"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Qevora Software" }]
+keywords = ["agents", "a2a", "protocol", "llm", "tokens", "dsl"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Interpreters",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+# Exact BPE token counts. Without it the tokenizer falls back to a clearly
+# labelled sub-word estimator, so Zeno never hard-depends on a network download.
+tiktoken = ["tiktoken>=0.5"]
+dev = ["pytest>=7", "tiktoken>=0.5"]
+
+[project.urls]
+Homepage = "https://github.com/qevorasoftware/zeno-lang"
+Issues = "https://github.com/qevorasoftware/zeno-lang/issues"
+
+[project.scripts]
+zeno = "zeno.cli:main"
+
+[tool.setuptools]
+packages = ["zeno"]
+
+[tool.setuptools.package-data]
+zeno = ["web/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["error::DeprecationWarning:zeno.*"]
