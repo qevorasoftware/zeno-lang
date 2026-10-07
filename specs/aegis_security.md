@@ -1,6 +1,8 @@
 # AEGIS — security specification
 
-**Status:** implemented · **Version:** 2.0.0 · **Code:** `aegis/` · **Tests:** `tests/test_aegis.py`
+**Status:** implemented · **Version:** 2.1.0 · **Code:** `aegis/` · **Tests:**
+`tests/test_aegis.py`, `tests/test_boundary.py` · **Hardening plan:** P0 complete
+(see §9), P1–P2 open
 
 AEGIS is the gateway in front of Zeno: eight layers, applied in a fixed order, all
 of which a request must pass. This document is the threat model, the exact
@@ -136,7 +138,69 @@ classical-only downgrade rather than silently proceeding.
 
 ---
 
-## 8. Verification checklist
+## 8. Enforcement modes, and what "authorized" means
+
+The gateway has two postures, and both are readable off the object, the server
+banner, and `GET /api/health`. Nothing about the posture is implicit.
+
+| | `development` (default) | `production` (`Policy.strict_policy()`) |
+|---|---|---|
+| Mandatory layers | 1, 4, 5 (3 when the HTTP surface drops the device lock) | all 8, in the brief's order |
+| Proof binding | optional | required: key registered to the actor, plus a fresh nonce |
+| Ledger signatures | hash chain only | re-verified on every request |
+| Refusal text | readable (`code` + sentence) | machine code only (`ZN-SEC-0x…`) |
+| Without the crypto wheels | effectful HTTP runs, labelled `enforcement: development` | server refuses to start (exit 3) |
+
+The effectful HTTP routes (`POST /api/run`, `POST /api/ask`) never call the kernel
+themselves. They call `aegis.boundary.AuthorizationBoundary.authorize`, and only a
+permit unlocks execution; the permit is attached to the response, and the payload
+the kernel receives is the *canonical* one that layer 6 restored from the epoch's
+rotated vocabulary, never the bytes the caller sent. `tests/test_boundary.py`
+asserts this by spying on the kernel: on a refusal it must not have been called.
+
+A refusal in production is a code and nothing else. The sentence behind the code
+stays in-process (`Result.human_reason`) and in the owner's ledger, so the owner
+can always answer "why was this refused?" without telling the caller anything.
+
+### What the ZKP binding actually establishes
+
+An accepted production request proves three things, and only three: the caller
+holds the private key registered to the claimed actor; that key was used over a
+context this server derived (`aegis:<actor>:<nonce>`) rather than one the caller
+chose; and that nonce had not been spent. It does **not** establish that the
+actor is a human, that the actor is trustworthy, or that the request is
+well-intentioned — those are the sentinel's and the policy's business, and the
+sentinel can only escalate, never authorize.
+
+Nonces are spent on acceptance and remembered in a bounded, per-process buffer.
+Durable, multi-node replay state is Phase P1 and is explicitly not claimed.
+
+## 9. Hardening plan: audit findings and their status
+
+The hardened plan (v1.0) lists findings from an audit of this code. Each one was
+checked against the code rather than assumed; this table is the result.
+
+| ID | Finding | Status |
+|---|---|---|
+| C1 | HTTP reached the kernel without AEGIS | **Fixed (P0):** `AuthorizationBoundary` is the only path; spied-kernel test proves no execution on refusal |
+| C2 | Eight-layer enforcement not mandatory | **Fixed (P0):** `Policy.strict_policy()` makes all 8 mandatory and is reported; development mode is labelled in every response, banner and `/api/health` |
+| C3 | ZKP not bound to identity/context | **Partly fixed (P0):** registry binding (`require_identity_binding`) + nonce-bound context (`require_nonce`); binding to capability/audience/policy/semantic hashes needs capability tokens (P1) |
+| H1 | PQC layer does not authenticate the caller | **Open (P1):** layer 1 checks the backend, not the sender; registry binding lands in layer 3 |
+| H2 | Hybrid signature downgrade | **Open (P1):** the suite identifier is not yet inside the signed envelope |
+| H3 | Receiver-side replay incomplete | **Partly fixed (P0):** nonce single-use per process; durable cross-node state is P1 |
+| H4 | Ledger signatures not verified in the gateway | **Fixed (P0):** `verify_ledger_signatures` is on in production |
+| H5 | Ledger failure swallowed | **Partly fixed (P0):** a boundary that cannot write the ledger refuses in production; per-layer audit failure inside `Result` remains best-effort |
+| M1–M3 | Public endpoints, no quotas, DoS | **Open (P2)** |
+| M4 | Guardian metadata attacker-controlled | **Open (P2):** claimed vs verified metadata is not yet separated |
+| M5–M6 | Device binding, geofencing | **Documented limits**, unchanged: risk signals, never proof |
+| G1 | No disclosure policy | **Fixed (P0):** `SECURITY.md`, including explicit non-scope and known-limitation lists |
+
+What P0 explicitly did **not** do: capability tokens rooted in an owner key,
+owner-controlled revocation/epoch rotation, independent ledger anchoring,
+per-caller quotas, TPM attestation, layer-order permutation, and sealed
+knowledge modules. None of them are claimed anywhere in this repository.
+
+## 10. Verification checklist
 
 - [x] RFC 8439 §2.8.2 and RFC 5869 test vectors pass.
 - [x] Pure-Python AEAD is byte-identical to `cryptography` over 300 random cases.
@@ -147,4 +211,10 @@ classical-only downgrade rather than silently proceeding.
 - [x] The device lock refuses a foreign fingerprint and an expired blob.
 - [x] The gateway fails closed when a required layer raises.
 - [x] **The VAJRA wrap is decoded with no key, in a test, so the claim cannot quietly return.**
+- [x] Unauthorized HTTP execution is refused, and the kernel is proven not to have run.
+- [x] A fully authorized production request *does* execute (deny-by-default is not deny-always).
+- [x] Removing any single piece of mandatory material turns an ALLOW into a DENY.
+- [x] A proof for a key not registered to the actor, and a proof replayed under a new nonce, are both refused.
+- [x] A refusal in production contains a code and no prose.
+- [x] A production server refuses to start without a crypto backend.
 - [ ] External audit. Not performed, and no amount of internal testing substitutes for it.

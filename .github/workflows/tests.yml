@@ -140,7 +140,50 @@ jobs:
           python -m aegis selftest --json
 
       - name: AEGIS and VAJRA tests
-        run: python -m pytest tests/test_aegis.py tests/test_vajra.py -p no:cacheprovider
+        run: python -m pytest tests/test_aegis.py tests/test_vajra.py tests/test_boundary.py -p no:cacheprovider
+
+      # P0 of the hardening plan, asserted from outside the process: a production
+      # server must refuse an unauthorized effectful request, with a code and no
+      # explanation. Gated on the wheel having installed, so the job keeps its
+      # "warn, never fail, if the backend is unavailable" contract.
+      - name: Production mode refuses effectful execution over HTTP
+        if: env.AEGIS_CRYPTO == '1'
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys, time, urllib.error, urllib.request
+
+          server = subprocess.Popen(
+              [sys.executable, "-m", "zeno", "serve", "--host", "127.0.0.1", "--port", "8123", "--production"],
+              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+          )
+          try:
+              for _ in range(60):
+                  try:
+                      urllib.request.urlopen("http://127.0.0.1:8123/api/health", timeout=1)
+                      break
+                  except Exception:
+                      if server.poll() is not None:
+                          raise SystemExit("server exited early:\n" + server.stdout.read())
+                      time.sleep(0.5)
+              request = urllib.request.Request(
+                  "http://127.0.0.1:8123/api/run",
+                  data=json.dumps({"payload": "?WX"}).encode(),
+                  headers={"Content-Type": "application/json"},
+              )
+              try:
+                  urllib.request.urlopen(request, timeout=10)
+              except urllib.error.HTTPError as error:
+                  body = json.loads(error.read())
+                  assert error.code == 403, (error.code, body)
+                  assert body["error"]["code"].startswith("ZN-SEC-"), body
+                  assert set(body["error"]) == {"code"}, "the refusal explained itself"
+                  print("production refused an unauthorized run:", body)
+              else:
+                  raise SystemExit("production mode executed an unauthorized payload")
+          finally:
+              server.terminate()
+              server.wait(timeout=10)
+          PY
 
       # A YAML plain scalar cannot contain ": ", so this step is a block scalar.
       - name: The VAJRA wrap must be decodable without a key

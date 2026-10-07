@@ -250,8 +250,16 @@ def cmd_latency(args: argparse.Namespace) -> int:
 def cmd_serve(args: argparse.Namespace) -> int:
     from .server import serve
 
-    serve(host=args.host, port=args.port, allowed_origins=args.allow_origin)
-    return 0
+    mode = "production" if args.production else ("development" if args.development else None)
+    if args.production and args.development:
+        print("--production and --dev contradict each other", file=sys.stderr)
+        return 2
+    return serve(
+        host=args.host,
+        port=args.port,
+        allowed_origins=args.allow_origin,
+        mode=mode,
+    )
 
 
 def cmd_dashboard(args: argparse.Namespace) -> int:
@@ -391,6 +399,18 @@ def build_parser() -> argparse.ArgumentParser:
     serve = sub.add_parser("serve", help="run the local web playground")
     serve.add_argument("--host", default=os.environ.get("ZENO_HOST", "0.0.0.0"))
     serve.add_argument("--port", type=int, default=int(os.environ.get("ZENO_PORT", "8000")))
+    serve.add_argument(
+        "--production",
+        action="store_true",
+        help="require all eight AEGIS layers and hide refusal reasons (refuses to start "
+        "without the crypto backend); ZENO_ENV=production does the same",
+    )
+    serve.add_argument(
+        "--dev",
+        dest="development",
+        action="store_true",
+        help="force development mode even when ZENO_ENV=production is set",
+    )
     serve.add_argument(
         "--allow-origin",
         action="append",

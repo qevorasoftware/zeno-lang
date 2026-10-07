@@ -34,7 +34,7 @@ from __future__ import annotations
 import hashlib
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from . import HONESTY, cipher
 from .biometric_auth import BiometricVault
@@ -48,6 +48,9 @@ from .zkp_validator import Proof, Prover, Statement, Verifier
 
 __all__ = [
     "Gateway",
+    "REFUSAL_CODES",
+    "refusal_code",
+    "Policy",
     "Policy",
     "Request",
     "Result",
@@ -55,6 +58,34 @@ __all__ = [
     "LAYER_ORDER",
     "Protection",
 ]
+
+#: Machine codes for every refusal. Production mode returns the code and nothing
+#: else (invariants S20/S21/S23): an attacker probing the gateway learns that it
+#: refused, not which layer or why. The human sentence stays in-process, reachable
+#: only by the owner running the CLI on this host.
+REFUSAL_CODES: Dict[str, Tuple[str, str]] = {
+    "1-pqc": ("ZN-SEC-0x1A01", "ZN-SEC-0x1B01"),
+    "2-biometric": ("ZN-SEC-0x2A01", "ZN-SEC-0x2B01"),
+    "3-zkp": ("ZN-SEC-0x3A01", "ZN-SEC-0x3B01"),
+    "4-ledger": ("ZN-SEC-0x4A01", "ZN-SEC-0x4B01"),
+    "5-sentinel": ("ZN-SEC-0x5A01", "ZN-SEC-0x5B01"),
+    "6-polymorphic": ("ZN-SEC-0x6A01", "ZN-SEC-0x6B01"),
+    "7-geo-hardware": ("ZN-SEC-0x7A01", "ZN-SEC-0x7B01"),
+    "8-vajra": ("ZN-SEC-0x8A01", "ZN-SEC-0x8B01"),
+    "gate": ("ZN-SEC-0x0A01", "ZN-SEC-0x0B01"),
+}
+
+
+def refusal_code(layer: str, *, missing: bool = False) -> str:
+    """The opaque code for a refusal at ``layer``.
+
+    ``missing`` distinguishes "the caller did not supply this layer's material"
+    from "the material was supplied and rejected". Both are refusals; the
+    distinction is the owner's, not the caller's.
+    """
+    absent, failed = REFUSAL_CODES.get(layer, REFUSAL_CODES["gate"])
+    return absent if missing else failed
+
 
 #: The order is fixed by the brief; do not reorder without changing the docs.
 LAYER_ORDER: Tuple[str, ...] = (
@@ -71,7 +102,23 @@ LAYER_ORDER: Tuple[str, ...] = (
 
 @dataclass
 class Policy:
-    """Which layers must pass, and how strict the gateway is."""
+    """Which layers must pass, how loud the gateway is, and in which mode.
+
+    ``mode`` is not cosmetic. The plan separates two operating states:
+
+    * ``"development"`` — the shipping default of this library, and the honest
+      description of it: layers 2, 3, 6 and 8 are *optional* unless the caller
+      supplies their material, refusals explain themselves in prose, and ledger
+      signatures are not re-verified on every request. Convenient, and not a
+      production posture.
+    * ``"production"`` — every layer in :data:`LAYER_ORDER` is mandatory, ledger
+      signatures are verified, and refusals carry only a machine code. This is
+      what :meth:`Policy.strict` returns, and what ``zeno serve --production``
+      runs.
+
+    A policy is reported by :meth:`to_dict` in both cases, so no deployment can
+    be strict by accident and none can be permissive *silently* (S18, S25).
+    """
 
     require_pqc: bool = True
     require_biometric: bool = False
@@ -83,11 +130,77 @@ class Policy:
     require_geofence: bool = False
     #: VAJRA never protects anything: it is decoration unless explicitly wanted.
     apply_vajra_wrap: bool = True
+    #: Layer 8 is mandatory in production (the brief makes it the final layer)
+    #: even though it is an encoding: what is mandatory is that it *runs*.
+    require_vajra: bool = False
     #: Sentinel verdicts at or above this become refusals.
     block_on_sentinel: Tuple[str, ...] = ("FREEZE",)
+    #: Re-verify every ledger signature instead of only the hash chain (H4).
+    verify_ledger_signatures: bool = False
+    #: Require the proof's key to be the one registered to the claimed actor
+    #: (audit finding C3). A proof of knowledge of *some* key proves nothing about
+    #: *which* entity is asking; without this, any key holder can prove as anyone.
+    require_identity_binding: bool = False
+    #: Require a caller-supplied nonce in the proof context (audit findings C3 and
+    #: H3). The ZKP nullifier is derived from (identity, context), so a *fixed*
+    #: context allows exactly one accepted request ever. Binding a fresh nonce per
+    #: attempt is what makes repeat requests possible while keeping a replayed
+    #: transcript impossible.
+    require_nonce: bool = False
+    #: Refusals carry a code and nothing else (S20/S21/S23).
+    opaque_reasons: bool = False
+    mode: str = "development"
+
+    #: The layer names that must pass, in order. Derived, never hand-maintained.
+    @property
+    def mandatory_layers(self) -> Tuple[str, ...]:
+        required = {
+            "1-pqc": self.require_pqc,
+            "2-biometric": self.require_biometric,
+            "3-zkp": self.require_zkp,
+            "4-ledger": self.require_ledger,
+            "5-sentinel": self.require_sentinel,
+            "6-polymorphic": self.require_polymorphic,
+            "7-geo-hardware": self.require_device_lock or self.require_geofence,
+            "8-vajra": self.require_vajra,
+        }
+        return tuple(layer for layer in LAYER_ORDER if required.get(layer, False))
+
+    @property
+    def strict(self) -> bool:
+        return self.mode == "production"
+
+    @classmethod
+    def strict_policy(cls) -> "Policy":
+        """Every layer mandatory, signatures verified, reasons opaque.
+
+        The geofence stays a *signal* rather than a requirement (S14): treating
+        spoofable coordinates as a hard gate would trade real security for the
+        appearance of it. It still runs, and still refuses when the policy says
+        so, but a caller outside a fence is not automatically refused here.
+        """
+        return cls(
+            mode="production",
+            require_pqc=True,
+            require_biometric=True,
+            require_zkp=True,
+            require_ledger=True,
+            require_sentinel=True,
+            require_polymorphic=True,
+            require_device_lock=True,
+            require_geofence=False,
+            require_vajra=True,
+            verify_ledger_signatures=True,
+            require_identity_binding=True,
+            require_nonce=True,
+            opaque_reasons=True,
+            apply_vajra_wrap=True,
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "mode": self.mode,
+            "strict": self.strict,
             "required": {
                 "pqc": self.require_pqc,
                 "biometric": self.require_biometric,
@@ -97,7 +210,13 @@ class Policy:
                 "polymorphic": self.require_polymorphic,
                 "device_lock": self.require_device_lock,
                 "geofence": self.require_geofence,
+                "vajra": self.require_vajra,
             },
+            "mandatory_layers": list(self.mandatory_layers),
+            "verify_ledger_signatures": self.verify_ledger_signatures,
+            "require_identity_binding": self.require_identity_binding,
+            "require_nonce": self.require_nonce,
+            "opaque_reasons": self.opaque_reasons,
             "apply_vajra_wrap": self.apply_vajra_wrap,
             "block_on_sentinel": list(self.block_on_sentinel),
             "fail_closed": True,
@@ -146,15 +265,20 @@ class LayerVerdict:
     detail: str = ""
     data: Dict[str, Any] = field(default_factory=dict)
     elapsed_ms: float = 0.0
+    #: Machine code for a refusal, filled in by :meth:`Gateway.decide`.
+    code: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, *, opaque: bool = False) -> Dict[str, Any]:
         return {
             "layer": self.layer,
             "ok": self.ok,
             "required": self.required,
-            "detail": self.detail,
+            # In production the sentence stays on this host; the caller gets the
+            # code. ``data`` is withheld too when it would narrate the refusal.
+            "detail": "" if opaque else self.detail,
+            "code": self.code or None,
             "elapsed_ms": round(self.elapsed_ms, 4),
-            "data": dict(self.data),
+            "data": {} if (opaque and not self.ok) else dict(self.data),
         }
 
 
@@ -166,7 +290,16 @@ class Result:
     verdicts: List[LayerVerdict] = field(default_factory=list)
     refused_by: Optional[str] = None
     reason: str = ""
+    #: The sentence behind :attr:`code`. Never serialised: it is for the owner
+    #: reading this host's own console, not for the caller who was refused.
+    human_reason: str = ""
+    code: str = ""
+    opaque: bool = False
     payload: Optional[bytes] = None
+    #: The canonical payload after layer 6 restored it from this epoch's rotated
+    #: vocabulary. This — not the bytes on the wire — is what may be executed
+    #: (invariant S24).
+    restored_payload: Optional[bytes] = None
     wrapped: Optional[str] = None
     box: Optional[SealedBox] = None
     sentinel: Optional[SentinelDecision] = None
@@ -177,24 +310,30 @@ class Result:
             "allowed": self.allowed,
             "refused_by": self.refused_by,
             "reason": self.reason,
-            "layers": [verdict.to_dict() for verdict in self.verdicts],
-            "sentinel": self.sentinel.to_dict() if self.sentinel else None,
+            "code": self.code or None,
+            "layers": [verdict.to_dict(opaque=self.opaque) for verdict in self.verdicts],
+            "sentinel": None if self.opaque else (self.sentinel.to_dict() if self.sentinel else None),
             "vajra_wrapped": self.wrapped is not None,
             "sealed": self.box is not None,
             "at": self.at,
             "honesty": dict(HONESTY),
         }
 
-    def render(self) -> str:
+    def render(self, *, include_human: bool = True) -> str:
+        """Human-readable summary. The owner's view; do not serve this."""
         lines = [
             f"AEGIS gate   : {'ALLOW' if self.allowed else 'DENY'}"
             + (f" (refused by {self.refused_by})" if self.refused_by else ""),
         ]
-        if self.reason:
-            lines.append(f"  reason     : {self.reason}")
+        shown = self.reason if include_human else self.code
+        if shown:
+            lines.append(f"  reason     : {shown}")
+        if include_human and self.code and self.human_reason and self.human_reason != self.reason:
+            lines.append(f"  detail     : {self.human_reason}")
         for verdict in self.verdicts:
             mark = "ok  " if verdict.ok else ("FAIL" if verdict.required else "warn")
-            lines.append(f"  [{mark}] {verdict.layer:<14} {verdict.detail}")
+            text = verdict.detail if include_human else (verdict.code or "")
+            lines.append(f"  [{mark}] {verdict.layer:<14} {text}")
         return "\n".join(lines)
 
 
@@ -225,6 +364,7 @@ class Gateway:
         self,
         policy: Optional[Policy] = None,
         *,
+        identities: Optional[Mapping[str, str]] = None,
         identity: Optional[Identity] = None,
         vault: Optional[BiometricVault] = None,
         verifier: Optional[Verifier] = None,
@@ -241,6 +381,10 @@ class Gateway:
 
         require_classical("constructing an AEGIS gateway")
         self.policy = policy or Policy()
+        #: actor -> the base64 public key registered to that actor. Empty by
+        #: default: with ``require_identity_binding`` the strict policy refuses
+        #: any proof that cannot be attributed to the actor claiming it.
+        self.identities: Dict[str, str] = dict(identities or {})
         self.identity = identity or generate_identity("gateway")
         self.sealer = Sealer(self.identity)
         self.vault = vault or BiometricVault()
@@ -250,6 +394,12 @@ class Gateway:
         self.polymorphic = polymorphic
         self.hardware = hardware
         self.started_at = time.time()
+
+    def register_identity(self, actor: str, statement: Any) -> str:
+        """Bind ``actor`` to a key. ``statement`` may be a Statement or its public string."""
+        public = getattr(statement, "public", statement)
+        self.identities[actor] = str(public)
+        return self.identities[actor]
 
     # -- inbound ---------------------------------------------------------
     def decide(self, request: Request) -> Result:
@@ -283,12 +433,24 @@ class Gateway:
                 result.sentinel = verdict.data["sentinel"]
 
             if not verdict.ok and required:
+                missing = verdict.data.get("reason_kind") == "missing"
+                verdict.code = refusal_code(name, missing=missing)
                 result.refused_by = name
-                result.reason = verdict.detail
+                result.code = verdict.code
+                result.human_reason = verdict.detail
+                result.opaque = self.policy.opaque_reasons
+                result.reason = verdict.code if self.policy.opaque_reasons else verdict.detail
+                # The audit record always keeps the human sentence: the ledger is
+                # the owner's, and an opaque code is useless to them later.
                 self._record(request, "deny", layer=name, reason=verdict.detail)
                 return result
 
         result.allowed = True
+        result.opaque = self.policy.opaque_reasons
+        for verdict in result.verdicts:
+            restored = verdict.data.get("restored")
+            if verdict.layer == "6-polymorphic" and restored:
+                result.restored_payload = str(restored).encode("utf-8")
         result.reason = "all required layers passed"
         self._record(request, "allow", layer="gate", reason=result.reason)
 
@@ -362,7 +524,8 @@ class Gateway:
         """Layer 2: fuzzy-extractor verification, with the entropy budget reported."""
         if request.biometric is None or request.biometric_subject is None:
             return LayerVerdict(
-                "2-biometric", not required, required, "no biometric material supplied"
+                "2-biometric", not required, required, "no biometric material supplied",
+                {"reason_kind": "missing"},
             )
         subject = request.biometric_subject
         if subject not in self.vault.records:
@@ -384,7 +547,27 @@ class Gateway:
     def _layer_zkp(self, request: Request, required: bool) -> LayerVerdict:
         """Layer 3: Schnorr proof of knowledge, single-use via nullifier."""
         if request.proof is None or request.statement is None:
-            return LayerVerdict("3-zkp", not required, required, "no proof supplied")
+            return LayerVerdict(
+                "3-zkp", not required, required, "no proof supplied", {"reason_kind": "missing"}
+            )
+        if self.policy.require_identity_binding:
+            registered = self.identities.get(request.actor)
+            if registered is None:
+                return LayerVerdict(
+                    "3-zkp",
+                    False,
+                    required,
+                    f"no identity is registered to {request.actor!r}: an unattributable proof "
+                    "is not authorization",
+                    {"reason_kind": "missing"},
+                )
+            if request.statement.public != registered:
+                return LayerVerdict(
+                    "3-zkp",
+                    False,
+                    required,
+                    "the proof is valid for a key that is not registered to this actor",
+                )
         context = request.context or f"aegis:{request.actor}".encode()
         ok = self.verifier.verify(request.statement, request.proof, context=context)
         detail = (
@@ -396,14 +579,15 @@ class Gateway:
 
     def _layer_ledger(self, request: Request, required: bool) -> LayerVerdict:
         """Layer 4: the ledger must be writable and intact."""
-        status = self.ledger.verify(check_signatures=False)
+        status = self.ledger.verify(check_signatures=self.policy.verify_ledger_signatures)
         if not status.ok:
             return LayerVerdict("4-ledger", False, required, f"ledger is broken: {status.reason}")
         return LayerVerdict(
             "4-ledger",
             True,
             required,
-            f"{status.blocks} blocks, {status.entries} entries, head {status.head[:16]}",
+            f"{status.blocks} blocks, {status.entries} entries, head {status.head[:16]}"
+            + ("" if self.policy.verify_ledger_signatures else " (signatures not re-verified in this mode)"),
             {"head": status.head},
         )
 
@@ -419,7 +603,10 @@ class Gateway:
     def _layer_polymorphic(self, request: Request, required: bool) -> LayerVerdict:
         """Layer 6: if rotation is configured, the payload must match an epoch."""
         if self.polymorphic is None:
-            return LayerVerdict("6-polymorphic", not required, required, "no rotation key configured")
+            return LayerVerdict(
+                "6-polymorphic", not required, required, "no rotation key configured",
+                {"reason_kind": "missing"},
+            )
         payload = request.payload.decode("utf-8", "replace")
         try:
             restored, epoch = self.polymorphic.decode_with_grace(payload)
@@ -445,7 +632,8 @@ class Gateway:
             )
         if self.hardware is None:
             return LayerVerdict(
-                "7-geo-hardware", not required, required, "no device lock configured"
+                "7-geo-hardware", not required, required, "no device lock configured",
+                {"reason_kind": "missing"},
             )
 
         fence: Optional[GeoFence] = self.hardware.fence
