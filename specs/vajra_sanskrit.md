@@ -20,10 +20,11 @@ Rot13 is not breakable "without Latin knowledge". The Vigenère cipher was
 unbroken for three centuries not because it used French but because it used a
 **key**. Obfuscation always reduces to an encoding plus, at most, a secret.
 
-VAJRA's wrap is a **bijection over bytes with a published table**:
-33 consonants × 8 vowel signs = 264 blocks, of which 256 are used. The decoder in
-`devanagari_wrapper.py` is twelve lines and needs no secret. Nothing about the
-Sanskrit language makes the table harder to read: it is in the file.
+VAJRA's wrap is a **bijection over bytes with a published table**: 34 consonants
+× 13 vowel signs give 442 possible syllable blocks, and the first 256 in varga
+order are used — which needs only 20 of the consonants, and no secrecy at all.
+The decoder in `devanagari_wrapper.py` is 23 lines and needs no key. Nothing
+about the Sanskrit language makes the table harder to read: it is in the file.
 
 So the layer is shipped as an **encoding and analysis toolkit**, with the
 confidentiality it does not have measured by its own code:
@@ -158,8 +159,8 @@ from the Sanskrit language itself; resist a reader of the source; stop a receive
 who holds the rotation key; or make a voiceprint sufficient on its own.
 
 `vajra_report()` returns all of this as data, including
-`is_a_cipher: False` and `provides_confidentiality: False`, and
-`tests/test_vajra.py` opens with `assert IS_A_CIPHER is False`.
+`is_a_cipher: False` and `provides_confidentiality: False`, and the first test in
+`tests/test_vajra.py` asserts `IS_A_CIPHER is False`.
 
 ---
 

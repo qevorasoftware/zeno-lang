@@ -5,7 +5,9 @@ Sanskrit linguistic knowledge". That claim is false, and this module is built so
 that the falseness is *checkable* rather than argued about:
 
 * The wrap is a **bijection** between bytes and Devanagari syllable blocks drawn
-  from a fixed, published table (33 consonants × 8 matras = 264 ≥ 256). A
+  from a fixed, published table. 34 consonants × 13 vowel signs give 442
+  combinations; the first 256 in varga order are used, which needs only 20 of the
+  consonants. A
   bijection with a public table is an encoding. There is no key in
   :func:`encode`, and :func:`decode` needs no secret.
 * :func:`confidentiality_report` therefore **measures** the thing the brief
@@ -59,7 +61,7 @@ DECORATION: Dict[str, str] = {
 
 
 def _build_table() -> List[Tuple[str, str]]:
-    """The fixed public table: 264 (consonant, matra) pairs, extras discarded.
+    """The fixed public table: the first 256 of 442 (consonant, matra) pairs.
 
     Ordering is documented and stable: consonants in the traditional varga order,
     then vowels by length. Anyone can reconstruct it from this list, which is the
