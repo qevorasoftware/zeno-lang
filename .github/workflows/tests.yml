@@ -64,7 +64,9 @@ jobs:
       - name: Dashboard script against a live server
         if: matrix.python-version == '3.11'
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq nodejs
+          # Bounded on purpose: a stalled apt mirror once hung this step for
+          # hours. Failing fast beats hanging slow; the step can be re-run.
+          sudo timeout 180 apt-get update -qq && sudo timeout 180 apt-get install -y -qq nodejs
           node --version
           python - <<'PY'
           import subprocess, sys
