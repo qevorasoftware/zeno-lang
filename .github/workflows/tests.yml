@@ -70,16 +70,18 @@ jobs:
           import subprocess, sys
 
           # Run the page's own script twice: against a live server, and against a
-          # plain static server with no API (that is GitHub Pages). A skip here
-          # means node was missing, which would quietly reduce this step to
-          # nothing -- so a skip is a failure, not a pass.
+          # plain static server with no API (that is GitHub Pages). A skip *for
+          # want of node* would quietly reduce this step to nothing, so that is a
+          # failure. Tests that skip for a different stated reason (this job
+          # installs no crypto wheels) are fine: they run in the aegis job, and
+          # the e2e/benchmark jobs are unaffected.
           result = subprocess.run(
               [sys.executable, "-m", "pytest", "tests/test_dashboard.py", "-q", "-rs"],
               text=True, capture_output=True,
           )
           sys.stdout.write(result.stdout[-6000:])
           sys.stderr.write(result.stderr[-2000:])
-          assert "skipped" not in result.stdout.lower(), "the dashboard tests were skipped"
+          assert "node is not installed" not in result.stdout, "node is missing: the page went unexercised"
           if result.returncode != 0:
               raise SystemExit(result.returncode)
           print("the dashboard booted, ran commands, and degraded to the snapshot")

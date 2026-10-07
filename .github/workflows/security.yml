@@ -65,7 +65,9 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e .[dev]
+          # Owner grants are hybrid-signed: without the crypto wheels they cannot
+          # be minted at all, and the point of this job is to exercise them.
+          python -m pip install -e .[dev,aegis]
 
       - name: Capability and token lifecycle
         run: python -m pytest tests/test_capability.py -q
