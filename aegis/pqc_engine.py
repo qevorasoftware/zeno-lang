@@ -34,7 +34,7 @@ from __future__ import annotations
 import base64
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Mapping, Optional, Tuple
 
 from . import cipher
 from ._kdf import derive_key
@@ -107,6 +107,47 @@ class Identity:
     @property
     def quantum_resistant(self) -> bool:
         return bool(self.kem_public and self.mldsa_public)
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, Any]) -> "Identity":
+        """Rebuild an identity from :meth:`to_dict(redact_secrets=False)`.
+
+        This is the inverse of persisting a key, so it is only meaningful for
+        payloads that actually carry the secrets: a redacted one raises rather
+        than silently producing a key that cannot sign.
+        """
+        secrets_block = payload.get("secrets")
+        if not isinstance(secrets_block, Mapping):
+            raise ValueError(
+                "identity payload has no secrets: it was redacted, and a redacted key "
+                "cannot be restored"
+            )
+        x25519_public = _unb64(payload["x25519"])
+        kem_public = _unb64(payload.get("ml_kem_768", ""))
+        ed25519_public = _unb64(payload.get("ed25519", ""))
+        mldsa_public = _unb64(payload.get("ml_dsa_65", ""))
+
+        # Recompute rather than trust: a fingerprint stored in a file is a claim,
+        # and a key file whose fingerprint does not match its own keys is either
+        # corrupt or edited. Either way it is refused instead of loaded.
+        recomputed = _fingerprint(x25519_public, kem_public, ed25519_public, mldsa_public)
+        stored = str(payload.get("fingerprint", ""))
+        if stored and stored != recomputed:
+            raise ValueError(
+                "identity file fingerprint does not match its keys: refusing to load it"
+            )
+        return cls(
+            name=str(payload.get("name", "")),
+            x25519_public=x25519_public,
+            x25519_secret=_unb64(secrets_block["x25519"]),
+            kem_public=kem_public,
+            kem_secret=_unb64(secrets_block.get("kem", "")),
+            ed25519_public=ed25519_public,
+            ed25519_secret=_unb64(secrets_block["ed25519"]),
+            mldsa_public=mldsa_public,
+            mldsa_secret=_unb64(secrets_block.get("mldsa", "")),
+            fingerprint=recomputed,
+        )
 
     def to_dict(self, *, redact_secrets: bool = True) -> Dict[str, Any]:
         payload = self.public.to_dict()

@@ -13,6 +13,10 @@ Subcommands
 from __future__ import annotations
 
 import argparse
+import os
+import pathlib
+import sys
+import time
 import json
 import sys
 from typing import Any, Dict, List, Optional
@@ -287,6 +291,158 @@ def cmd_selftest(args: argparse.Namespace) -> int:
     return 0 if all(item["ok"] for item in checks) else 1
 
 
+# ---------------------------------------------------------------------------
+# Owner: the root of trust (plan §3-4)
+# ---------------------------------------------------------------------------
+DEFAULT_OWNER_KEY = "~/.aegis/owner_root.json"
+
+
+def cmd_owner(args: argparse.Namespace) -> int:
+    """Issue, revoke and rotate the capability tokens the gateway accepts.
+
+    Everything here has to be run by the owner, because everything here needs the
+    owner's private key. The serving side only ever sees the public half.
+    """
+    from .capability import Capability, CapabilityError, CapabilityVerifier, OwnerRoot
+
+    action = args.owner_action
+    path = args.key
+
+    if action == "init":
+        if os.path.exists(os.path.expanduser(path)) and not args.force:
+            print(f"{path} already exists (use --force to replace it)", file=sys.stderr)
+            return 1
+        root = OwnerRoot.create(
+            name=args.issuer, audience=args.audience or "zeno-local", epoch=args.epoch
+        )
+        saved = root.save(path)
+        payload = {
+            "created": str(saved),
+            "issuer": root.public.name,
+            "fingerprint": root.fingerprint,
+            "audience": root.audience,
+            "epoch": root.epoch,
+            "quantum_resistant": root.public.quantum_resistant,
+            "file_mode": "0600",
+            "warning": "keep this file offline; anyone holding it can mint authority",
+        }
+        if args.json:
+            _print_json(payload)
+        else:
+            print(f"owner root created: {saved}")
+            print(f"  issuer      : {root.public.name}")
+            print(f"  fingerprint : {root.fingerprint}")
+            print(f"  audience    : {root.audience}   epoch {root.epoch}")
+            print(f"  hybrid      : {root.public.quantum_resistant}")
+            print("  warning     : keep this file offline — anyone holding it can mint authority")
+        return 0
+
+    try:
+        root = OwnerRoot.load(path)
+    except FileNotFoundError:
+        print(f"no owner key at {path}: run `python -m aegis owner init` first", file=sys.stderr)
+        return 1
+    except (ValueError, KeyError, CapabilityError) as error:
+        print(f"cannot use the owner key: {error}", file=sys.stderr)
+        return 1
+
+    if action == "show":
+        payload = root.to_dict() | {"path": os.path.expanduser(path)}
+        if args.json:
+            _print_json(payload)
+        else:
+            for key, value in payload.items():
+                print(f"{key:16}: {value}")
+        return 0
+
+    if action == "issue":
+        try:
+            token = root.issue(
+                args.subject,
+                args.capability,
+                audience=args.audience or None,
+                ttl=args.ttl,
+                semantic_scope_hash=args.semantic_scope or "",
+            )
+        except CapabilityError as error:
+            print(f"refused: {error}", file=sys.stderr)
+            return 1
+        encoded = token.encode()
+        if args.out:
+            target = pathlib.Path(args.out).expanduser()
+            target.write_text(encoded + "\n", encoding="utf-8")
+            os.chmod(target, 0o600)
+        payload = token.to_dict() | {"encoded": encoded, "verify_with": root.fingerprint}
+        if args.json:
+            _print_json(payload)
+        else:
+            print(f"token {token.token_id} for {token.subject}")
+            print(f"  capabilities: {', '.join(token.capabilities)}")
+            print(f"  audience    : {token.audience}   epoch {token.epoch}")
+            print(f"  expires at  : {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(token.expires_at))}")
+            print(f"  suite       : {token.crypto_suite} ({', '.join(token.required_algorithms)})")
+            if args.out:
+                print(f"  written to  : {os.path.expanduser(args.out)}")
+            else:
+                print(f"  token       : {encoded}")
+        return 0
+
+    if action == "revoke":
+        try:
+            token = Capability.decode(_read_token(args.token))
+        except CapabilityError as error:
+            print(f"cannot read the token: {error}", file=sys.stderr)
+            return 1
+        token_id = root.revoke(token)
+        root.save(path)
+        payload = {"revoked": token_id, "total": len(root.revocations)}
+        if args.json:
+            _print_json(payload)
+        else:
+            print(f"revoked {token_id} ({len(root.revocations)} total)")
+        return 0
+
+    if action == "rotate-epoch":
+        epoch = root.rotate_epoch()
+        root.save(path)
+        payload = {"epoch": epoch, "effect": "every token from the previous epoch is now refused"}
+        if args.json:
+            _print_json(payload)
+        else:
+            print(f"owner epoch is now {epoch}: every token from the previous epoch is refused")
+        return 0
+
+    if action == "verify":
+        try:
+            token = Capability.decode(_read_token(args.token))
+        except CapabilityError as error:
+            print(f"cannot read the token: {error}", file=sys.stderr)
+            return 1
+        verifier = CapabilityVerifier(root.public, audience=args.audience, epoch=root.epoch,
+                                      revocations=root.revocations)
+        check = verifier.verify(token, action=args.action or "")
+        payload = check.to_dict() | {"reason": check.reason}
+        if args.json:
+            _print_json(payload)
+        else:
+            print(f"{'ACCEPT' if check.ok else 'REFUSE'}: {check.reason or 'all checks passed'}")
+            if check.ok:
+                print(f"  subject     : {check.subject}")
+                print(f"  capabilities: {', '.join(check.capabilities)}")
+        return 0 if check.ok else 1
+
+    print(f"unknown owner action {action!r}", file=sys.stderr)
+    return 2
+
+
+def _read_token(value: str) -> str:
+    """Accept a token as the string itself, or a path to a file containing it."""
+    expanded = os.path.expanduser(value)
+    if os.path.exists(expanded):
+        return pathlib.Path(expanded).read_text(encoding="utf-8").strip()
+    return value
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="aegis",
@@ -312,6 +468,41 @@ def build_parser() -> argparse.ArgumentParser:
     demo.add_argument("--group-bits", type=int, default=1024, help="ZK group size (1024 is fast, 2048 is the default elsewhere)")
     demo.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
     demo.set_defaults(func=cmd_demo)
+
+    owner = subparsers.add_parser(
+        "owner", help="issue, revoke and rotate the owner-issued capability tokens"
+    )
+    owner.add_argument(
+        "owner_action",
+        choices=["init", "show", "issue", "revoke", "rotate-epoch", "verify"],
+        help="what to do with the root of trust",
+    )
+    owner.add_argument(
+        "--key",
+        default=os.environ.get("ZENO_OWNER_KEY") or DEFAULT_OWNER_KEY,
+        help="owner root key file (or set ZENO_OWNER_KEY)",
+    )
+    owner.add_argument("--issuer", default="owner_root", help="issuer name (init)")
+    owner.add_argument(
+        "--audience",
+        default="",
+        help="audience this root issues for (init: defaults to zeno-local; "
+        "issue: defaults to the root's own audience)",
+    )
+    owner.add_argument("--epoch", type=int, default=1, help="starting epoch (init)")
+    owner.add_argument("--force", action="store_true", help="replace an existing key file (init)")
+    owner.add_argument("--subject", default="", help="who the token is for (issue)")
+    owner.add_argument(
+        "--capability", action="append", default=[], metavar="GRANT",
+        help="a grant such as run:weather or execute:* (repeatable)",
+    )
+    owner.add_argument("--ttl", type=float, default=900.0, help="seconds until the token expires")
+    owner.add_argument("--semantic-scope", default="", help="bind the token to a semantic hash")
+    owner.add_argument("--out", default="", help="write the token to this file instead of stdout")
+    owner.add_argument("--token", default="", help="token string or the file holding it")
+    owner.add_argument("--action", default="", help="action to check, for `owner verify`")
+    owner.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
+    owner.set_defaults(func=cmd_owner)
 
     vajra = subparsers.add_parser("vajra", help="wrap text in the Sanskrit encoding and measure it")
     vajra.add_argument("text", help="text to wrap")

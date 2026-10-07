@@ -141,6 +141,10 @@ class Policy:
     #: (audit finding C3). A proof of knowledge of *some* key proves nothing about
     #: *which* entity is asking; without this, any key holder can prove as anyone.
     require_identity_binding: bool = False
+    #: Require an owner-issued capability token for effectful actions (plan §4).
+    #: Without this, "authorized" means "the layers agreed about this request";
+    #: with it, it means "the owner granted exactly this".
+    require_capability: bool = False
     #: Require a caller-supplied nonce in the proof context (audit findings C3 and
     #: H3). The ZKP nullifier is derived from (identity, context), so a *fixed*
     #: context allows exactly one accepted request ever. Binding a fresh nonce per
@@ -193,6 +197,7 @@ class Policy:
             verify_ledger_signatures=True,
             require_identity_binding=True,
             require_nonce=True,
+            require_capability=True,
             opaque_reasons=True,
             apply_vajra_wrap=True,
         )
@@ -216,6 +221,7 @@ class Policy:
             "verify_ledger_signatures": self.verify_ledger_signatures,
             "require_identity_binding": self.require_identity_binding,
             "require_nonce": self.require_nonce,
+            "require_capability": self.require_capability,
             "opaque_reasons": self.opaque_reasons,
             "apply_vajra_wrap": self.apply_vajra_wrap,
             "block_on_sentinel": list(self.block_on_sentinel),

@@ -61,6 +61,13 @@ def authorized_world(tmp_path_factory):
     keystore = tmp_path_factory.mktemp("boundary") / "device.json"
     lock = HardwareLock(device, b"device-secret", keystore=keystore)
 
+    # P1: production also demands an owner-issued grant, so the legitimate caller
+    # in these tests holds one. The tokens are exercised in tests/test_capability.py.
+    from aegis.capability import CapabilityVerifier, OwnerRoot
+
+    owner = OwnerRoot.create(name="owner_root", audience="zeno-local", epoch=1)
+    grant = owner.issue(ACTOR, ["execute:*"], ttl=600)
+
     gateway = Gateway(
         Policy.strict_policy(),
         verifier=Verifier(group),
@@ -89,6 +96,7 @@ def authorized_world(tmp_path_factory):
         """The JSON shape a client sends for one attempt."""
         return {
             "actor": ACTOR,
+            "token": grant.encode(),
             "nonce": nonce,
             "proof": base64.b64encode(proof.encode()).decode("ascii"),
             "biometric": BIOMETRIC,
@@ -112,7 +120,12 @@ def authorized_world(tmp_path_factory):
         "prover": prover,
         "prove_over": prove_over,
         "fresh_block": fresh_block,
-        "boundary": AuthorizationBoundary(gateway=gateway),
+        "owner": owner,
+        "grant": grant,
+        "boundary": AuthorizationBoundary(
+            gateway=gateway,
+            capability_verifier=CapabilityVerifier(owner.public, audience="zeno-local", epoch=1),
+        ),
     }
 
 
@@ -142,6 +155,12 @@ def _post(base: str, path: str, body: dict) -> tuple[int, dict]:
 def strict_server(authorized_world):
     playground = Playground(policy=Policy.strict_policy())
     playground.boundary = authorized_world["boundary"]
+    # These tests refuse a lot on purpose, and a refused request from a flagged
+    # source is tarpitted by design. The delay is real; its *size* is not what is
+    # under test here (tests/test_watchtower.py covers the tarpit itself).
+    if playground.watchtower is not None:
+        playground.watchtower.tarpit_base_ms = 1
+        playground.watchtower.tarpit_max_ms = 2
     httpd, base = _serve(playground)
     yield base, playground
     httpd.shutdown()

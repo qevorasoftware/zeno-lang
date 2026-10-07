@@ -69,15 +69,20 @@ jobs:
           python - <<'PY'
           import subprocess, sys
 
+          # Run the page's own script twice: against a live server, and against a
+          # plain static server with no API (that is GitHub Pages). A skip here
+          # means node was missing, which would quietly reduce this step to
+          # nothing -- so a skip is a failure, not a pass.
           result = subprocess.run(
               [sys.executable, "-m", "pytest", "tests/test_dashboard.py", "-q", "-rs"],
               text=True, capture_output=True,
           )
-          sys.stdout.write(result.stdout[-4000:])
-          # A skip here means node was missing, which would silently reduce this
-          # step to nothing: the page's own script would go unexercised in CI.
-          assert "skipped" not in result.stdout, "the dashboard tests were skipped"
-          raise SystemExit(result.returncode)
+          sys.stdout.write(result.stdout[-6000:])
+          sys.stderr.write(result.stderr[-2000:])
+          assert "skipped" not in result.stdout.lower(), "the dashboard tests were skipped"
+          if result.returncode != 0:
+              raise SystemExit(result.returncode)
+          print("the dashboard booted, ran commands, and degraded to the snapshot")
           PY
 
       - name: Encoder/decoder round trip without a provider

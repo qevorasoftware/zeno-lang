@@ -75,6 +75,10 @@ class Authorization:
     #: Owner-side sentence. Never serialised for callers.
     human_reason: str = ""
     ledger_seq: int = 0
+    #: True only for permits from :meth:`AuthorizationBoundary.authorize_read`,
+    #: which authorize a view rather than an execution. Callers that execute must
+    #: refuse a read-only permit, so a read can never be escalated into a run.
+    read_only: bool = False
     elapsed_ms: float = 0.0
     result: Optional[Result] = field(default=None, repr=False)
     #: The canonical payload, restored from this epoch's rotation. The caller is
@@ -98,6 +102,8 @@ class Authorization:
             out["code"] = self.code
         if self.reason:
             out["reason"] = self.reason
+        if self.read_only:
+            out["read_only"] = True
         return out
 
     def owner_view(self) -> Dict[str, Any]:
@@ -133,6 +139,16 @@ def material_from_payload(body: Mapping[str, Any]) -> Dict[str, Any]:
     for key in ("latitude", "longitude"):
         if isinstance(block.get(key), (int, float)):
             material[key] = float(block[key])
+    if isinstance(block.get("token"), str) and block["token"].strip():
+        from .capability import Capability, CapabilityError
+
+        try:
+            material["capability"] = Capability.decode(block["token"])
+        except CapabilityError:
+            # An undecodable token is no token; the refusal below says so.
+            material["capability"] = None
+    if block.get("token") is not None and "capability" not in material:
+        material["capability"] = None
     if isinstance(block.get("nonce"), str) and block["nonce"].strip():
         material["nonce"] = block["nonce"].strip()[:200]
     if isinstance(block.get("context"), str):
@@ -159,10 +175,14 @@ class AuthorizationBoundary:
         gateway: Optional[Gateway] = None,
         *,
         policy: Optional[Policy] = None,
+        capability_verifier: Any = None,
     ) -> None:
         # A boundary without a gateway cannot authorize anything, so it builds a
         # strict one: the failure mode of a missing gateway is DENY, not allow.
         self.gateway = gateway if gateway is not None else Gateway(policy or Policy.strict_policy())
+        #: The owner's public key, wrapped in a verifier. Absent means no token can
+        #: be honoured, which in production means no effectful request can pass.
+        self.capability_verifier = capability_verifier
         self.attempts = 0
         self.permitted = 0
         self.refused = 0
@@ -204,6 +224,17 @@ class AuthorizationBoundary:
         started = time.perf_counter()
         material = dict(material or {})
         self.attempts += 1
+
+        if self.policy.require_capability:
+            check = self._check_capability(material.get("capability"), action=action)
+            if not check.ok:
+                return self._reject(
+                    caller,
+                    payload,
+                    f"capability refused ({check.code}): {check.reason}",
+                    started=started,
+                    code=check.code,
+                )
 
         if self.policy.require_nonce and not material.get("nonce"):
             return self._reject(
@@ -281,6 +312,117 @@ class AuthorizationBoundary:
         self.recent.appendleft(authorization)
         return authorization
 
+    # -- owner-only reads ---------------------------------------------------
+    def authorize_read(
+        self,
+        caller: Caller,
+        material: Optional[Mapping[str, Any]] = None,
+        *,
+        action: str = "read",
+    ) -> Authorization:
+        """Authorize the owner reading the owner's own view.
+
+        A narrow, deliberate exception, and it is written down here so it can
+        never be mistaken for a general bypass:
+
+        * nothing is executed, so the execution chain (layers 1-8) is not asked —
+          it exists to authorize *effects*, and a read has none;
+        * the owner's grant is still required wherever the policy requires one, so
+          in production this refuses without a valid `read:*` capability;
+        * the nonce guard still applies, so a captured read request cannot be
+          replayed;
+        * the permit this returns is marked ``read_only``, and the effectful
+          :meth:`authorize` never consults this path.
+
+        Everything effectful — anything that can change state or reach a tool —
+        continues to go through :meth:`authorize`, where the full chain applies.
+        """
+        started = time.perf_counter()
+        material = dict(material or {})
+        self.attempts += 1
+
+        if self.policy.require_capability:
+            check = self._check_capability(material.get("capability"), action=action)
+            if not check.ok:
+                return self._reject(
+                    caller,
+                    b"",
+                    f"capability refused ({check.code}): {check.reason}",
+                    started=started,
+                    code=check.code,
+                    action=action,
+                )
+        elif self.capability_verifier is not None:
+            check = self._check_capability(material.get("capability"), action=action)
+            if not check.ok and material.get("capability") is not None:
+                # A token was presented and did not verify. That is a refusal in
+                # any mode: an invalid grant is never quietly ignored.
+                return self._reject(
+                    caller,
+                    b"",
+                    f"capability refused ({check.code}): {check.reason}",
+                    started=started,
+                    code=check.code,
+                    action=action,
+                )
+
+        nonce = material.get("nonce")
+        if self.policy.require_nonce and not nonce:
+            return self._reject(
+                caller,
+                b"",
+                f"no nonce supplied: an owner read must be fresh on {caller.actor!r}",
+                started=started,
+                action=action,
+            )
+        if nonce and f"{caller.actor}:{nonce}" in self._spent_set:
+            return self._reject(
+                caller,
+                b"",
+                "this nonce has already authorized a request",
+                started=started,
+                action=action,
+            )
+
+        authorization = Authorization(
+            allowed=True,
+            payload=None,
+            decision_id=self._decision_id(caller.actor, b"read", time.time()),
+            mode=self.mode,
+            reason="owner read: capability honoured, nothing executed",
+            human_reason="owner read: capability honoured, nothing executed",
+            elapsed_ms=(time.perf_counter() - started) * 1000.0,
+        )
+        authorization.read_only = True
+        authorization.ledger_seq = self._record(caller, authorization, action=action)
+        self.permitted += 1
+        if nonce:
+            self._spend(f"{caller.actor}:{nonce}")
+        self.recent.appendleft(authorization)
+        return authorization
+
+    # -- owner-issued capability -------------------------------------------
+    def _check_capability(self, token: Any, *, action: str) -> Any:
+        """Verify the owner's grant, or explain why it cannot be honoured."""
+        from .capability import CAPABILITY_CODES, CapabilityCheck
+
+        if self.capability_verifier is None:
+            return CapabilityCheck(
+                ok=False,
+                code=CAPABILITY_CODES["unconfigured"],
+                reason=(
+                    "this deployment requires an owner-issued capability token but has no "
+                    "owner public key configured: no token can be honoured"
+                ),
+            )
+        if token is None:
+            return CapabilityCheck(
+                ok=False,
+                code=CAPABILITY_CODES["malformed"],
+                reason="no capability token supplied",
+            )
+        return self.capability_verifier.verify(token, action=action)
+
     # -- nonces ------------------------------------------------------------
     @staticmethod
     def _decision_id(actor: str, payload: bytes, at: float) -> str:
@@ -297,19 +439,28 @@ class AuthorizationBoundary:
         self._spent_nonces.append(key)
         self._spent_set.add(key)
 
-    def _reject(self, caller: Caller, payload: bytes, reason: str, *, started: float) -> Authorization:
+    def _reject(
+        self,
+        caller: Caller,
+        payload: bytes,
+        reason: str,
+        *,
+        started: float,
+        code: str = "",
+        action: str = "execute",
+    ) -> Authorization:
         """Refuse a malformed attempt without consulting the gateway."""
         self.refused += 1
         authorization = Authorization(
             allowed=False,
             decision_id=self._decision_id(caller.actor, payload, time.time()),
             mode=self.mode,
-            code=refusal_code("3-zkp", missing=True),
+            code=code or refusal_code("3-zkp", missing=True),
             reason="" if self.policy.opaque_reasons else reason,
             human_reason=reason,
             elapsed_ms=(time.perf_counter() - started) * 1000.0,
         )
-        authorization.ledger_seq = self._record(caller, authorization, action="execute")
+        authorization.ledger_seq = self._record(caller, authorization, action=action)
         self.recent.appendleft(authorization)
         return authorization
 

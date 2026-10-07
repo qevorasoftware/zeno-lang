@@ -109,8 +109,26 @@ zeno serve --production     # all eight layers mandatory, opaque refusals,
 - Production mode **refuses to start** if the crypto backend
   (`python -m pip install -e .[aegis]`) is unavailable, rather than running with
   an authorization layer it cannot enforce.
-- Keep `~/.aegis/` private. It holds the device secret and the cached ZKP group
-  parameters.
+- Keep `~/.aegis/` private. It holds the device secret, the cached ZKP group
+  parameters, and — if you created one — the **owner root key** that mints every
+  access grant. That key belongs offline: ideally on hardware you are not serving
+  from, never in a container image, never in CI. Anyone holding it can mint
+  authority for anything, and no layer in this repository can tell the difference
+  between a grant it signed and one you signed.
+- Grant the minimum. A token can be scoped to one action (`--capability
+  run:weather`) and a short `--ttl`, and it can be revoked or invalidated wholesale
+  by rotating the epoch. On a signal of compromise, rotate the epoch first: it
+  invalidates every outstanding token at once.
+- The intruder feed at `~/.zeno/watchtower.jsonl` is written by the watchtower and
+  holds source addresses, timestamps, refusal codes and **digests** — never
+  request bodies, tokens or cookies. It is still personal data about whoever
+  attacked you: treat it like a log, keep it as long as it is useful, and no
+  longer.
+- Tarpitting is deliberately bounded, on purpose. A delay is applied only to
+  refusals, only from a flagged source, and only while a concurrency budget is
+  free, so an attacker cannot use the tarpit to exhaust your own server. If a
+  shared egress address gets flagged, clear the live view: the feed keeps the
+  history.
 - Read `aegis report` on the host you deploy to: it lists which layers are real
   cryptography, which are policy, and which are encoding, on *that* machine.
 - Treat the ledger as evidence, not as immutable truth: it is append-only and

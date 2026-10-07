@@ -239,6 +239,36 @@ python -m aegis demo           # one request through all eight layers
 python -m aegis vajra "@LOC[TYO] -> ?WX"
 ```
 
+### The owner's key, and the adversary feed
+
+Authority is rooted in a key only you hold. Create it once, keep it offline, and
+issue short-lived grants from it:
+
+```bash
+python -m aegis owner init --audience zeno-local
+python -m aegis owner issue --subject agent://agent-1 \
+    --capability run:weather --capability read:ledger --ttl 900 --out token.txt
+python -m aegis owner rotate-epoch            # invalidates every old grant
+python -m aegis owner revoke --token token.txt
+```
+
+Meanwhile every refusal is evidence. In production a flagged source is delayed,
+then answered with a fabricated result that never touched the kernel, and the
+owner can see all of it — who, from where, how often, and with what excuse:
+
+```bash
+python -m zeno watchtower                     # the feed, read from disk
+python -m zeno watchtower --server http://127.0.0.1:8000 --summary
+```
+
+The same feed appears on the dashboard as an *Adversary feed* panel, once you
+paste a grant with `token <encoded>` and refresh it with `watchtower` — the panel
+is the owner's, so it needs the owner's grant. What this is **not**: a claim that
+an attacker can never leave. A tarpit delays and a decoy misleads; the security
+value is that the attack stops being invisible, and that the attacker's
+fingerprints end up in your hands. `specs/aegis_security.md` §9 states the limits
+in full, including the ones that can flag innocent callers behind shared NAT.
+
 | # | Layer | What it provides |
 |---|---|---|
 | 1 | `pqc_engine` | X25519 **+** ML-KEM-768 hybrid key agreement, Ed25519 **+** ML-DSA-65 dual signatures, ChaCha20-Poly1305 sealing (RFC 8439) |

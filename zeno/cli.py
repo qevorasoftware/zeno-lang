@@ -298,6 +298,84 @@ def cmd_dashboard(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_watchtower(args: argparse.Namespace) -> int:
+    """Show who has been attacking this deployment.
+
+    Reads the on-disk feed by default, so it works even when the server is down;
+    ``--server`` asks a running server instead, which also shows what is currently
+    tarpitted and how many decoys have been served.
+    """
+    from aegis.watchtower import DEFAULT_FEED, Watchtower
+
+    live: Optional[Dict[str, Any]] = None
+    if args.server:
+        import urllib.request
+
+        url = args.server.rstrip("/") + "/api/watchtower?limit=" + str(args.tail)
+        try:
+            with urllib.request.urlopen(url, timeout=args.timeout) as response:
+                live = json.loads(response.read())
+        except Exception as error:  # noqa: BLE001
+            print(f"could not read {url}: {type(error).__name__}: {error}", file=sys.stderr)
+            return 1
+
+    tower = Watchtower(feed=args.feed)
+    records = tower.read_feed(args.tail)
+    if live:
+        records = list(reversed(live.get("recent", []))) or records
+
+    if args.clear:
+        removed = tower.clear()
+        try:
+            pathlib.Path(os.path.expanduser(args.feed)) if False else None
+        except Exception:
+            pass
+        print(f"cleared {removed} source entries from the live view (the feed file is kept)")
+        if not records:
+            return 0
+
+    payload = {
+        "feed": os.path.expanduser(args.feed or DEFAULT_FEED),
+        "records": records,
+        "count": len(records),
+        "summary": (live or {}).get("summary") if args.summary and live else None,
+        "alerts": (live or {}).get("alerts", []),
+        "intruders": (live or {}).get("intruders", {}),
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, default=str))
+        return 0
+
+    if not records:
+        print("no refused attempts recorded yet")
+        print(f"  feed: {payload['feed']}")
+        return 0
+
+    print(f"{len(records)} refused attempts  ({payload['feed']})")
+    print(f"{'when':<20} {'source':<16} {'strikes':>7} {'code':<16} {'path':<12} note")
+    for record in records:
+        print(
+            f"{record.get('at_iso', ''):<20} {record.get('remote', ''):<16} "
+            f"{record.get('strike', 0):>7} {record.get('code', ''):<16} "
+            f"{record.get('path', ''):<12} {str(record.get('note', ''))[:40]}"
+        )
+    intruders = payload["intruders"]
+    if intruders:
+        print()
+        print(f"flagged sources ({len(intruders)}):")
+        for source, info in intruders.items():
+            print(
+                f"  {source:<16} strikes={info.get('strikes')} "
+                f"user-agent={info.get('user_agent') or '-'} fp={info.get('client_fingerprint', '')[:12]}"
+            )
+    for alert in payload["alerts"]:
+        print(f"  ALERT {alert.get('at_iso', '')} {alert.get('message', '')}")
+    print()
+    print("limits: a tarpit delays rather than stops; decoys are fabricated;")
+    print("        legitimate traffic is never delayed and never receives a decoy")
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Parser
 # ---------------------------------------------------------------------------
@@ -383,6 +461,18 @@ def build_parser() -> argparse.ArgumentParser:
     latency.add_argument("--json", action="store_true")
     latency.set_defaults(func=cmd_latency)
 
+    tower = sub.add_parser(
+        "watchtower", help="who has been refused, and what was done about it"
+    )
+    tower.add_argument("--feed", default="", help="path to the intrusion feed (default ~/.zeno/watchtower.jsonl)")
+    tower.add_argument("--tail", type=int, default=25, help="how many recent attempts to show")
+    tower.add_argument("--server", default="", help="query a running server instead of the file")
+    tower.add_argument("--timeout", type=float, default=5.0, help="seconds to wait for the server")
+    tower.add_argument("--summary", action="store_true", help="include the live counters")
+    tower.add_argument("--clear", action="store_true", help="clear the live view (the feed file is kept)")
+    tower.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
+    tower.set_defaults(func=cmd_watchtower)
+
     dashboard = sub.add_parser(
         "dashboard", help="export the static dashboard snapshot (dashboard-data.json)"
     )
@@ -426,6 +516,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    # Subparsers declare --json with SUPPRESS so a global --json (given before the
+    # subcommand) is not clobbered; that means the attribute may not exist at all.
+    args.json = bool(getattr(args, "json", False)) or "--json" in (argv or sys.argv[1:])
+    if not getattr(args, "command", None) and not hasattr(args, "func"):
+        parser.print_help()
+        return 0
     try:
         return int(args.func(args) or 0)
     except ZenoError as exc:

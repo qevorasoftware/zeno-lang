@@ -131,6 +131,17 @@ def _build_boundary(mode: str, policy: Any = None) -> Any:
         return None
 
 
+def _build_watchtower(mode: str, boundary: Any) -> Any:
+    """Build the attacker-facing watchtower for this mode."""
+    try:
+        from aegis.watchtower import Watchtower
+
+        ledger = getattr(getattr(boundary, "gateway", None), "ledger", None)
+        return Watchtower(decoys=(mode == "production"), ledger=ledger)
+    except Exception:  # noqa: BLE001 - telemetry must never stop the server
+        return None
+
+
 @dataclass
 class _NoBoundary:
     """What the server answers with when AEGIS cannot be constructed at all.
@@ -196,6 +207,11 @@ class Playground:
         # this kernel. ``mode`` decides how hard it is: see aegis/boundary.py.
         self.mode = mode or os.environ.get("ZENO_ENV") or "development"
         self.boundary = boundary if boundary is not None else _build_boundary(self.mode, policy)
+        # The watchtower records every refusal, and in production it starts
+        # tarpitting and feeding decoys once a source is flagged. Development mode
+        # records too, but keeps answering honestly: a developer needs to see the
+        # real error, not a plausible fake.
+        self.watchtower = _build_watchtower(self.mode, self.boundary)
         #: Set by :meth:`authorize` for the duration of one request, so the
         #: handler can attach the permit (or the refusal) to its response.
         self.kernel_calls = 0
@@ -208,7 +224,9 @@ class Playground:
             return "unavailable"
         return self.boundary.mode
 
-    def authorize(self, caller: Any, payload: bytes, body: Mapping[str, Any]) -> Any:
+    def authorize(
+        self, caller: Any, payload: bytes, body: Mapping[str, Any], *, action: str = "execute"
+    ) -> Any:
         """Ask AEGIS about this request, or refuse because AEGIS cannot be asked.
 
         A missing boundary is never an implicit permit: in production the server
@@ -219,7 +237,26 @@ class Playground:
 
         if self.boundary is None:
             return _NoBoundary(self.mode)
-        return self.boundary.authorize(caller, payload, material_from_payload(body))
+        return self.boundary.authorize(
+            caller, payload, material_from_payload(body), action=action
+        )
+
+    def authorize_read(
+        self, caller: Any, body: Mapping[str, Any], *, action: str = "read"
+    ) -> Any:
+        """Authorize the owner reading a view of this server.
+
+        Reads are not executions: they are gated by the owner's grant and a
+        nonce, not by the eight-layer execution chain. See
+        :meth:`aegis.boundary.AuthorizationBoundary.authorize_read`.
+        """
+        from aegis.boundary import Caller, material_from_payload
+
+        if self.boundary is None:
+            return _NoBoundary(self.mode)
+        return self.boundary.authorize_read(
+            caller, material_from_payload(body), action=action
+        )
 
     # -- helpers ---------------------------------------------------------
     def _encoder(self, text: str) -> Encoder:
@@ -442,7 +479,11 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", origin)
         self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        # X-Zeno-Capability carries the owner's grant on cross-origin reads (the
+        # owner's own dashboard, reading the adversary feed from another origin).
+        self.send_header(
+            "Access-Control-Allow-Headers", "Content-Type, X-Zeno-Capability, Authorization"
+        )
         self.send_header("Access-Control-Max-Age", "600")
         # Chrome's Private Network Access: a public page (GitHub Pages) reaching a
         # private address (localhost) sends a preflight asking for this grant.
@@ -461,8 +502,12 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    #: The parsed body of the request in flight, for digesting. Never persisted raw.
+    _last_body: bytes = b""
+
     def _caller(self, body: Mapping[str, Any]) -> Any:
         """The caller as the transport sees them. Claims, not identity."""
+        self._last_body = b""
         from aegis.boundary import Caller
 
         actor = body.get("actor")
@@ -480,14 +525,45 @@ class _Handler(BaseHTTPRequestHandler):
             kind="agent" if isinstance(actor, str) and actor else "human",
         )
 
-    def _refusal(self, permit: Any) -> None:
-        """Say no, and say as little as the mode allows.
+    def _refusal(self, permit: Any, *, path: str, body: Mapping[str, Any]) -> None:
+        """Say no, watch who asked, and decide what they get.
 
         Production answers with a code and nothing else: which layer refused, and
         why, is the owner's information (invariants S20/S21/S23). Development
         answers readably, because a developer needs the sentence.
         """
-        if getattr(permit, "mode", "development") == "production":
+        production = getattr(permit, "mode", "development") == "production"
+        tower = self.playground.watchtower
+        if tower is not None:
+            actor = ""
+            block = body.get("aegis")
+            if isinstance(block, Mapping) and isinstance(block.get("actor"), str):
+                actor = block["actor"]
+            elif isinstance(body.get("actor"), str):
+                actor = body["actor"]
+            record, reaction = tower.observe(
+                remote=str(self.client_address[0]) if self.client_address else "",
+                method=str(self.command),
+                path=path,
+                actor_claimed=actor,
+                user_agent=str(self.headers.get("User-Agent", "")),
+                code=permit.code or "ZN-SEC-0x0B01",
+                body=self._last_body,
+                headers=dict(self.headers),
+                note=permit.human_reason or permit.reason or "",
+            )
+            if reaction.tarpit_ms:
+                slept = tower.apply_tarpit(reaction.tarpit_ms)
+                record.tarpit_ms = slept
+            if reaction.decoy:
+                # Flagged source: answer with a fabricated success instead of a
+                # refusal, so the attempt continues to be observable while the
+                # kernel is never touched. Fabricated means fabricated: see
+                # aegis/watchtower.py.
+                self._json(tower.decoy(path=path), 200)
+                return
+
+        if production:
             self._json({"error": {"code": permit.code or "ZN-SEC-0x0B01"}}, 403)
             return
         self._json(
@@ -501,6 +577,16 @@ class _Handler(BaseHTTPRequestHandler):
             403,
         )
 
+    def _watchtower_view(self, limit: int = 20) -> Dict[str, Any]:
+        tower = self.playground.watchtower
+        if tower is None:
+            return {"enabled": False}
+        return tower.summary() | {
+            "alerts": tower.alerts(limit),
+            "intruders": tower.intruders(),
+            "recent": tower.recent(limit),
+        }
+
     def _json(self, payload: Any, status: int = 200) -> None:
         self._send(status, json.dumps(payload, default=str).encode("utf-8"), "application/json")
 
@@ -510,14 +596,39 @@ class _Handler(BaseHTTPRequestHandler):
         else:  # pragma: no cover - defensive
             self._json({"error": {"code": "ZN0000", "message": str(exc)}}, 500)
 
+    def _query(self) -> Dict[str, str]:
+        """The query string as a dict. Values are length-capped; this is input."""
+        from urllib.parse import unquote_plus
+
+        raw = self.path.split("?", 1)[1] if "?" in self.path else ""
+        pairs = (pair.split("=", 1) for pair in raw.split("&") if "=" in pair)
+        return {key: unquote_plus(value)[:200] for key, value in pairs}
+
+    def _capability_block(self) -> Dict[str, Any]:
+        """The owner's grant, when it arrives in a header.
+
+        A header keeps a bearer token out of URLs, and therefore out of logs and
+        referrers. ``Authorization: Zeno <token>`` and ``X-Zeno-Capability`` are
+        both accepted; anything else is not looked at.
+        """
+        token = self.headers.get("X-Zeno-Capability", "").strip()
+        if not token:
+            header = self.headers.get("Authorization", "").strip()
+            if header.lower().startswith("zeno "):
+                token = header[5:].strip()
+        return {"token": token} if token else {}
+
     def _body(self) -> Dict[str, Any]:
         length = int(self.headers.get("Content-Length") or 0)
         if length <= 0:
             return {}
         if length > MAX_BODY:
             raise ValueError("request body too large")
-        raw = self.rfile.read(length).decode("utf-8")
-        return json.loads(raw or "{}")
+        payload = self.rfile.read(length)
+        # Kept for the watchtower to *digest*, never to store: what an attacker
+        # sent is evidence, and evidence is hashed, not archived.
+        self._last_body = payload
+        return json.loads(payload.decode("utf-8") or "{}")
 
     def _root_file(self, name: str) -> None:
         """Serve one of :data:`ROOT_FILES` from the repository root."""
@@ -600,6 +711,24 @@ class _Handler(BaseHTTPRequestHandler):
             if path == "/api/tools":
                 self._json(self.playground.tools())
                 return
+            if path == "/api/watchtower":
+                # The feed names who attacked this host and how often: that is the
+                # owner's business. It is a read, so it is authorized as one — the
+                # owner's grant plus a fresh nonce, never an execution.
+                query = self._query()
+                material = {**self._capability_block(), "nonce": query.get("nonce", "")}
+                permit = self.playground.authorize_read(
+                    self._caller({}), {"aegis": material}, action="read:watchtower"
+                )
+                if not permit.allowed:
+                    self._refusal(permit, path=path, body={})
+                    return
+                try:
+                    limit = max(1, min(int(query.get("limit", "25")), 200))
+                except ValueError:
+                    limit = 25
+                self._json(self._watchtower_view(limit))
+                return
             if path == "/api/benchmark":
                 self._json(self.playground.benchmark())
                 return
@@ -632,9 +761,11 @@ class _Handler(BaseHTTPRequestHandler):
                     return
                 # Audit finding C1: this route used to call the kernel directly.
                 # Nothing effectful runs until the boundary permits it.
-                permit = self.playground.authorize(self._caller(body), payload.encode("utf-8"), body)
+                permit = self.playground.authorize(
+                    self._caller(body), payload.encode("utf-8"), body, action="execute:zeno"
+                )
                 if not permit.allowed:
-                    self._refusal(permit)
+                    self._refusal(permit, path=path, body=body)
                     return
                 executed = getattr(permit, "payload", None)
                 result = self.playground.run(
@@ -649,9 +780,11 @@ class _Handler(BaseHTTPRequestHandler):
                 if not text.strip():
                     self._json({"error": {"code": "ZN0003", "message": "text is required"}}, 400)
                     return
-                permit = self.playground.authorize(self._caller(body), text.encode("utf-8"), body)
+                permit = self.playground.authorize(
+                    self._caller(body), text.encode("utf-8"), body, action="execute:ask"
+                )
                 if not permit.allowed:
-                    self._refusal(permit)
+                    self._refusal(permit, path=path, body=body)
                     return
                 executed = getattr(permit, "payload", None)
                 result = self.playground.ask(
