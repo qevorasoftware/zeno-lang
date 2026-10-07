@@ -17,6 +17,13 @@ def run(capsys, *argv):
     return code, captured.out, captured.err
 
 
+def test_version_flag(capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        main(["--version"])
+    assert excinfo.value.code == 0
+    assert "zeno-lang" in capsys.readouterr().out
+
+
 def test_encode_prints_a_payload(capsys):
     code, out, _ = run(capsys, "encode", "book 30 minutes with Amara next week")
     assert code == 0

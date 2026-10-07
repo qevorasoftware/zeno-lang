@@ -262,6 +262,9 @@ def build_parser() -> argparse.ArgumentParser:
         prog="zeno",
         description="Zeno Protocol — dense A2A language tooling (Grammar v0.1).",
     )
+    from . import __version__
+
+    parser.add_argument("--version", action="version", version=f"zeno-lang {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     def add_provider_flags(target: argparse.ArgumentParser) -> None:
