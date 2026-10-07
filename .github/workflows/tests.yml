@@ -75,3 +75,49 @@ jobs:
       # This benchmark enforces the brief's per-hop target and fails the build
       # when the protocol regresses, so it is not allowed to fail.
       - run: python -m benchmarks.conversation_test
+
+  # AEGIS is the only part of the repository that can use third-party crypto
+  # wheels. This job installs them and runs the real-crypto paths. If a wheel is
+  # unavailable on a runner, the job warns and the capability-gated tests skip
+  # with a stated reason -- the build never goes red for a missing wheel, but it
+  # only passes the crypto checks when the crypto is actually there.
+  aegis:
+    name: aegis (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .[dev]
+          if python -m pip install -e .[aegis]; then
+            echo "AEGIS_CRYPTO=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::cryptography/pqcrypto unavailable on $(python -V); the AEGIS crypto checks will be skipped, not faked"
+          fi
+
+      - name: Report which backends are present
+        run: python -m aegis capabilities
+
+      - name: AEGIS self-test (real attacks, one per layer)
+        if: env.AEGIS_CRYPTO == '1'
+        run: |
+          python -m aegis selftest
+          python -m aegis selftest --json
+
+      - name: AEGIS and VAJRA tests
+        run: python -m pytest tests/test_aegis.py tests/test_vajra.py -p no:cacheprovider
+
+      # A YAML plain scalar cannot contain ": ", so this step is a block scalar.
+      - name: The VAJRA wrap must be decodable without a key
+        run: |
+          python -m aegis vajra "@LOC[TYO] -> ?WX" | tee /tmp/vajra.txt
+          grep -q "is a cipher  : False" /tmp/vajra.txt

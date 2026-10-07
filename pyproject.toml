@@ -28,6 +28,13 @@ dependencies = []
 # Exact BPE token counts. Without it the tokenizer falls back to a clearly
 # labelled sub-word estimator, so Zeno never hard-depends on a network download.
 tiktoken = ["tiktoken>=0.5"]
+# AEGIS (aegis/) is the only part of the repository that wants third-party
+# wheels. Both are optional: cryptographic capability is detected at runtime and
+# reported, so a missing wheel downgrades the CLAIM rather than faking it.
+aegis = ["cryptography>=42", "pqcrypto>=0.3"]
+# `dev` deliberately does NOT include the AEGIS wheels: the main test job must
+# keep exercising the capability-gated (no-wheel) path so the degradation stays
+# honest. CI installs .[aegis] in its own job.
 dev = ["pytest>=7", "tiktoken>=0.5"]
 
 [project.urls]

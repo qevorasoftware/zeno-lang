@@ -31,11 +31,13 @@ python -m pip install -e .          # zero runtime dependencies
 # optional extras
 python -m pip install -e .[tiktoken]  # exact BPE token counts
 python -m pip install -e .[dev]       # pytest + tiktoken
+python -m pip install -e .[aegis]     # cryptography + pqcrypto, for the gateway below
 ```
 
-Python 3.10+. The library is standard-library only; `tiktoken` is optional and
-every report says which counter produced its numbers
-(`tiktoken:o200k_base` or `estimator:subword`).
+Python 3.10+. The Zeno library itself is standard-library only; `tiktoken` is
+optional and every report says which counter produced its numbers
+(`tiktoken:o200k_base` or `estimator:subword`). AEGIS is the one part that wants
+optional wheels, and it degrades loudly rather than silently: see its section.
 
 ## Quickstart
 
@@ -190,6 +192,56 @@ Mean of 30 runs, on a laptop-class CPU, with model calls mocked:
 Grammar (parse + emit) is **8.9 %** of the round trip; the rest is the pipeline
 around it, and in production the model call dominates everything.
 
+## AEGIS — the gateway in front of Zeno
+
+`aegis/` is an eight-layer gateway that sits between a caller and the Zeno
+kernel: post-quantum hybrid crypto, biometric verification, zero-knowledge
+proofs, an audit ledger, a behavioural sentinel, syntax rotation, device
+binding, and the VAJRA Sanskrit encoding layer.
+
+```bash
+python -m aegis report         # layers, capabilities on this machine, limits
+python -m aegis selftest       # 7 real attacks, each asserted to fail
+python -m aegis demo           # one request through all eight layers
+python -m aegis vajra "@LOC[TYO] -> ?WX"
+```
+
+| # | Layer | What it provides |
+|---|---|---|
+| 1 | `pqc_engine` | X25519 **+** ML-KEM-768 hybrid key agreement, Ed25519 **+** ML-DSA-65 dual signatures, ChaCha20-Poly1305 sealing (RFC 8439) |
+| 2 | `biometric_auth` | Fuzzy-extractor biometrics: no stored templates, no raw hashes, entropy budget reported |
+| 3 | `zkp_validator` | Schnorr proofs over a validated 2048-bit group, Pedersen commitments, single-use nullifiers |
+| 4 | `blockchain_ledger` | Hash-chained, Ed25519-signed, Merkle-committed audit log — tamper-evident, **not** immutable |
+| 5 | `guardian_ai` | Deterministic behavioural sentinel with explainable verdicts; an LLM may advise, never unlock |
+| 6 | `polymorphic_engine` | Six-hour keyed vocabulary rotation (`?WX` → `?KHKP`) |
+| 7 | `geo_hardware_lock` | Device binding via a 0600 keystore + fingerprint; geofence reported as advisory |
+| 8 | `vajra/` | Devanagari encoding, Piṅgala's combinatorics, real prosody, FFT voiceprint — **an encoding, not a cipher** |
+
+### What AEGIS does not claim
+
+The brief that specified AEGIS asked for a payload that stays secret until 2126
+against "any human, AI, quantum computer or agency". No implementation can meet
+that, so AEGIS does not claim it. What it claims instead: standard primitives
+composed correctly, **fail-closed** behaviour when a layer cannot run, every
+decision recorded, and every layer reporting its own limits in code.
+
+Three consequences worth knowing before reading the code:
+
+- **VAJRA is not encryption.** It is a bijection over bytes with a published
+  table; a test decodes its output with no key and asserts success, so the claim
+  cannot quietly come back. See `specs/vajra_sanskrit.md`.
+- **The ledger is tamper-evident, not immutable.** An attacker with write access
+  *and* the node signing key can rewrite and re-sign; publish `ledger.anchor()`
+  in a second trust domain to make that provable.
+- **Geofencing is advisory.** Coordinates are declared, never proven, and every
+  report says `spoofable: true`. Device binding is the real control in that layer.
+
+Without `pqcrypto`, layer 1 runs classical-only and says
+`quantum_resistant: false`; without `cryptography` it refuses and points at the
+pure-Python AEAD that exists for tests. Threat models, the cryptographic
+inventory, and the deliberate divergences from the brief are in
+`specs/aegis_security.md`.
+
 ## Conformance
 
 ```bash
@@ -228,11 +280,14 @@ a model, so it doubles as an audit tool.
 ## Repository layout
 
 ```
+aegis/         the eight-layer gateway in front of Zeno (see below), with
+               vajra/ the Sanskrit encoding layer
 agents/        linguist + tester agents (runnable as python -m agents.<name>)
 benchmarks/    corpus.json, density / conversation / latency benchmarks
 examples/      01_basic_math.py, 02_agent_chat.py, tools.py
-specs/         grammar.md (EBNF, semantics) and tokens.json (machine-readable)
-tests/         373 tests incl. tests/invalid/cases.json negative corpus
+specs/         grammar.md (EBNF, semantics), tokens.json (machine-readable),
+               aegis_security.md and vajra_sanskrit.md (threat models + limits)
+tests/         472 tests incl. tests/invalid/cases.json negative corpus
 zeno/          the library: lexer → parser → validator → runtime, plus
                encoder/decoder agents, CLI, web playground
 ```
