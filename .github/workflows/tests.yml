@@ -65,7 +65,20 @@ jobs:
         if: matrix.python-version == '3.11'
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq nodejs
-          python -m pytest tests/test_dashboard.py -q
+          node --version
+          python - <<'PY'
+          import subprocess, sys
+
+          result = subprocess.run(
+              [sys.executable, "-m", "pytest", "tests/test_dashboard.py", "-q", "-rs"],
+              text=True, capture_output=True,
+          )
+          sys.stdout.write(result.stdout[-4000:])
+          # A skip here means node was missing, which would silently reduce this
+          # step to nothing: the page's own script would go unexercised in CI.
+          assert "skipped" not in result.stdout, "the dashboard tests were skipped"
+          raise SystemExit(result.returncode)
+          PY
 
       - name: Encoder/decoder round trip without a provider
         run: python -m zeno ask --no-decode "total 3 * 129.99 + 2 * 45.5"
