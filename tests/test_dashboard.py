@@ -27,6 +27,7 @@ from pathlib import Path
 
 import pytest
 
+from aegis.capabilities import capabilities
 from zeno.server import Playground, _Handler
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -34,6 +35,13 @@ HARNESS = ROOT / "tests" / "js" / "dashboard_harness.mjs"
 NODE = shutil.which("node")
 
 pytestmark = pytest.mark.skipif(NODE is None, reason="node is not installed")
+
+#: Owner grants and the strict policy are hybrid-signed, so they need the crypto
+#: wheels. The rest of the page — commands, panels, the offline snapshot — does
+#: not, and those tests run everywhere.
+requires_crypto = pytest.mark.skipif(
+    not capabilities().classical, reason="owner grants need the cryptography wheel"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +220,7 @@ def test_an_unknown_command_is_an_explained_refusal():
     assert "unknown command" in text and "help" in text
 
 
+@requires_crypto
 def test_the_adversary_panel_shows_real_refusals_only():
     """The one panel that must never be decorative: it names who attacked."""
     from aegis.gate import Policy

@@ -21,8 +21,16 @@ from urllib.request import urlopen
 
 import pytest
 
+from aegis.capabilities import capabilities
 from aegis.watchtower import Watchtower, digest
 from zeno.server import Playground, _Handler
+
+# Some of these tests construct things that *refuse* to exist without a real
+# signing backend — the audit ledger refuses rather than signing with a
+# substitute, which is the behaviour we want. Those tests say so and skip.
+requires_crypto = pytest.mark.skipif(
+    not capabilities().classical, reason="the audit ledger needs the cryptography wheel"
+)
 
 
 @pytest.fixture()
@@ -103,6 +111,7 @@ def test_the_third_strike_flags_the_source_and_alerts_the_owner(tower):
     assert tower.summary()["intruders"] == 1
 
 
+@requires_crypto
 def test_an_alert_reaches_the_audit_ledger():
     from aegis.blockchain_ledger import Ledger
 
@@ -189,10 +198,7 @@ def test_development_mode_records_but_does_not_deceive():
         httpd.server_close()
 
 
-@pytest.mark.skipif(
-    not __import__("aegis.capabilities", fromlist=["capabilities"]).capabilities().classical,
-    reason="cryptography wheel not installed",
-)
+@requires_crypto
 def test_production_flags_an_attacker_and_serves_decoys_without_touching_the_kernel():
     from aegis.gate import Policy
 
