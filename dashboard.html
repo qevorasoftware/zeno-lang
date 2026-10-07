@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zeno Dashboard — run the protocol</title>
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #111823; --panel2: #0e141d; --line: #1e2a3a;
+    --ink: #dbe6f2; --dim: #8497ad; --accent: #4cc2ff; --ok: #4ade80;
+    --warn: #fbbf24; --bad: #f87171; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  a { color: var(--accent); }
+  header {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel2); position: sticky; top: 0; z-index: 5;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; }
+  .brand code { color: var(--accent); }
+  .status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--dim); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dim); display: inline-block; }
+  .dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.snap { background: var(--warn); }
+  .dot.down { background: var(--bad); }
+  input, button, select {
+    font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 7px; padding: 7px 10px;
+  }
+  button { cursor: pointer; background: #16202c; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: #103146; border-color: #1d5c86; }
+  main { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; padding: 16px 20px 40px; max-width: 1500px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .card h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: .09em; text-transform: uppercase; color: var(--dim); }
+  .cmds { display: flex; flex-direction: column; gap: 4px; max-height: 60vh; overflow: auto; }
+  .cmd { text-align: left; font-family: var(--mono); font-size: 13px; padding: 6px 9px; }
+  .cmd small { display: block; font-family: inherit; color: var(--dim); font-size: 11.5px; }
+  #console {
+    font-family: var(--mono); font-size: 13px; background: #070b10; border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; height: 46vh; min-height: 280px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  .line-in { color: var(--accent); }
+  .line-out { color: var(--ink); }
+  .line-dim { color: var(--dim); }
+  .line-ok { color: var(--ok); }
+  .line-warn { color: var(--warn); }
+  .line-bad { color: var(--bad); }
+  .inputrow { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .inputrow input { flex: 1; font-family: var(--mono); }
+  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td, th { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 500; }
+  pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: var(--mono); font-size: 12.5px; color: var(--ink); }
+  .muted { color: var(--dim); font-size: 12.5px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .pill { border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; font-size: 12px; color: var(--dim); }
+  .stat { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 5px 0; font-size: 13px; }
+  .stat b { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">⌘ <code>zeno</code> dashboard <span class="pill" id="mode-pill">connecting…</span></div>
+  <div class="status">
+    <span class="dot" id="dot"></span><span id="status-text">checking for a backend…</span>
+    <input id="backend" size="26" spellcheck="false" placeholder="http://localhost:8000">
+    <button id="connect" class="primary">Connect</button>
+    <button id="use-local">Use localhost</button>
+    <a href="./" id="playground-link">playground</a>
+    <a href="https://github.com/qevorasoftware/zeno-lang" target="_blank" rel="noopener">github</a>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Commands</h2>
+    <div class="cmds" id="palette"></div>
+    <p class="muted" style="margin:12px 0 0">
+      Type <code>help</code> for the full list. <kbd>↑</kbd>/<kbd>↓</kbd> walk history,
+      <kbd>Ctrl</kbd>+<kbd>L</kbd> clears. Everything runs against the connected backend.
+    </p>
+  </section>
+
+  <section>
+    <div id="console" aria-live="polite"></div>
+    <div class="inputrow">
+      <span class="line-in">zeno&gt;</span>
+      <input id="command" autocomplete="off" spellcheck="false" placeholder="encode Check the weather in Tokyo. If it is raining, suggest 3 indoor activities.">
+      <button id="run" class="primary">Run</button>
+    </div>
+    <p class="muted" id="hint" style="margin-top:8px"></p>
+
+    <div class="panels">
+      <div class="card"><h2>Backend</h2><div id="panel-status"></div></div>
+      <div class="card"><h2>Token density</h2><div id="panel-density"></div></div>
+      <div class="card"><h2>Multi-turn A2A</h2><div id="panel-conversation"></div></div>
+      <div class="card"><h2>Vocabularies</h2><div id="panel-tools"></div></div>
+      <div class="card" style="grid-column: 1 / -1"><h2>Grammar card</h2><div id="panel-grammar"></div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+// ---------------------------------------------------------------------------
+// The dashboard talks to a *running* Zeno server. Two ways in:
+//   1. same origin  — when this page is served by `zeno serve` (/dashboard).
+//   2. remote       — when this page is on GitHub Pages, point it at a server
+//                     you started locally (`zeno serve --allow-origin ...`).
+// With no server reachable it degrades to the committed snapshot, read-only.
+// ---------------------------------------------------------------------------
+const SNAPSHOT_URL = "dashboard-data.json";
+const backendInput = document.getElementById("backend");
+const consoleEl = document.getElementById("console");
+const commandInput = document.getElementById("command");
+const dot = document.getElementById("dot");
+const modePill = document.getElementById("mode-pill");
+const statusText = document.getElementById("status-text");
+
+const state = {
+  base: "",              // "" means same origin
+  live: false,
+  snapshot: null,
+  history: [],
+  cursor: 0,
+  provider: null,
+};
+
+function detectDefaultBackend() {
+  const stored = localStorage.getItem("zeno.backend");
+  if (stored) return stored;
+  if (location.protocol.startsWith("http") && location.port === "8000") return location.origin;
+  return "http://localhost:8000";
+}
+
+function render(mode, text) {
+  const line = document.createElement("div");
+  line.className = "line-" + mode;
+  line.textContent = text;
+  consoleEl.appendChild(line);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function showJson(value, limit) {
+  const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+  const clipped = limit && text.length > limit ? text.slice(0, limit) + "\n… (" + (text.length - limit) + " more chars)" : text;
+  render("out", clipped);
+}
+
+function formatExample(value, fallback) {
+  if (value && typeof value === "object") {
+    return "human: " + (value.human || "?") + "\n" + "zeno : " + (value.zeno || "?");
+  }
+  return String(value || fallback || "?");
+}
+
+function snapshotUrl() {
+  try { return new URL(SNAPSHOT_URL, document.baseURI || location.href).toString(); }
+  catch (_) { return SNAPSHOT_URL; }
+}
+
+async function loadSnapshot() {
+  if (state.snapshot) return state.snapshot;
+  const response = await fetch(snapshotUrl());
+  if (!response.ok) throw new Error("snapshot " + response.status);
+  state.snapshot = await response.json();
+  return state.snapshot;
+}
+
+async function api(path, options) {
+  const response = await fetch(state.base + path, options);
+  let payload = null;
+  try { payload = await response.json(); } catch (_) { payload = null; }
+  if (!response.ok) {
+    const detail = payload && payload.error ? (payload.error.message || JSON.stringify(payload.error)) : response.statusText;
+    throw new Error(detail || ("HTTP " + response.status));
+  }
+  return payload;
+}
+
+function post(path, body) {
+  return api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+}
+
+// -- connection -------------------------------------------------------------
+async function probe(base, { quiet } = {}) {
+  const previous = state.base;
+  state.base = base;
+  try {
+    const health = await api("/api/health");
+    state.live = true;
+    state.provider = health;
+    localStorage.setItem("zeno.backend", base);
+    setStatus("live", base === "" ? "connected (same origin)" : "connected to " + base);
+    if (!quiet) {
+      render("ok", "connected: provider=" + health.provider + " tokenizer=" + health.tokenizer);
+    }
+    await loadPanels();
+    return true;
+  } catch (error) {
+    state.base = previous;
+    state.live = false;
+    setStatus(base ? "down" : "snap", base ? "no backend at " + base : "no backend found");
+    if (!quiet) render("warn", "could not reach " + (base || "the same origin") + ": " + error.message);
+    return false;
+  }
+}
+
+function setStatus(kind, text) {
+  dot.className = "dot " + (kind === "live" ? "live" : kind === "down" ? "down" : "snap");
+  modePill.textContent = kind === "live" ? "LIVE" : kind === "down" ? "OFFLINE" : "SNAPSHOT";
+  statusText.textContent = text;
+  renderStatusPanel();
+}
+
+function renderStatusPanel() {
+  const panel = document.getElementById("panel-status");
+  const rows = state.live
+    ? [["mode", "live"], ["backend", state.base || location.origin],
+       ["provider", state.provider.provider], ["model", state.provider.model || "—"],
+       ["online", String(state.provider.online)], ["tokenizer", state.provider.tokenizer]]
+    : [["mode", "snapshot (read-only)"], ["source", SNAPSHOT_URL]];
+  panel.innerHTML = rows.map(([key, value]) =>
+    '<div class="stat"><span class="muted">' + key + '</span><b>' + String(value) + "</b></div>").join("") +
+    (state.live ? "" : '<p class="muted" style="margin:10px 0 0">Start a backend to run commands: <code>python -m pip install -e .[dev]</code> then <code>zeno serve</code>, and connect to <code>http://localhost:8000</code>.</p>');
+}
+
+// -- panels -----------------------------------------------------------------
+async function loadPanels() {
+  if (state.live) {
+    try {
+      const snapshot = await api("/api/snapshot");
+      renderPanels(snapshot);
+      return;
+    } catch (_) { /* fall through to the committed snapshot */ }
+  }
+  try {
+    renderPanels(await loadSnapshot());
+  } catch (_) { /* neither a backend nor the snapshot: panels stay empty */ }
+}
+
+function renderPanels(data) {
+  // The committed snapshot (portable) carries targets and corpus size but no
+  // token counts, because those depend on the counter the host has installed.
+  const targets = data.benchmark.targets || {};
+  const density = data.benchmark.density, conversation = data.benchmark.conversation;
+  const row = (key, value) => '<div class="stat"><span class="muted">' + key + "</span><b>" + value + "</b></div>";
+  const liveNote = '<p class="muted" style="margin:8px 0 0">Connect a backend to measure this host: token counts depend on the counter in use.</p>';
+
+  document.getElementById("panel-density").innerHTML = density
+    ? row("pooled reduction", density.reduction.pooled_pct + "%") +
+      row("cases", density.cases.length) +
+      row("counter", density.tokenizer) +
+      row("target", density.target_reduction_pct + "% — " + (density.reduction.meets_target ? "met" : "not met"))
+    : row("target", (targets.density_pct || 75) + "%") +
+      row("corpus cases", data.benchmark.corpus_cases) + liveNote;
+
+  document.getElementById("panel-conversation").innerHTML = conversation
+    ? row("chat → zeno", conversation.totals.chat_tokens + " → " + conversation.totals.zeno_payload_only) +
+      row("per hop", conversation.reduction.per_hop_pct + "%") +
+      row("break-even", conversation.reduction.break_even_hops + " hops") +
+      row("target", conversation.target_reduction_pct + "% — " + (conversation.reduction.meets_target ? "met" : "missed"))
+    : row("target", (targets.conversation_pct || 75) + "%") +
+      row("measure", "live backend only") + liveNote;
+  const tools = data.tools;
+  document.getElementById("panel-tools").innerHTML =
+    '<div class="stat"><span class="muted">queries</span><b>' + tools.queries.length + "</b></div>" +
+    '<div class="stat"><span class="muted">actions</span><b>' + tools.actions.length + "</b></div>" +
+    '<p class="muted" style="margin:8px 0 0">' + tools.queries.join(" · ") + "<br>" + tools.actions.join(" · ") + "</p>";
+  // Grammar v0.1: the token classes are lists, the diagnostics a map, and the
+  // canonical example a {human, zeno} pair — so count/format defensively.
+  const grammar = data.grammar, spec = grammar.spec;
+  const size = (value) => (Array.isArray(value) ? value.length
+    : value && typeof value === "object" ? Object.keys(value).length : 0);
+  document.getElementById("panel-grammar").innerHTML =
+    '<div class="row" style="margin-bottom:8px">' +
+    '<span class="pill">' + spec.protocol + " " + spec.grammar_version + "</span>" +
+    '<span class="pill">' + size(spec.sigils) + " sigils</span>" +
+    '<span class="pill">' + (size(spec.flow_operators) + size(spec.expression_operators)) + " operators</span>" +
+    '<span class="pill">' + size(spec.diagnostics) + " diagnostics</span>" +
+    '<span class="pill">' + size(spec.keywords) + " keywords</span></div>" +
+    "<pre>" + formatExample(spec.canonical_example, data.canonical_example) + "</pre>";
+}
+
+// -- commands ----------------------------------------------------------------
+const COMMANDS = [
+  ["help", "list every command"],
+  ["status", "backend, provider, tokenizer, versions"],
+  ["encode <text>", "natural language → Zeno payload"],
+  ["run <payload>", "execute a payload against the demo tools"],
+  ["ask <text>", "encode → execute → decode, one round trip"],
+  ["check <payload>", "validate and canonicalise"],
+  ["decode <payload>", "execute then render the result as prose"],
+  ["tokens <text>", "count tokens (and compare with a payload)"],
+  ["grammar [table]", "grammar card, or the raw token table"],
+  ["tools", "the vocabularies the kernel exposes"],
+  ["benchmark", "density + multi-turn headlines"],
+  ["example", "load the canonical example into the input"],
+  ["connect <url>", "point the dashboard at a backend"],
+  ["snapshot", "the committed offline data this page ships with"],
+  ["clear", "clear the console"],
+];
+
+function renderPalette() {
+  const palette = document.getElementById("palette");
+  palette.innerHTML = "";
+  for (const [usage, description] of COMMANDS) {
+    const button = document.createElement("button");
+    button.className = "cmd";
+    button.innerHTML = usage.replace(/</g, "&lt;") + "<small>" + description + "</small>";
+    button.addEventListener("click", () => {
+      commandInput.value = usage.endsWith(">") ? usage.replace(/\s*<[^>]*>$/, " ") : usage;
+      commandInput.focus();
+    });
+    palette.appendChild(button);
+  }
+}
+
+function requireLive() {
+  if (state.live) return true;
+  render("warn", "this command needs a backend. Start one with `zeno serve`, then run: connect http://localhost:8000");
+  return false;
+}
+
+async function execute(input) {
+  const raw = input.trim();
+  if (!raw) return;
+  render("in", "zeno> " + raw);
+  const space = raw.indexOf(" ");
+  const name = (space === -1 ? raw : raw.slice(0, space)).toLowerCase();
+  const argument = space === -1 ? "" : raw.slice(space + 1).trim();
+
+  switch (name) {
+    case "help":
+      render("out", COMMANDS.map(([usage, description]) => "  " + usage.padEnd(22) + description).join("\n"));
+      return;
+    case "clear":
+      consoleEl.innerHTML = "";
+      return;
+    case "example":
+      commandInput.value = "ask Check the weather in Tokyo. If it is raining, suggest 3 indoor activities.";
+      render("dim", "loaded the canonical round trip into the input — press Run.");
+      return;
+    case "status": {
+      if (!requireLive()) return;
+      const version = await api("/api/version");
+      showJson(version);
+      return;
+    }
+    case "connect": {
+      const target = argument.replace(/\/$/, "");
+      const ok = await probe(target, { quiet: false });
+      if (ok) render("ok", "the dashboard is now driving " + target);
+      return;
+    }
+    case "snapshot": {
+      try {
+        const data = await loadSnapshot();
+        showJson({
+          generated_by: data.generated_by,
+          version: data.version,
+          canonical_example: data.canonical_example,
+          benchmark: data.benchmark.reduction || undefined,
+        }, 2500);
+        render("dim", "full file: dashboard-data.json (regenerate with `zeno dashboard --write`)");
+      } catch (error) {
+        render("warn", "no snapshot available here: " + error.message);
+      }
+      return;
+    }
+    default:
+      break;
+  }
+
+  if (!requireLive()) return;
+  try {
+    if (name === "encode") {
+      if (!argument) return render("warn", "usage: encode <natural language>");
+      const result = await post("/api/encode", { text: argument });
+      render("ok", (result.payload || "(no payload produced)").replace(/\n/g, "\n    "));
+      if (result.nl_tokens !== undefined) {
+        render("dim", result.nl_tokens + " tokens in → " + result.zeno_tokens + " tokens out" +
+          (result.token_reduction_pct !== undefined ? "  (" + result.token_reduction_pct + "% fewer)" : "") +
+          "   provider=" + result.provider + (result.fell_back ? " (fallback)" : ""));
+      }
+      if (result.validation && !result.validation.ok) {
+        render("warn", result.validation.diagnostics.map((item) => item.code + " " + item.message).join("\n"));
+      }
+      if (result.warnings && result.warnings.length) render("dim", result.warnings.join("\n"));
+      return;
+    }
+    if (name === "run") {
+      if (!argument) return render("warn", "usage: run <payload>");
+      const result = await post("/api/run", { payload: argument });
+      render("ok", result.frame);
+      if (result.errors && result.errors.length) render("warn", JSON.stringify(result.errors));
+      showJson({ output: result.output, bindings: result.bindings, duration_ms: result.duration_ms }, 1500);
+      return;
+    }
+    if (name === "ask") {
+      if (!argument) return render("warn", "usage: ask <natural language>");
+      const result = await post("/api/ask", { text: argument });
+      const payload = result.payload || (result.encode && result.encode.payload) || "?";
+      render("dim", "zeno> " + payload.replace(/\n/g, "\n       "));
+      render("ok", result.response || "(no response)");
+      if (result.execution && result.execution.frame) showJson({ frame: result.execution.frame }, 900);
+      return;
+    }
+    if (name === "check") {
+      if (!argument) return render("warn", "usage: check <payload>");
+      const result = await post("/api/check", { payload: argument });
+      render(result.report.ok ? "ok" : "warn", result.rendered);
+      if (result.canonical && result.canonical !== argument) render("dim", "canonical: " + result.canonical);
+      return;
+    }
+    if (name === "decode") {
+      if (!argument) return render("warn", "usage: decode <payload>");
+      const result = await post("/api/decode", { payload: argument });
+      render("ok", result.text);
+      render("dim", "frame: " + result.frame);
+      return;
+    }
+    if (name === "tokens") {
+      if (!argument) return render("warn", "usage: tokens <text>");
+      const result = await post("/api/tokens", { texts: [argument] });
+      render("out", "tokens: " + result.counts[argument] + "   (" + result.method + ")");
+      try {
+        const encoded = await post("/api/encode", { text: argument });
+        if (encoded.payload) {
+          const pct = encoded.token_reduction_pct;
+          render(pct > 0 ? "ok" : "warn",
+            "as Zeno: " + encoded.zeno_tokens + " tokens" +
+            (pct !== undefined ? "  (" + pct + "% fewer)" : "") +
+            "   ⚠ the benchmark wins on dispatch-style text, not on terse one-liners");
+          render("dim", encoded.payload.replace(/\n/g, "\n       "));
+        }
+      } catch (_) { /* the comparison is a bonus, not the command */ }
+      return;
+    }
+    if (name === "grammar") {
+      const grammar = await api("/api/grammar");
+      if (argument === "table") return showJson(grammar.spec, 5000);
+      render("out", typeof grammar.card === "string" ? grammar.card : JSON.stringify(grammar.card, null, 2));
+      render("dim", "raw machine-readable table: grammar table");
+      return;
+    }
+    if (name === "tools") {
+      const tools = await api("/api/tools");
+      render("out", "queries: " + tools.queries.join(", "));
+      render("out", "actions: " + tools.actions.join(", "));
+      return;
+    }
+    if (name === "benchmark") {
+      const benchmark = await api("/api/benchmark");
+      render("out", "density pooled : " + benchmark.density.reduction.pooled_pct + "% (" + benchmark.density.cases.length + " cases, target " +
+        benchmark.density.target_reduction_pct + "% — " + (benchmark.density.reduction.meets_target ? "met" : "not met") + ")");
+      render("out", "A2A reduction  : " + benchmark.conversation.reduction.per_hop_pct + "% (target " +
+        benchmark.conversation.target_reduction_pct + "% — " + (benchmark.conversation.reduction.meets_target ? "met" : "not met") + ")");
+      render("dim", "full reports: zeno benchmark / zeno latency");
+      return;
+    }
+    render("warn", "unknown command: " + name + "  (try `help`)");
+  } catch (error) {
+    render("bad", "error: " + error.message);
+  }
+}
+
+// -- wiring -----------------------------------------------------------------
+document.getElementById("run").addEventListener("click", () => {
+  const value = commandInput.value;
+  state.history.push(value);
+  state.cursor = state.history.length;
+  commandInput.value = "";
+  execute(value).catch((error) => render("bad", "error: " + error.message));
+});
+commandInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") { document.getElementById("run").click(); return; }
+  if (event.key === "ArrowUp" && state.history.length) {
+    state.cursor = Math.max(0, state.cursor - 1);
+    commandInput.value = state.history[state.cursor] || "";
+    event.preventDefault();
+  }
+  if (event.key === "ArrowDown" && state.history.length) {
+    state.cursor = Math.min(state.history.length, state.cursor + 1);
+    commandInput.value = state.history[state.cursor] || "";
+    event.preventDefault();
+  }
+  if (event.key.toLowerCase() === "l" && event.ctrlKey) { consoleEl.innerHTML = ""; event.preventDefault(); }
+});
+document.getElementById("connect").addEventListener("click", async () => {
+  const target = backendInput.value.trim().replace(/\/$/, "");
+  await probe(target.startsWith("http") ? target : "http://" + target, { quiet: false });
+});
+document.getElementById("use-local").addEventListener("click", async () => {
+  backendInput.value = "http://localhost:8000";
+  await probe("http://localhost:8000", { quiet: false });
+});
+backendInput.addEventListener("keydown", (event) => { if (event.key === "Enter") document.getElementById("connect").click(); });
+
+(async function start() {
+  renderPalette();
+  render("dim", "Zeno dashboard. Commands run against a backend you connect; the panels below work offline.");
+  render("dim", "Local server:  zeno serve      →  http://localhost:8000");
+  const sameOrigin = await probe("", { quiet: true });
+  if (!sameOrigin) {
+    const target = detectDefaultBackend();
+    backendInput.value = target;
+    const ok = await probe(target, { quiet: true });
+    if (!ok) {
+      setStatus("snap", "no backend — panels are read-only");
+      await loadPanels();
+      render("warn", "no backend reachable at " + target + ".");
+      render("dim", "start one:  python -m pip install -e .[dev]  &&  zeno serve");
+      render("dim", "then:      connect " + target);
+    } else {
+      render("ok", "connected to " + target);
+    }
+  }
+})();
+</script>
+</body>
+</html>

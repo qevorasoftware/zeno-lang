@@ -250,7 +250,43 @@ def cmd_latency(args: argparse.Namespace) -> int:
 def cmd_serve(args: argparse.Namespace) -> int:
     from .server import serve
 
-    serve(host=args.host, port=args.port)
+    serve(host=args.host, port=args.port, allowed_origins=args.allow_origin)
+    return 0
+
+
+def cmd_dashboard(args: argparse.Namespace) -> int:
+    """Export the snapshot the static (GitHub Pages) dashboard reads offline."""
+    from .server import build_app, snapshot_bytes
+
+    payload = snapshot_bytes(build_app())
+
+    from pathlib import Path
+
+    target = Path(args.path).expanduser().resolve()
+    if args.check:
+        try:
+            current = target.read_bytes()
+        except OSError as error:
+            print(f"cannot read {target}: {error}", file=sys.stderr)
+            return 1
+        if current == payload:
+            print(f"up to date: {target} ({len(payload)} bytes)")
+            return 0
+        print(
+            f"STALE: {target} differs from the generated snapshot "
+            f"({len(current)} bytes on disk, {len(payload)} expected).\n"
+            f"Run: zeno dashboard --write",
+            file=sys.stderr,
+        )
+        return 1
+    if args.stdout or args.json or not args.write:
+        sys.stdout.write(payload.decode("utf-8"))
+        return 0
+
+    target.write_bytes(payload)
+    print(f"wrote {target} ({len(payload)} bytes)")
+    if args.print_path:
+        print(target)
     return 0
 
 
@@ -339,9 +375,29 @@ def build_parser() -> argparse.ArgumentParser:
     latency.add_argument("--json", action="store_true")
     latency.set_defaults(func=cmd_latency)
 
+    dashboard = sub.add_parser(
+        "dashboard", help="export the static dashboard snapshot (dashboard-data.json)"
+    )
+    dashboard.add_argument(
+        "--check", action="store_true", help="verify the committed snapshot is up to date; exit 1 if stale"
+    )
+    dashboard.add_argument("--write", action="store_true", help="write the file instead of printing it")
+    dashboard.add_argument("--path", default="dashboard-data.json", help="where to write the snapshot")
+    dashboard.add_argument("--stdout", action="store_true", help="print the snapshot to stdout")
+    dashboard.add_argument("--print-path", action="store_true", help="print the absolute path as well")
+    dashboard.add_argument("--json", action="store_true")
+    dashboard.set_defaults(func=cmd_dashboard)
+
     serve = sub.add_parser("serve", help="run the local web playground")
     serve.add_argument("--host", default=os.environ.get("ZENO_HOST", "0.0.0.0"))
     serve.add_argument("--port", type=int, default=int(os.environ.get("ZENO_PORT", "8000")))
+    serve.add_argument(
+        "--allow-origin",
+        action="append",
+        default=[],
+        metavar="ORIGIN",
+        help="extra origin allowed to call the API from another page (repeatable; '*' for any)",
+    )
     serve.set_defaults(func=cmd_serve)
 
     return parser

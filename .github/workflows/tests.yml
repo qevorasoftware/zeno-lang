@@ -54,6 +54,19 @@ jobs:
       - name: Unit tests
         run: python -m pytest tests/ -q
 
+      # dashboard.html ships in this repository and is served by GitHub Pages, so
+      # it must stay in step with the data it reads. Depending on one node job
+      # (not a Python test) keeps the dependency honest: without node the
+      # generated file is still checked, the page itself is not.
+      - name: Committed dashboard snapshot is up to date
+        run: python -m zeno dashboard --check
+
+      - name: Dashboard script against a live server
+        if: matrix.python-version == '3.11'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq nodejs
+          python -m pytest tests/test_dashboard.py -q
+
       - name: Encoder/decoder round trip without a provider
         run: python -m zeno ask --no-decode "total 3 * 129.99 + 2 * 45.5"
 
