@@ -280,6 +280,61 @@ in full, including the ones that can flag innocent callers behind shared NAT.
 | 7 | `geo_hardware_lock` | Device binding via a 0600 keystore + fingerprint; geofence reported as advisory |
 | 8 | `vajra/` | Devanagari encoding, Piṅgala's combinatorics, real prosody, FFT voiceprint — **an encoding, not a cipher** |
 
+### Talk to it: the voice agent, its memory, and other agents
+
+`zeno voice` serves a page you can speak to. Speech in and speech out are done by
+*your browser* (so which languages work depends on the browser and OS — the
+language tag itself always travels unchanged and is stored with the turn). One
+turn is `authorize → measure the voice if audio came → answer → remember`, in that
+order: in production a turn without a currently valid owner grant is refused with
+an opaque code, and nothing is generated, sent or stored.
+
+```bash
+python -m zeno memory init-key                # the key that seals what you say
+python -m zeno voice --memory-key ~/.zeno/memory.key
+#   → open http://localhost:8000/voice
+```
+
+Everything said is kept — **sealed to your key** with the AEGIS hybrid sealer
+(X25519+ML-KEM-768, ChaCha20-Poly1305), in an append-only log chained by digest,
+so an edit or deletion is detectable by `zeno memory verify`. The words are
+ciphertext on disk; without a key the store runs unsealed and says so on every
+record, in `/api/health`, and on the page. Reading it back is the owner's:
+
+```bash
+python -m zeno memory list --key ~/.zeno/memory.key
+python -m zeno memory show --session voice-2026-10-08 --key ~/.zeno/memory.key
+python -m zeno memory search --query varsad --key ~/.zeno/memory.key
+python -m zeno memory forget --session voice-2026-10-07   # destructive, on purpose
+```
+
+Any language tag is accepted (`gu-IN`, `sw-KE`, `pt-BR`…). What "support" means
+honestly: the tag travels and is stored untouched; the *answerer* is whoever you
+configured as the provider — with none configured it is the rule-based Zeno
+encoder, which is English-shaped, and the reply says so.
+
+The same page connects **other agents** to yours — out-sourced, multi-agent, no
+artificial cap on how many:
+
+```bash
+python -m zeno agents add weather --endpoint https://agent.example --capability <its grant>
+python -m zeno agents ask weather --text "will it rain in Surat" --lang gu-IN
+python -m zeno agents broadcast --text "report in"      # every connected agent, at once
+```
+
+Each peer holds **its own** grant (never your owner key), each call is authorized
+by the same boundary as everything else, and a reply is remembered as *that
+peer's claim* with its name attached. The real limits are reported, not hidden:
+no maximum peer count is imposed — concurrency (16 at a time) and timeout are the
+bounds; a peer that fails is reported as its own failure; nothing verifies what a
+remote agent claims about itself beyond the transport succeeding.
+
+Two things a conversation deployment should know: the guardian watches request
+*rate*, and a machine-paced client reads as a burst — raise the ceiling
+deliberately with `ZENO_SENTINEL_MAX_EVENTS_PER_MINUTE` when a fast client is
+expected; and a voiceprint, when audio is attached, is measured as a **signal**
+(recorded speech replays) — it never authorizes anything by itself.
+
 ### What AEGIS does not claim
 
 The brief that specified AEGIS asked for a payload that stays secret until 2126

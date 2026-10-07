@@ -18,6 +18,7 @@ import argparse
 import importlib
 import json
 import os
+import time
 import sys
 from typing import Any, Dict, List, Optional
 
@@ -298,6 +299,132 @@ def cmd_dashboard(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_voice(args: argparse.Namespace) -> int:
+    """Serve the whole thing and hand you the URL of the talking page."""
+    from zeno.server import serve
+
+    print("voice agent: open  http://{host}:{port}/voice".format(
+        host="localhost" if args.host in ("0.0.0.0", "::") else args.host, port=args.port))
+    if args.memory_key:
+        os.environ["ZENO_MEMORY_KEY"] = args.memory_key
+    print(f"  memory key : {os.environ.get('ZENO_MEMORY_KEY') or 'not set — memory will be stored UNSEALED'}")
+    print("  languages  : any BCP-47 tag; speech in/out is done by your browser")
+    return serve(host=args.host, port=args.port, mode=args.mode)
+
+
+def cmd_memory(args: argparse.Namespace) -> int:
+    """The owner's view of what was said, from the command line."""
+    from zeno.memory import MemoryStore
+
+    action = args.memory_action
+    if action == "init-key":
+        if not args.key:
+            args.key = os.path.expanduser("~/.zeno/memory.key")
+        try:
+            target = MemoryStore.create_owner(args.key)
+        except FileExistsError as error:
+            print(str(error), file=sys.stderr)
+            return 1
+        print(f"memory key created: {target} (mode 0600)")
+        print("point the server at it:  export ZENO_MEMORY_KEY=" + str(target))
+        return 0
+
+    owner = None
+    if args.key or os.environ.get("ZENO_MEMORY_KEY"):
+        from zeno.memory import MemoryStore as _Store
+
+        try:
+            owner = _Store.load_owner(args.key or os.environ["ZENO_MEMORY_KEY"])
+        except Exception as error:  # noqa: BLE001 - the owner is told, not guessed at
+            print(f"cannot use the memory key: {error}", file=sys.stderr)
+            return 1
+    store = MemoryStore(args.root, owner=owner)
+
+    if action == "list":
+        sessions = store.sessions()
+        if not sessions:
+            print("nothing stored yet")
+            return 0
+        print(f"{'session':<28} {'records':>8}  {'languages':<16} last")
+        for item in sessions:
+            print(
+                f"{item['id']:<28} {item['turns']:>8}  "
+                f"{(','.join(item['languages']) or '-'):<16} {time.strftime('%Y-%m-%d %H:%M', time.localtime(item['last_at']))}"
+            )
+        return 0
+    if action == "show":
+        if not args.session:
+            print("which session? `zeno memory list` shows them", file=sys.stderr)
+            return 1
+        for record in store.read(args.session, limit=args.limit):
+            stamp = time.strftime("%H:%M:%S", time.localtime(record.get("at", 0)))
+            print(f"[{stamp}] {record.get('role', '?'):>6}: {record.get('text', '')}")
+        return 0
+    if action == "search":
+        if not args.query:
+            print("what should I look for?", file=sys.stderr)
+            return 1
+        hits = store.search(args.query, limit=args.limit)
+        for record in hits:
+            print(f"{record.get('session')} {record.get('role')}: {record.get('text')}")
+        print(f"--- {len(hits)} match(es): a substring scan over decrypted records, not a semantic index")
+        return 0
+    if action == "verify":
+        report = store.verify(args.session or None)
+        print(json.dumps(report, indent=2, default=str))
+        return 0 if report["ok"] else 2
+    if action == "forget":
+        if not args.session:
+            print("which session?", file=sys.stderr)
+            return 1
+        removed = store.forget(args.session)
+        print(f"forgot {args.session}: {removed} record(s) deleted")
+        return 0
+    if action == "where":
+        print(json.dumps(store.describe(), indent=2, default=str))
+        return 0
+    print(f"unknown memory action {action!r}", file=sys.stderr)
+    return 2
+
+
+def cmd_agents(args: argparse.Namespace) -> int:
+    """Connected agents, from the command line."""
+    from zeno.peers import AgentRegistry
+
+    registry = AgentRegistry(args.file)
+    action = args.agents_action
+    if action == "list":
+        print(json.dumps(registry.describe(), indent=2))
+        for peer in registry.peers():
+            print(f"  {peer['name']:<20} {peer['endpoint']:<44} calls={peer['calls']} failures={peer['failures']}")
+        return 0
+    if action == "add":
+        if not args.name or not args.endpoint:
+            print("need --name and --endpoint", file=sys.stderr)
+            return 1
+        print(json.dumps(registry.register(args.name, args.endpoint, capability=args.capability or ""), indent=2))
+        return 0
+    if action == "remove":
+        print("removed" if registry.unregister(args.name or "") else "no such agent")
+        return 0
+    if action == "ask":
+        if not args.name or not args.text:
+            print("need --name and --text", file=sys.stderr)
+            return 1
+        outcome = registry.ask(args.name, args.text, lang=args.lang, session="cli")
+        print(json.dumps(outcome, indent=2, default=str))
+        return 0 if outcome.get("ok") else 1
+    if action == "broadcast":
+        if not args.text:
+            print("need --text", file=sys.stderr)
+            return 1
+        outcome = registry.broadcast(args.text, lang=args.lang, session="cli")
+        print(json.dumps(outcome, indent=2, default=str))
+        return 0 if outcome.get("ok") else 1
+    print(f"unknown agents action {action!r}", file=sys.stderr)
+    return 2
+
+
 def cmd_watchtower(args: argparse.Namespace) -> int:
     """Show who has been attacking this deployment.
 
@@ -485,6 +612,51 @@ def build_parser() -> argparse.ArgumentParser:
     dashboard.add_argument("--print-path", action="store_true", help="print the absolute path as well")
     dashboard.add_argument("--json", action="store_true")
     dashboard.set_defaults(func=cmd_dashboard)
+
+    voice = sub.add_parser(
+        "voice", help="serve the agent you can talk to: audio in, audio out, any language"
+    )
+    voice.add_argument("--host", default=os.environ.get("ZENO_HOST", "0.0.0.0"))
+    voice.add_argument("--port", type=int, default=int(os.environ.get("ZENO_PORT", "8000")))
+    voice.add_argument(
+        "--memory-key",
+        default="",
+        help="owner identity that seals what you say (defaults to $ZENO_MEMORY_KEY)",
+    )
+    voice.add_argument(
+        "--mode",
+        choices=["development", "production"],
+        default=None,
+        help="enforcement for the agent surface (default: $ZENO_ENV or development)",
+    )
+    voice.set_defaults(func=cmd_voice)
+
+    memory = sub.add_parser(
+        "memory", help="what the agent heard, read by the owner who holds the key"
+    )
+    memory.add_argument(
+        "memory_action",
+        choices=["list", "show", "search", "verify", "forget", "where", "init-key"],
+        help="list sessions, show one, search, verify the chain, forget one, where it lives, or mint a key",
+    )
+    memory.add_argument("--root", default=None, help="memory root (default ~/.zeno/memory)")
+    memory.add_argument("--key", default="", help="owner identity file that seals memory")
+    memory.add_argument("--session", default="", help="session id (show / verify / forget)")
+    memory.add_argument("--query", default="", help="what to look for (search)")
+    memory.add_argument("--limit", type=int, default=100, help="how many records (show / search)")
+    memory.set_defaults(func=cmd_memory)
+
+    agents = sub.add_parser("agents", help="connect, list and talk to other agents")
+    agents.add_argument(
+        "agents_action", choices=["list", "add", "remove", "ask", "broadcast"], help="what to do"
+    )
+    agents.add_argument("--file", default=None, help="registry file (default ~/.zeno/agents.json)")
+    agents.add_argument("--name", default="", help="the agent's name")
+    agents.add_argument("--endpoint", default="", help="its base URL; the bridge POSTs to <url>/ask")
+    agents.add_argument("--capability", default="", help="the grant that agent was issued")
+    agents.add_argument("--text", default="", help="what to ask it")
+    agents.add_argument("--lang", default="en", help="language tag to send")
+    agents.set_defaults(func=cmd_agents)
 
     serve = sub.add_parser("serve", help="run the local web playground")
     serve.add_argument("--host", default=os.environ.get("ZENO_HOST", "0.0.0.0"))

@@ -99,6 +99,20 @@ independent ledger anchoring, cross-process replay state, per-caller quotas,
 TPM/secure-enclave attestation, and layer-order permutation. See
 `specs/aegis_security.md` for the current status of each.
 
+## Conversation memory
+
+`zeno voice` remembers what is said to the agent. Three things to know:
+
+* With a memory key (`zeno memory init-key`), records are **ciphertext at rest**
+  (hybrid X25519+ML-KEM-768 + ChaCha20-Poly1305) in `~/.zeno/memory`, and the key
+  file is required to be mode 0600. Without a key, records are plaintext and every
+  record, `/api/health` and the page say so.
+* The log is chained by digest: `zeno memory verify` detects edits, reorders and
+  deletions. It cannot detect a whole-file rewrite by someone with write access —
+  the same limit as the audit ledger.
+* `zeno memory forget --session <id>` deletes that session irrecoverably. If a
+  conversation may contain personal data, this is the control to use.
+
 ## Operating this safely
 
 ```bash

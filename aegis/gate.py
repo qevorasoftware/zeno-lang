@@ -638,8 +638,13 @@ class Gateway:
             "6-polymorphic",
             True,
             required,
-            f"epoch {epoch} accepted ({self.polymorphic.policy.epoch_seconds // 3600}h window)",
-            {"epoch": epoch, "restored": restored[:80]},
+            f"epoch {epoch} accepted ({self.polymorphic.policy.epoch_seconds // 3600}h window)"
+            + (f" [{restored[:40]}…]" if len(restored) > 40 else ""),
+            # The full restored payload travels in ``data``: it becomes the
+            # authorized payload the caller executes. It used to be cut at 80
+            # characters, which silently executed a truncated program whenever a
+            # production payload ran longer than that.
+            {"epoch": epoch, "restored": restored},
         )
 
     def _layer_hardware(self, request: Request, required: bool) -> LayerVerdict:

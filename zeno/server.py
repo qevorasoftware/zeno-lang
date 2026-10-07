@@ -121,14 +121,63 @@ def _build_boundary(mode: str, policy: Any = None) -> Any:
     """
     try:
         from aegis.boundary import AuthorizationBoundary
+        from aegis.gate import Gateway, Policy
 
-        if mode == "production":
-            from aegis.gate import Policy
-
-            return AuthorizationBoundary(policy=policy or Policy.strict_policy())
-        return AuthorizationBoundary(policy=_development_policy(policy))
+        chosen = (policy or Policy.strict_policy()) if mode == "production" else _development_policy(policy)
+        return AuthorizationBoundary(gateway=Gateway(chosen, sentinel=_build_sentinel()), policy=chosen)
     except Exception:  # noqa: BLE001 - no crypto backend, no boundary
         return None
+
+
+def _build_sentinel() -> Any:
+    """The guardian, with its burst heuristic configurable on purpose.
+
+    A conversation is a burst of requests by nature: twenty turns a minute is a
+    person talking, not an attack. The default heuristic is tuned for a machine
+    interface, so a voice deployment will trip it — which is the guardian working,
+    not a bug. ``ZENO_SENTINEL_MAX_EVENTS_PER_MINUTE`` raises the ceiling for a
+    deployment that has decided a conversation is expected traffic; leaving it
+    unset keeps the library's own (stricter) default, and nothing is lowered
+    silently.
+    """
+    from aegis.guardian_ai import Sentinel
+
+    configured = os.environ.get("ZENO_SENTINEL_MAX_EVENTS_PER_MINUTE", "").strip()
+    if not configured:
+        return Sentinel()
+    try:
+        return Sentinel(max_events_per_minute=float(configured))
+    except ValueError:
+        print(
+            f"ZENO_SENTINEL_MAX_EVENTS_PER_MINUTE={configured!r} is not a number; "
+            "using the guardian's own default",
+            file=sys.stderr,
+            flush=True,
+        )
+        return Sentinel()
+
+
+def _build_memory() -> Any:
+    """The conversation store, sealed to the owner when a key is configured.
+
+    ``ZENO_MEMORY_KEY`` points at the owner's private identity (a ``zeno memory
+    init-key`` file, or an ``aegis owner init`` root). Without it the store runs
+    unsealed and says so in every record and in ``/api/health``.
+    """
+    from zeno.memory import MemoryStore
+
+    path = os.environ.get("ZENO_MEMORY_KEY", "").strip()
+    if path:
+        try:
+            return MemoryStore(owner=MemoryStore.load_owner(path))
+        except Exception as error:  # noqa: BLE001 - report, never silently continue unsealed
+            print(
+                f"memory key {path!r} could not be used ({type(error).__name__}: {error}); "
+                "conversation memory will be stored UNSEALED",
+                file=sys.stderr,
+                flush=True,
+            )
+    return MemoryStore(seal=False)
 
 
 def _build_watchtower(mode: str, boundary: Any) -> Any:
@@ -197,6 +246,8 @@ class Playground:
         policy: Any = None,
         boundary: Any = None,
         mode: Optional[str] = None,
+        memory: Any = None,
+        peers: Any = None,
     ) -> None:
         self.provider = provider or resolve()
         self.heuristic = HeuristicEncoder()
@@ -212,6 +263,25 @@ class Playground:
         # records too, but keeps answering honestly: a developer needs to see the
         # real error, not a plausible fake.
         self.watchtower = _build_watchtower(self.mode, self.boundary)
+        # What the agent hears is kept, sealed to the owner's key when one is
+        # configured; where it is not, the store says so on every record and the
+        # health endpoint repeats it. Same rule as everywhere else: a degraded
+        # posture is labelled, never implied.
+        from zeno.memory import MemoryStore
+
+        self.memory = memory if memory is not None else _build_memory()
+        from zeno.peers import AgentRegistry
+
+        self.peers = (
+            peers
+            if peers is not None
+            else AgentRegistry(boundary=self.boundary, memory=self.memory)
+        )
+        from zeno.agent import VoiceAgent
+
+        self.agent = VoiceAgent(
+            self, memory=self.memory, boundary=self.boundary, provider=self.provider, peers=self.peers
+        )
         #: Set by :meth:`authorize` for the duration of one request, so the
         #: handler can attach the permit (or the refusal) to its response.
         self.kernel_calls = 0
@@ -604,6 +674,63 @@ class _Handler(BaseHTTPRequestHandler):
         pairs = (pair.split("=", 1) for pair in raw.split("&") if "=" in pair)
         return {key: unquote_plus(value)[:200] for key, value in pairs}
 
+    def _authorize_once(
+        self,
+        *,
+        action: str,
+        read: bool = False,
+        body: Optional[Mapping[str, Any]] = None,
+        payload: bytes = b"",
+    ) -> Any:
+        """Ask the boundary exactly once for this request.
+
+        The authorization is passed on to whatever does the work, so a single
+        request is one decision -- authorizing twice would double-count the request
+        in the guardian's behavioural profile, and a conversation is already a
+        burst of requests by nature.
+
+        The grant may arrive in the ``aegis`` block of the body or in the
+        ``X-Zeno-Capability`` header (the dashboard's habit); the header wins only
+        when the body did not carry one, so a body cannot be downgraded by a
+        stray header.
+        """
+        merged = dict(body or {})
+        block = merged.get("aegis")
+        block = dict(block) if isinstance(block, Mapping) else {}
+        header = self._capability_block()
+        if header.get("token") and not (block.get("token") or "").strip():
+            block["token"] = header["token"]
+        query_nonce = self._query().get("nonce", "")
+        if query_nonce and not (block.get("nonce") or "").strip():
+            block["nonce"] = query_nonce
+        if block:
+            merged["aegis"] = block
+        caller = self._caller(merged)
+        if read:
+            return self.playground.authorize_read(caller, merged, action=action)
+        return self.playground.authorize(caller, payload, merged, action=action)
+
+    def _permit(
+        self,
+        path: str,
+        *,
+        action: str,
+        read: bool = False,
+        body: Optional[Mapping[str, Any]] = None,
+        payload: bytes = b"",
+    ) -> bool:
+        """``_authorize_once`` plus the standard refusal answer.
+
+        Returns ``True`` when a refusal has already been sent, ``False`` when the
+        caller may proceed. Reads go through the read gate, effects through the
+        effectful one -- the same split the boundary documents.
+        """
+        permit = self._authorize_once(action=action, read=read, body=body, payload=payload)
+        if not permit.allowed:
+            self._refusal(permit, path=path, body=body or {})
+            return True
+        return False
+
     def _capability_block(self) -> Dict[str, Any]:
         """The owner's grant, when it arrives in a header.
 
@@ -703,6 +830,8 @@ class _Handler(BaseHTTPRequestHandler):
                     health["policy"] = self.playground.boundary.policy.to_dict()
                 else:
                     health["policy"] = {"mode": self.playground.mode, "aegis_available": False}
+                health["memory"] = self.playground.memory.describe()
+                health["agents"] = self.playground.peers.describe()
                 self._json(health)
                 return
             if path == "/api/grammar":
@@ -710,6 +839,53 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/tools":
                 self._json(self.playground.tools())
+                return
+            if path in ("/voice", "/voice/"):
+                # The page is a page: it needs no authorization to be downloaded,
+                # and everything it can *do* is authorized route by route.
+                self._file("voice.html")
+                return
+            if path == "/api/memory/sessions":
+                if self._permit(path, action="read:memory", read=True):
+                    return
+                self._json({"sessions": self.playground.memory.sessions()})
+                return
+            if path == "/api/memory/session":
+                if self._permit(path, action="read:memory", read=True):
+                    return
+                query = self._query()
+                session = query.get("id", "")
+                try:
+                    limit = max(1, min(int(query.get("limit", "200")), 2000))
+                except ValueError:
+                    limit = 200
+                self._json(
+                    {
+                        "session": session,
+                        "records": self.playground.memory.read(session, limit=limit),
+                        "memory": self.playground.memory.describe(),
+                    }
+                )
+                return
+            if path == "/api/memory/verify":
+                if self._permit(path, action="read:memory", read=True):
+                    return
+                self._json(self.playground.memory.verify())
+                return
+            if path == "/api/agents":
+                if self._permit(path, action="read:agents", read=True):
+                    return
+                self._json({"agents": self.playground.peers.peers(), "bridge": self.playground.peers.describe()})
+                return
+            if path == "/api/voice/health":
+                self._json(
+                    {
+                        "memory": self.playground.memory.describe(),
+                        "agents": self.playground.peers.describe(),
+                        "provider": self.playground.provider_info(),
+                        "enforcement": self.playground.enforcement,
+                    }
+                )
                 return
             if path == "/api/watchtower":
                 # The feed names who attacked this host and how often: that is the
@@ -793,6 +969,129 @@ class _Handler(BaseHTTPRequestHandler):
                 )
                 result["aegis"] = permit.to_dict()
                 self._json(result)
+                return
+            if path == "/api/voice/turn":
+                # The utterance is authorized in its encoded wire form: a canonical
+                # Zeno payload, which is what layer 6 can vouch for. Encoding is the
+                # same pure, public transform as /api/encode -- nothing is answered,
+                # sent or stored until the boundary has allowed the turn.
+                text = str(body.get("text", ""))
+                wire = text
+                try:
+                    encoded = self.playground.encode(text).get("payload")
+                    if isinstance(encoded, str) and encoded.strip():
+                        wire = encoded
+                except ZenoError:
+                    pass
+                permit = self._authorize_once(
+                    action="agent:turn", body=body, payload=wire.encode("utf-8")
+                )
+                if not permit.allowed:
+                    self._refusal(permit, path=path, body=body)
+                    return
+                wav = None
+                if body.get("audio_b64"):
+                    import base64
+
+                    from zeno.agent import wav_from_pcm
+
+                    try:
+                        wav = wav_from_pcm(
+                            base64.b64decode(str(body["audio_b64"]), validate=True),
+                            sample_rate=int(body.get("sample_rate") or 16_000),
+                            channels=int(body.get("channels") or 1),
+                        )
+                    except Exception as error:  # noqa: BLE001 - unreadable audio is not a reason to fail the turn
+                        wav = None
+                        body["_audio_error"] = f"{type(error).__name__}: {error}"
+                turn = self.playground.agent.turn(
+                    session=str(body.get("session") or "voice"),
+                    text=str(body.get("text", "")),
+                    lang=str(body.get("lang", "")),
+                    audio_wav=wav,
+                    caller=self._caller(body),
+                    authorization=permit,
+                )
+                turn["aegis"] = permit.to_dict()
+                if body.get("_audio_error"):
+                    turn.setdefault("notes", []).append(f"audio was not readable: {body['_audio_error']}")
+                self._json(turn)
+                return
+            if path == "/api/memory/search":
+                if self._permit(path, action="read:memory", read=True, body=body):
+                    return
+                query = str(body.get("query", ""))
+                limit = max(1, min(int(body.get("limit") or 50), 500))
+                self._json({"query": query, "hits": self.playground.memory.search(query, limit=limit)})
+                return
+            if path == "/api/memory/forget":
+                session = str(body.get("session", ""))
+                if not session:
+                    self._json({"error": {"code": "ZN0003", "message": "session is required"}}, 400)
+                    return
+                if self._permit(path, action="memory:forget", body=body, payload=session.encode("utf-8")):
+                    return
+                removed = self.playground.memory.forget(session)
+                self._json({"session": session, "removed": removed})
+                return
+            if path == "/api/agents":
+                action = "agent:register" if body.get("name") else "agent:ask"
+                if self._permit(path, action=action, body=body, payload=str(body).encode("utf-8")[:512]):
+                    return
+                self._json(
+                    {
+                        "agent": self.playground.peers.register(
+                            str(body.get("name", "")),
+                            str(body.get("endpoint", "")),
+                            capability=str(body.get("capability", "")),
+                            languages=[str(item) for item in (body.get("languages") or [])],
+                            description=str(body.get("description", "")),
+                        )
+                    }
+                )
+                return
+            if path == "/api/agents/remove":
+                if self._permit(path, action="agent:register", body=body, payload=str(body.get("name", "")).encode("utf-8")):
+                    return
+                name = str(body.get("name", ""))
+                self._json({"removed": self.playground.peers.unregister(name), "name": name})
+                return
+            if path == "/api/agents/ask":
+                permit = self._authorize_once(
+                    action="agent:peer", body=body, payload=str(body.get("text", "")).encode("utf-8")
+                )
+                if not permit.allowed:
+                    self._refusal(permit, path=path, body=body)
+                    return
+                self._json(
+                    self.playground.peers.ask(
+                        str(body.get("name", "")),
+                        str(body.get("text", "")),
+                        lang=str(body.get("lang") or "en"),
+                        session=str(body.get("session") or "peers"),
+                        caller=self._caller(body),
+                        authorization=permit,
+                    )
+                )
+                return
+            if path == "/api/agents/broadcast":
+                permit = self._authorize_once(
+                    action="agent:peer", body=body, payload=str(body.get("text", "")).encode("utf-8")
+                )
+                if not permit.allowed:
+                    self._refusal(permit, path=path, body=body)
+                    return
+                names = body.get("names")
+                self._json(
+                    self.playground.peers.broadcast(
+                        str(body.get("text", "")),
+                        lang=str(body.get("lang") or "en"),
+                        session=str(body.get("session") or "peers"),
+                        names=[str(item) for item in names] if isinstance(names, list) else None,
+                        caller=self._caller(body),
+                        authorization=permit,
+                    )
+                )
                 return
             if path == "/api/check":
                 payload = str(body.get("payload", ""))

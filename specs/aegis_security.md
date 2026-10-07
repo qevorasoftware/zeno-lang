@@ -293,6 +293,37 @@ bounded rather than distributed (§8); quotas, endpoint hardening and
 attacker-controlled guardian metadata are P2; geolocation remains an
 unverifiable claim; and no external audit has been performed.
 
+## 9a. The agent surface: voice, memory, connected agents
+
+The voice agent is not a bypass around the chain; it is a client of it. One turn
+is `authorize → (optional) voiceprint → answer → remember`, and the order is the
+security property: authorization happens over the *encoded wire form* of the
+utterance (the same pure, public transform as `/api/encode` — a canonical Zeno
+payload, which is the form layer 6 can vouch for), and nothing is answered, sent
+to a peer, or written to memory before the boundary has allowed it.
+
+What each piece is, and is not:
+
+* **Memory** (`zeno/memory.py`) is sealed to the owner's private identity with
+  the hybrid sealer and chained by digest: tamper-evident, not immutable; one
+  owner key opens every session; no forward secrecy. Without a key, records are
+  plaintext **and labelled so** on every line and in `/api/health`. `forget` is
+  destructive on purpose. Reads of memory are owner reads: capability
+  `read:memory`, fresh nonce, nothing executed.
+* **Voiceprints** are measurements by layer 8's FFT (`nada_brahma_voice`), kept
+  as a signal with the sentence "recorded speech replays" attached to every
+  report. A voiceprint can lower or raise suspicion; it can never authorize.
+* **Connected agents** (`zeno/peers.py`) each hold their own owner-issued grant;
+  the bridge never holds or sends the owner key. `agent:peer` and `agent:turn`
+  are effectful actions — in production a peer call without a valid grant is
+  refused before anything leaves the machine. A peer's reply is stored as that
+  peer's claim. No maximum peer count is imposed; concurrency and per-call
+  timeout are the declared bounds, and both are in the bridge's own `describe()`.
+* **Conversation rate.** The guardian's burst heuristic is tuned for machine
+  traffic; a voice deployment raises it deliberately with
+  `ZENO_SENTINEL_MAX_EVENTS_PER_MINUTE`, which is a documented deployment
+  decision, never a silent default change.
+
 ## 10. Hardening plan: audit findings and their status
 
 The hardened plan (v1.0) lists findings from an audit of this code. Each one was
