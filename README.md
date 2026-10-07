@@ -299,7 +299,9 @@ Three consequences worth knowing before reading the code:
 - **Geofencing is advisory.** Coordinates are declared, never proven, and every
   report says `spoofable: true`. Device binding is the real control in that layer.
 
-Without `pqcrypto`, layer 1 runs classical-only and says
+Status against the hardening plan's audit findings — including the ones still
+open, and the reasons — is in `specs/aegis_hardening_status.md`. Without
+`pqcrypto`, layer 1 runs classical-only and says
 `quantum_resistant: false`; without `cryptography` it refuses and points at the
 pure-Python AEAD that exists for tests. Threat models, the cryptographic
 inventory, and the deliberate divergences from the brief are in

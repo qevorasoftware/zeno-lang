@@ -400,6 +400,12 @@ class Gateway:
         self.polymorphic = polymorphic
         self.hardware = hardware
         self.started_at = time.time()
+        #: Audited operations whose record could not be written. Any of these is a
+        #: refusal (finding H5), and the count is reported so they cannot hide.
+        self.audit_failures = 0
+        #: How many audit writes failed. Any of these on an audited operation is a
+        #: refusal (finding H5); the count is reported so it cannot go unnoticed.
+        self.audit_failures = 0
 
     def register_identity(self, actor: str, statement: Any) -> str:
         """Bind ``actor`` to a key. ``statement`` may be a Statement or its public string."""
@@ -458,7 +464,17 @@ class Gateway:
             if verdict.layer == "6-polymorphic" and restored:
                 result.restored_payload = str(restored).encode("utf-8")
         result.reason = "all required layers passed"
-        self._record(request, "allow", layer="gate", reason=result.reason)
+        audited = self._record(request, "allow", layer="gate", reason=result.reason)
+        if not audited and self.policy.require_ledger:
+            # Finding H5: an operation that cannot be recorded must not happen.
+            result.allowed = False
+            result.refused_by = "4-ledger"
+            result.code = refusal_code("4-ledger", missing=False)
+            result.human_reason = (
+                "the ledger could not record this decision: refusing to act unaudited"
+            )
+            result.reason = result.code if self.policy.opaque_reasons else result.human_reason
+            return result
 
         if self.policy.apply_vajra_wrap:
             from .vajra.devanagari_wrapper import wrap
@@ -675,7 +691,12 @@ class Gateway:
         )
 
     # -- audit -----------------------------------------------------------
-    def _record(self, request: Request, decision: str, *, layer: str, reason: str) -> None:
+    def _record(self, request: Request, decision: str, *, layer: str, reason: str) -> bool:
+        """Append the audit entry. Returns whether it was written.
+
+        A swallowed failure is how an audited operation ends up unaudited, so the
+        caller gets the outcome and :meth:`decide` refuses on it (finding H5).
+        """
         entry = LedgerEntry(
             actor=request.actor,
             action="access" if decision == "allow" else decision,
@@ -692,7 +713,9 @@ class Gateway:
         try:
             self.ledger.append(entry)
         except Exception:  # noqa: BLE001 - never let audit failure crash the gate
-            pass
+            self.audit_failures += 1
+            return False
+        return True
 
     # -- introspection ---------------------------------------------------
     def describe(self) -> Dict[str, Any]:
@@ -711,6 +734,7 @@ class Gateway:
                 "immutable": False,
                 "tamper_evident": True,
             },
+            "audit_failures": self.audit_failures,
             "polymorphic": self.polymorphic.describe() if self.polymorphic else None,
             "hardware": self.hardware.to_dict() if self.hardware else None,
             "vajra": {

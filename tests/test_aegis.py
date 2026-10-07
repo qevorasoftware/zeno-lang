@@ -860,3 +860,62 @@ def test_without_the_wheels_the_cli_selftest_fails_loudly():
     assert completed.returncode != 0, "selftest must not pass without the crypto backends"
     assert "FAIL" in completed.stdout
     assert "checks passed" in completed.stdout
+
+
+# ---------------------------------------------------------------------------
+# Audit findings H2 and H5, closed and pinned
+# ---------------------------------------------------------------------------
+@requires_crypto
+def test_a_relabelled_suite_is_refused_by_the_sealer():
+    """H2 at the seal layer: relabelling the envelope must not open it."""
+    from aegis.pqc_engine import SUITE, SealedBox, Sealer, generate_identity
+
+    alice, bob = generate_identity("alice"), generate_identity("bob")
+    box = Sealer(alice).seal(b"@LOC[TYO] -> ?WX", recipient=bob.public)
+    assert Sealer(bob).open(box) == b"@LOC[TYO] -> ?WX"
+
+    relabelled = SealedBox.from_dict({**box.to_dict(), "suite": "aegis-classical/v1"})
+    assert relabelled.suite != SUITE
+    with pytest.raises(cipher.AeadError, match="unknown suite"):
+        Sealer(bob).open(relabelled)
+
+    # and a box with no suite at all is read as this build's suite, not as a
+    # weaker one: dropping the field is not a downgrade route either
+    payload = box.to_dict()
+    payload.pop("suite")
+    assert Sealer(bob).open(SealedBox.from_dict(payload)) == b"@LOC[TYO] -> ?WX"
+
+
+@requires_crypto
+def test_an_unwritable_ledger_refuses_instead_of_acting_unaudited():
+    """H5: the audit write is part of the decision, not a note after it."""
+    from aegis.gate import Gateway, Policy, Request
+
+    # The device lock is the one layer a bare test request cannot satisfy; every
+    # other layer is left as the policy has it, so the refusal below can only
+    # come from the audit write.
+    gateway = Gateway(Policy(require_device_lock=False))
+
+    def explode(*args, **kwargs):
+        raise OSError("the disk holding the ledger is gone")
+
+    gateway.ledger.append = explode  # type: ignore[method-assign]
+    result = gateway.decide(Request(actor="agent://one", payload=b"?WX"))
+
+    assert not result.allowed, "an operation that cannot be recorded must not proceed"
+    assert result.refused_by == "4-ledger"
+    assert gateway.audit_failures >= 1
+    assert "unaudited" in result.human_reason
+    assert gateway.describe()["audit_failures"] == gateway.audit_failures
+
+
+@requires_crypto
+def test_a_healthy_ledger_still_allows_and_records():
+    """The H5 rule must not turn a working deployment into a deny-machine."""
+    from aegis.gate import Gateway, Policy, Request
+
+    gateway = Gateway(Policy(require_device_lock=False))
+    result = gateway.decide(Request(actor="agent://one", payload=b"?WX"))
+    assert result.allowed, result.human_reason
+    assert gateway.audit_failures == 0
+    assert any(entry["actor"] == "agent://one" for entry in gateway.ledger.entries)

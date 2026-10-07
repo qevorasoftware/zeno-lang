@@ -543,6 +543,15 @@ class Sealer:
 
     def open(self, box: SealedBox, *, aad: bytes = b"", sender: Optional[PublicIdentity] = None) -> bytes:
         """Open a box, verifying its signature first when one is attached."""
+        # Anti-downgrade (audit finding H2): this build speaks exactly one suite.
+        # A box that claims another one is refused rather than opened under this
+        # build's rules -- otherwise relabelling the envelope would be a way to
+        # make a weaker suite look acceptable to a policy that reads the label.
+        if box.suite != SUITE:
+            raise cipher.AeadError(
+                f"unknown suite {box.suite!r}: this build speaks {SUITE!r}. "
+                "Refusing to open an envelope that claims a different suite."
+            )
         if box.signature is not None:
             checker = sender or self._known_senders.get(box.signature.fingerprint)
             if sender is not None and not verify(sender, _signed_material(box), box.signature):

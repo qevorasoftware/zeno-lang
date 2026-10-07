@@ -3,7 +3,8 @@
 **Status:** implemented · **Version:** 2.2.0 · **Code:** `aegis/` · **Tests:**
 `tests/test_aegis.py`, `tests/test_boundary.py`, `tests/test_capability.py`,
 `tests/test_watchtower.py` · **Hardening plan:** P0 complete, P1 complete
-(see §9–§10), P2 open
+(see §9–§10), P2 open · **Status against the audit:**
+[`specs/aegis_hardening_status.md`](aegis_hardening_status.md)
 
 AEGIS is the gateway in front of Zeno: eight layers, applied in a fixed order, all
 of which a request must pass. This document is the threat model, the exact
