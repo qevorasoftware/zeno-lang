@@ -181,7 +181,8 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-name">Name</label>
-              <input id="f-name" class="form-control" placeholder="e.g. groq-fast" spellcheck="false">
+              <input id="f-name" class="form-control" placeholder="your own label, e.g. openai-main" spellcheck="false">
+              <p class="fs-8 text-muted-2 mt-1 mb-0">Your label for this profile — any name you like; the provider is chosen beside it.</p>
             </div>
             <div class="col-md-4">
               <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-provider">Provider</label>
@@ -431,7 +432,11 @@
 
       const option = document.createElement("option");
       option.value = profile.name;
-      option.textContent = profile.name + " (" + profile.provider + ")";
+      // name and provider can be the same word ("openai" named "openai"):
+      // saying it twice is noise, not information
+      option.textContent = profile.name === profile.provider
+        ? profile.name
+        : profile.name + " (" + profile.provider + ")";
       select.appendChild(option);
     });
 
@@ -476,6 +481,10 @@
       picker.addEventListener("change", () => {
         const preset = state.presets.find((item) => item.slug === picker.value);
         if (preset) {
+          // The name field is the owner's own label, not the provider: keep its
+          // example in step with the provider they are configuring, so the
+          // placeholder never looks like a wrong default.
+          $("f-name").placeholder = "your own label, e.g. " + preset.slug + "-main";
           $("f-model").value = "";
           $("f-model").placeholder = preset.model || "preset default";
           $("f-base").value = "";

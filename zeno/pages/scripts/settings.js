@@ -163,7 +163,11 @@
 
       const option = document.createElement("option");
       option.value = profile.name;
-      option.textContent = profile.name + " (" + profile.provider + ")";
+      // name and provider can be the same word ("openai" named "openai"):
+      // saying it twice is noise, not information
+      option.textContent = profile.name === profile.provider
+        ? profile.name
+        : profile.name + " (" + profile.provider + ")";
       select.appendChild(option);
     });
 
@@ -208,6 +212,10 @@
       picker.addEventListener("change", () => {
         const preset = state.presets.find((item) => item.slug === picker.value);
         if (preset) {
+          // The name field is the owner's own label, not the provider: keep its
+          // example in step with the provider they are configuring, so the
+          // placeholder never looks like a wrong default.
+          $("f-name").placeholder = "your own label, e.g. " + preset.slug + "-main";
           $("f-model").value = "";
           $("f-model").placeholder = preset.model || "preset default";
           $("f-base").value = "";
