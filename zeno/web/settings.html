@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#4f46e5">
+  <title>Settings | Zeno · AEGIS</title>
+  <meta name="description" content="Zeno settings — AI providers and their keys, models and endpoints. Several providers, one active.">
+
+  <!-- Apply the stored colour mode before first paint to avoid a theme flash -->
+  <script>(function(){try{var s=localStorage.getItem("qevora-theme");var d=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-bs-theme",(s==="dark"||s==="light")?s:(d?"dark":"light"));}catch(e){}})();</script>
+
+  <!-- UI kit, vendored at the repository root (see assets/CREDITS.md) -->
+  <link rel="stylesheet" href="/assets/css/fonts.css">
+  <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/assets/icons/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/dark.css">
+  <style>
+    .code-chip { font-family: var(--q-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: .78rem; }
+  </style>
+</head>
+
+<body class="q-app">
+  <a class="visually-hidden-focusable" href="#q-content">Skip to main content</a>
+
+  <!-- ================= Sidebar ================= -->
+  <aside class="q-sidebar" id="qevora-sidebar" aria-label="Settings navigation">
+    <div class="q-sidebar__brand">
+      <a href="#top" class="d-flex align-items-center gap-2 min-w-0 text-decoration-none">
+        <span class="q-brand__mark" aria-hidden="true">Z</span>
+        <span class="q-brand__text">
+          <span class="q-brand__name">Zeno</span>
+          <span class="q-brand__sub">AEGIS Suite</span>
+        </span>
+      </a>
+      <button class="btn btn-icon btn-sm btn-ghost ms-auto d-none d-lg-inline-grid" type="button"
+              data-sidebar-compact aria-pressed="false" aria-label="Collapse sidebar" title="Collapse sidebar">
+        <i class="bi bi-chevron-double-left"></i>
+      </button>
+      <button class="btn btn-icon btn-sm btn-ghost ms-auto d-lg-none" type="button"
+              data-sidebar-toggle aria-expanded="false" aria-controls="qevora-sidebar" aria-label="Close navigation">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <nav class="q-sidebar__body q-scroll">
+      <p class="q-sidebar__group-label">Settings</p>
+      <ul class="q-nav">
+        <li class="q-nav-item">
+          <a class="q-nav__link is-active" href="#top">
+            <i class="q-nav__icon bi bi-gear" aria-hidden="true"></i><span class="q-nav__text">AI providers</span>
+          </a>
+        </li>
+      </ul>
+
+      <p class="q-sidebar__group-label">Surfaces</p>
+      <ul class="q-nav">
+        <li class="q-nav-item"><a class="q-nav__link" href="/dashboard"><i class="q-nav__icon bi bi-speedometer2" aria-hidden="true"></i><span class="q-nav__text">Dashboard</span></a></li>
+        <li class="q-nav-item"><a class="q-nav__link" href="/admin"><i class="q-nav__icon bi bi-shield-check" aria-hidden="true"></i><span class="q-nav__text">Admin console</span></a></li>
+        <li class="q-nav-item"><a class="q-nav__link" href="/voice"><i class="q-nav__icon bi bi-mic" aria-hidden="true"></i><span class="q-nav__text">Talk to the agent</span></a></li>
+        <li class="q-nav-item"><a class="q-nav__link" href="/"><i class="q-nav__icon bi bi-terminal" aria-hidden="true"></i><span class="q-nav__text">Playground</span></a></li>
+      </ul>
+
+      <div class="q-sidebar__footer">
+        <p class="fs-8 text-muted-2 mb-0" id="store-state">…</p>
+      </div>
+    </nav>
+  </aside>
+  <div class="q-sidebar-backdrop" aria-hidden="true"></div>
+
+  <div class="q-main" id="top">
+    <!-- ================= Header ================= -->
+    <header class="q-header">
+      <button class="q-header__toggle" type="button" data-sidebar-toggle
+              aria-expanded="false" aria-controls="qevora-sidebar" aria-label="Toggle navigation">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <div class="q-header__search d-none d-md-block">
+        <i class="bi bi-plug q-header__search-icon" aria-hidden="true"></i>
+        <label class="visually-hidden" for="active-name">Active provider</label>
+        <input type="search" class="form-control" id="active-name" placeholder="no provider yet" disabled>
+      </div>
+
+      <div class="q-header__actions">
+        <span class="badge badge-soft-secondary badge-pill d-none d-sm-inline-flex" id="pill-provider" hidden></span>
+        <span class="badge badge-soft-success badge-pill" id="pill-sealed" hidden></span>
+        <button class="q-icon-btn" type="button" id="grant-btn" title="Owner grant" aria-label="Owner grant">
+          <i class="bi bi-key" aria-hidden="true"></i>
+        </button>
+        <button class="q-icon-btn" type="button" data-theme-toggle aria-pressed="false"
+                title="Switch to dark mode" aria-label="Toggle colour mode">
+          <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ================= Content ================= -->
+    <main class="q-content" id="q-content">
+      <div class="q-page-head">
+        <div>
+          <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Settings</li>
+            </ol>
+          </nav>
+          <h1 class="q-page-head__title mt-2">AI providers</h1>
+          <p class="q-page-head__subtitle">
+            Keep several providers — each with its own key, model and endpoint — and switch the active
+            one when you want. The agent answers through exactly one at a time.
+          </p>
+        </div>
+      </div>
+
+      <!-- needs a live server -->
+      <div class="alert alert-warning q-section" id="offline-note" hidden>
+        <i class="bi bi-cloud-slash me-1"></i>
+        This page manages a live server's configuration, and this page is being served statically —
+        there is no server to configure here. Start one with <code>zeno voice</code> and open
+        <code>/settings</code> on it.
+      </div>
+
+      <!-- locked store -->
+      <div class="alert alert-danger q-section" id="locked-note" hidden>
+        <i class="bi bi-lock me-1"></i>
+        <span id="locked-reason"></span>
+      </div>
+
+      <!-- ============ providers ============ -->
+      <div class="card q-section">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Your providers</h2>
+            <p class="card-subtitle">One is active; the rest are kept for when you switch</p>
+          </div>
+          <span class="fs-8 text-muted-2" id="store-file"></span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th></th><th>Name</th><th>Provider</th><th>Model</th><th>Key</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+            <tbody id="provider-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ add / update ============ -->
+      <div class="card q-section">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Add or update a provider</h2>
+            <p class="card-subtitle">Same name updates the profile; a blank key keeps the one already stored</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-name">Name</label>
+              <input id="f-name" class="form-control" placeholder="e.g. groq-fast" spellcheck="false">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-provider">Provider</label>
+              <select id="f-provider" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-model">Model</label>
+              <input id="f-model" class="form-control" placeholder="preset default" spellcheck="false">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-base">Base URL</label>
+              <input id="f-base" class="form-control" placeholder="preset default" spellcheck="false">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-key">API key</label>
+              <input id="f-key" type="password" class="form-control" placeholder="sk-…" autocomplete="off">
+              <p class="fs-8 text-muted-2 mt-1 mb-0">Stored server-side; never shown again after this.</p>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
+            <button class="btn btn-primary" id="f-save"><i class="bi bi-save me-1"></i>Save and make active</button>
+            <span class="fs-8 text-muted-2">in production, saving needs an owner grant (settings:write)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ test ============ -->
+      <div class="card q-section">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Test a provider</h2>
+            <p class="card-subtitle">Sends one tiny real completion through it — that is the whole test</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="d-flex gap-2 flex-wrap">
+            <select id="t-name" class="form-select form-select-sm" style="width: auto"></select>
+            <button class="btn btn-sm btn-primary" id="t-go"><i class="bi bi-play-fill me-1"></i>Run the test</button>
+          </div>
+          <pre id="t-out" class="code-chip mt-3 mb-0" hidden style="max-height: 10rem; overflow: auto;"></pre>
+        </div>
+      </div>
+
+      <!-- ============ honesty ============ -->
+      <div class="card q-section">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">What this page is, honestly</h2>
+            <p class="card-subtitle">Where your keys live, and what this is not</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <ul class="timeline mb-0" id="limits"></ul>
+        </div>
+      </div>
+
+      <footer class="q-footer">
+        <div class="q-footer__inner">
+          <span>Zeno · keys stay server-side, sealed when an owner key is configured · UI kit vendored locally (assets/CREDITS.md)</span>
+          <nav class="d-flex flex-wrap gap-3" aria-label="Footer">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/admin">Admin console</a>
+            <a href="/voice">Talk to the agent</a>
+          </nav>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
+
+  <script src="/assets/js/bootstrap.bundle.min.js"></script>
+  <script src="/assets/js/theme.js"></script>
+  <script src="/assets/js/sidebar.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script>
+  "use strict";
+  const state = { token: localStorage.getItem("zeno.token") || "", presets: [] };
+  const $ = (id) => document.getElementById(id);
+
+  function freshNonce() {
+    try {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    } catch (_) { return String(Date.now()) + Math.random().toString(16).slice(2); }
+  }
+
+  async function api(path, options) {
+    const request = Object.assign({}, options);
+    request.headers = Object.assign({ "Content-Type": "application/json" }, request.headers || {});
+    if (state.token) request.headers["X-Zeno-Capability"] = state.token;
+    const url = (request.method === "GET" || !request.method)
+      ? path + (path.includes("?") ? "&" : "?") + "nonce=" + freshNonce()
+      : path;
+    const response = await fetch(url, request);
+    let payload = null;
+    try { payload = await response.json(); } catch (_) { payload = null; }
+    if (!response.ok) {
+      const error = payload && payload.error ? payload.error : null;
+      const failure = new Error(error ? [error.code, error.message].filter(Boolean).join(" — ") : ("HTTP " + response.status));
+      failure.status = response.status;
+      failure.code = error ? error.code : "";
+      throw failure;
+    }
+    return payload;
+  }
+  const post = (path, body) => api(path, { method: "POST", body: JSON.stringify(Object.assign({ nonce: freshNonce() }, body)) });
+
+  function toast(title, body, variant) {
+    if (typeof bootstrap === "undefined") return;
+    const element = document.createElement("div");
+    element.className = "toast align-items-center border-0 text-bg-" + (variant || "dark");
+    element.setAttribute("role", "alert");
+    const flex = document.createElement("div");
+    flex.className = "d-flex";
+    const content = document.createElement("div");
+    content.className = "toast-body";
+    const head = document.createElement("strong");
+    head.className = "d-block";
+    head.textContent = title;
+    content.appendChild(head);
+    const text = document.createElement("span");
+    text.className = "code-chip";
+    text.textContent = body;
+    content.appendChild(text);
+    flex.appendChild(content);
+    const close = document.createElement("button");
+    close.className = "btn-close me-2 m-auto";
+    close.setAttribute("data-bs-dismiss", "toast");
+    flex.appendChild(close);
+    element.appendChild(flex);
+    $("toasts").appendChild(element);
+    new bootstrap.Toast(element, { delay: 6000 }).show();
+    element.addEventListener("hidden.bs.toast", () => element.remove());
+  }
+
+  function timelineItem(list, title, meta) {
+    const li = document.createElement("li");
+    li.className = "timeline__item";
+    const dot = document.createElement("span");
+    dot.className = "timeline__dot timeline__dot--muted";
+    const t = document.createElement("p");
+    t.className = "timeline__title";
+    t.textContent = title;
+    const m = document.createElement("p");
+    m.className = "timeline__meta";
+    m.textContent = meta;
+    li.appendChild(dot); li.appendChild(t); li.appendChild(m);
+    list.appendChild(li);
+  }
+
+  function render(info) {
+    const rows = $("provider-rows");
+    rows.textContent = "";
+    const select = $("t-name");
+    select.textContent = "";
+    (info.profiles || []).forEach((profile) => {
+      const tr = document.createElement("tr");
+      const status = document.createElement("td");
+      const avatar = document.createElement("span");
+      avatar.className = "avatar avatar-xs " + (profile.active ? "bg-avatar-3" : "bg-avatar-8");
+      status.appendChild(avatar);
+      tr.appendChild(status);
+      const name = document.createElement("td");
+      name.className = "fw-600 text-heading";
+      name.textContent = profile.name;
+      tr.appendChild(name);
+      const provider = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = "badge badge-soft-primary badge-pill";
+      badge.textContent = profile.provider;
+      provider.appendChild(badge);
+      tr.appendChild(provider);
+      const model = document.createElement("td");
+      model.className = "code-chip fs-7";
+      model.textContent = profile.model || "—";
+      tr.appendChild(model);
+      const key = document.createElement("td");
+      if (profile.has_key) {
+        const hint = document.createElement("span");
+        hint.className = "badge badge-soft-success badge-pill code-chip";
+        hint.textContent = profile.key_hint;
+        hint.title = "stored — never displayed in full anywhere";
+        key.appendChild(hint);
+      } else if (profile.ready) {
+        const local = document.createElement("span");
+        local.className = "badge badge-soft-secondary badge-pill";
+        local.textContent = "local, no key needed";
+        key.appendChild(local);
+      } else {
+        const missing = document.createElement("span");
+        missing.className = "badge badge-soft-warning badge-pill";
+        missing.textContent = "no key yet";
+        key.appendChild(missing);
+      }
+      tr.appendChild(key);
+      const active = document.createElement("td");
+      const chip = document.createElement("span");
+      chip.className = "badge badge-soft-" + (profile.active ? "success" : "secondary") + " badge-pill";
+      chip.textContent = profile.active ? "active" : "kept";
+      active.appendChild(chip);
+      tr.appendChild(active);
+
+      const actions = document.createElement("td");
+      actions.className = "text-end";
+      if (!profile.active) {
+        const activate = document.createElement("button");
+        activate.className = "btn btn-sm btn-white me-1";
+        activate.textContent = "activate";
+        activate.addEventListener("click", async () => {
+          try {
+            const out = await post("/api/settings/activate", { name: profile.name });
+            toast("Active provider", out.provider.provider + " · " + out.provider.model, "success");
+            load();
+          } catch (error) { toast("Refused", String(error.message || error), "danger"); }
+        });
+        actions.appendChild(activate);
+      }
+      const test = document.createElement("button");
+      test.className = "btn btn-sm btn-white me-1";
+      test.textContent = "test";
+      test.addEventListener("click", () => runTest(profile.name));
+      actions.appendChild(test);
+      const remove = document.createElement("button");
+      remove.className = "btn btn-sm btn-soft-danger";
+      remove.textContent = "remove";
+      remove.addEventListener("click", async () => {
+        if (!window.confirm("Remove " + profile.name + " and forget its key?")) return;
+        try {
+          await post("/api/settings/remove", { name: profile.name });
+          toast("Removed", profile.name, "secondary");
+          load();
+        } catch (error) { toast("Refused", String(error.message || error), "danger"); }
+      });
+      actions.appendChild(remove);
+      tr.appendChild(actions);
+      rows.appendChild(tr);
+
+      const option = document.createElement("option");
+      option.value = profile.name;
+      option.textContent = profile.name + " (" + profile.provider + ")";
+      select.appendChild(option);
+    });
+
+    if (!(info.profiles || []).length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 7;
+      td.className = "fs-7 text-muted-2";
+      td.textContent = "no providers yet — add one below";
+      tr.appendChild(td);
+      rows.appendChild(tr);
+    }
+
+    // header + sidebar state
+    const active = info.active;
+    $("active-name").value = active ? active.name + " · " + active.model : "no provider yet";
+    const pill = $("pill-provider");
+    pill.hidden = !active;
+    if (active) pill.textContent = "answering through: " + active.provider;
+    const sealed = $("pill-sealed");
+    sealed.hidden = false;
+    sealed.className = "badge badge-soft-" + (info.encrypted ? "success" : "warning") + " badge-pill";
+    sealed.textContent = info.encrypted ? "keys: sealed" : "keys: NOT sealed";
+    $("store-file").textContent = info.file || "";
+    $("store-state").textContent = info.encrypted ? "keys sealed at rest" : "keys stored unsealed (0600)";
+
+    const limits = $("limits");
+    limits.textContent = "";
+    (info.limits || []).forEach((line) => timelineItem(limits, line.split(":")[0], line.split(":").slice(1).join(":").trim() || "—"));
+
+    // the provider dropdown in the form
+    if ((info.presets || []).length && !state.presets.length) {
+      state.presets = info.presets;
+      const picker = $("f-provider");
+      picker.textContent = "";
+      info.presets.filter((preset) => preset.slug !== "mock" && preset.slug !== "none").forEach((preset) => {
+        const option = document.createElement("option");
+        option.value = preset.slug;
+        option.textContent = preset.slug + (preset.needs_key ? " (needs a key)" : " (local, no key)");
+        picker.appendChild(option);
+      });
+      picker.addEventListener("change", () => {
+        const preset = state.presets.find((item) => item.slug === picker.value);
+        if (preset) {
+          $("f-model").value = "";
+          $("f-model").placeholder = preset.model || "preset default";
+          $("f-base").value = "";
+          $("f-base").placeholder = preset.base_url || "preset default";
+        }
+      });
+    }
+  }
+
+  async function load() {
+    let info;
+    try {
+      info = await api("/api/settings");
+    } catch (error) {
+      $("offline-note").hidden = false;
+      return;
+    }
+    if (info.locked) {
+      $("locked-note").hidden = false;
+      $("locked-reason").textContent = info.locked;
+    }
+    render(info);
+  }
+
+  async function runTest(name) {
+    const out = $("t-out");
+    out.hidden = false;
+    out.textContent = "testing " + name + " …";
+    try {
+      const result = await post("/api/settings/test", { name });
+      out.textContent = JSON.stringify(result, null, 2);
+      toast(name, result.ok ? "answered: " + (result.reply || "").slice(0, 40) : "unavailable", result.ok ? "success" : "warning");
+    } catch (error) {
+      out.textContent = String(error.message || error);
+      toast("Test refused", String(error.code || error.message), "danger");
+    }
+  }
+
+  $("t-go").addEventListener("click", () => runTest($("t-name").value));
+
+  $("f-save").addEventListener("click", async () => {
+    const name = $("f-name").value.trim();
+    const provider = $("f-provider").value;
+    if (!name || !provider) {
+      toast("Missing", "a name and a provider are needed", "warning");
+      return;
+    }
+    const body = { name, provider, model: $("f-model").value.trim(), base_url: $("f-base").value.trim() };
+    const key = $("f-key").value;
+    if (key) body.api_key = key;  // blank keeps the stored one; that is the documented rule
+    try {
+      const result = await post("/api/settings/providers", body);
+      $("f-key").value = "";
+      toast("Saved", result.profile.name + " · " + result.provider.provider + (result.provider.online ? " · online" : ""), "success");
+      load();
+    } catch (error) {
+      toast("Refused", String(error.code || error.message || error), "danger");
+    }
+  });
+
+  $("grant-btn").addEventListener("click", () => {
+    const value = window.prompt(
+      "Owner grant\n\nPaste an owner-issued grant (python -m aegis owner issue …).\nDevelopment needs none; production refuses every change without one.",
+      state.token
+    );
+    if (value === null) return;
+    state.token = value.trim();
+    if (state.token) localStorage.setItem("zeno.token", state.token);
+    else localStorage.removeItem("zeno.token");
+    toast("Grant", state.token ? "stored in this browser" : "cleared", "secondary");
+    load();
+  });
+
+  load();
+  </script>
+</body>
+</html>

@@ -186,6 +186,35 @@ def _build_memory() -> Any:
     return MemoryStore(seal=False)
 
 
+def _build_provider_store() -> Any:
+    """The provider profiles (API keys, models), sealed when a key is set.
+
+    ``ZENO_MEMORY_KEY`` seals conversation memory and provider keys with the
+    same owner identity, so one key file protects both. When the file exists
+    but cannot be opened, the store is locked rather than clobbered: the server
+    still starts, still answers, and every settings view carries the reason.
+    """
+    from zeno.settings import ProviderStore, SettingsError
+
+    path = os.environ.get("ZENO_MEMORY_KEY", "").strip()
+    owner = None
+    if path:
+        try:
+            owner = ProviderStore.load_owner(path)
+        except Exception as error:  # noqa: BLE001 - the owner is told, not guessed at
+            print(
+                f"memory key {path!r} could not be used ({type(error).__name__}: {error}); "
+                "provider profiles will be stored UNSEALED",
+                file=sys.stderr,
+                flush=True,
+            )
+    try:
+        return ProviderStore(owner=owner)
+    except SettingsError as error:
+        print(f"provider profiles are locked: {error}", file=sys.stderr, flush=True)
+        return ProviderStore.locked_store(str(error))
+
+
 def _build_watchtower(mode: str, boundary: Any) -> Any:
     """Build the attacker-facing watchtower for this mode."""
     try:
@@ -255,7 +284,15 @@ class Playground:
         memory: Any = None,
         peers: Any = None,
     ) -> None:
-        self.provider = provider or resolve()
+        self.provider_store = _build_provider_store()
+        if provider is not None:
+            self.provider = provider
+        elif self.provider_store.active and self.provider_store.active in self.provider_store.profiles:
+            # A stored profile (settings page) outranks the environment: the
+            # owner picked it deliberately, after the environment was written.
+            self.provider = self.provider_store.provider_for(self.provider_store.active)
+        else:
+            self.provider = resolve()
         self.heuristic = HeuristicEncoder()
         self.kernel = default_kernel(generator=demo_generator)
         for name, tool in demo_tools().items():
@@ -364,6 +401,12 @@ class Playground:
             "online": self.provider.available(),
             "tokenizer": counting_method(),
         }
+
+    def apply_provider(self, name: str) -> Dict[str, Any]:
+        """Switch the live provider to a stored profile, and say what is now on."""
+        self.provider_store.activate(name)
+        self.provider = self.provider_store.provider_for(name)
+        return self.provider_info()
 
     # -- endpoints -------------------------------------------------------
     def encode(self, text: str) -> Dict[str, Any]:
@@ -851,6 +894,14 @@ class _Handler(BaseHTTPRequestHandler):
             if path == "/api/tools":
                 self._json(self.playground.tools())
                 return
+            if path in ("/settings", "/settings/"):
+                self._file("settings.html")
+                return
+            if path == "/api/settings":
+                if self._permit(path, action="read:settings", read=True):
+                    return
+                self._json(self.playground.provider_store.describe() | {"live": True})
+                return
             if path in ("/admin", "/admin/"):
                 # The admin console is a page: downloading it needs no grant, and
                 # every panel it can fill is authorized route by route.
@@ -1154,6 +1205,80 @@ class _Handler(BaseHTTPRequestHandler):
                         authorization=permit,
                     )
                 )
+                return
+            if path == "/api/settings/providers":
+                # Storing a key is effectful: it changes what the agent answers
+                # through, and in production it needs an owner grant.
+                if self._permit(path, action="settings:write", body=body, payload=str(body.get("name", "")).encode("utf-8")):
+                    return
+                from zeno.settings import SettingsError
+
+                try:
+                    profile = self.playground.provider_store.add(
+                        str(body.get("name", "")),
+                        str(body.get("provider", "")),
+                        model=str(body.get("model", "")),
+                        base_url=str(body.get("base_url", "")),
+                        api_key=body["api_key"] if isinstance(body.get("api_key"), str) else None,
+                    )
+                    if body.get("activate", True):
+                        self.playground.apply_provider(str(body.get("name", "")))
+                    self._json({"profile": profile, "provider": self.playground.provider_info()})
+                except SettingsError as error:
+                    self._json({"error": {"code": "ZN0003", "message": str(error)}}, 400)
+                return
+            if path == "/api/settings/activate":
+                if self._permit(path, action="settings:write", body=body, payload=str(body.get("name", "")).encode("utf-8")):
+                    return
+                from zeno.settings import SettingsError
+
+                try:
+                    self._json(
+                        {
+                            "profile": self.playground.apply_provider(str(body.get("name", ""))),
+                            "provider": self.playground.provider_info(),
+                        }
+                    )
+                except SettingsError as error:
+                    self._json({"error": {"code": "ZN0003", "message": str(error)}}, 400)
+                return
+            if path == "/api/settings/remove":
+                if self._permit(path, action="settings:write", body=body, payload=str(body.get("name", "")).encode("utf-8")):
+                    return
+                removed = self.playground.provider_store.remove(str(body.get("name", "")))
+                self._json({"removed": removed, "name": str(body.get("name", ""))})
+                return
+            if path == "/api/settings/test":
+                if self._permit(path, action="settings:test", body=body, payload=str(body.get("name", "")).encode("utf-8")):
+                    return
+                from zeno.settings import SettingsError
+
+                name = str(body.get("name", "")) or self.playground.provider_store.active
+                try:
+                    candidate = self.playground.provider_store.provider_for(name)
+                except SettingsError as error:
+                    self._json({"ok": False, "error": str(error)})
+                    return
+                if not candidate.available():
+                    self._json(
+                        {
+                            "ok": False,
+                            "error": "the provider reports itself unavailable (no key set, or no endpoint)",
+                            "provider": self.playground.provider_store.view(name),
+                        }
+                    )
+                    return
+                try:
+                    completion = candidate.complete("Reply with exactly: ok", max_tokens=8)
+                    self._json(
+                        {
+                            "ok": True,
+                            "reply": str(getattr(completion, "text", "")).strip()[:200],
+                            "provider": self.playground.provider_store.view(name),
+                        }
+                    )
+                except Exception as error:  # noqa: BLE001 - the provider's failure is the answer
+                    self._json({"ok": False, "error": f"{type(error).__name__}: {error}"})
                 return
             if path == "/api/check":
                 payload = str(body.get("payload", ""))
