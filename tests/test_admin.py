@@ -96,12 +96,14 @@ def test_the_console_assets_are_served_locally():
     A vendored asset that 404s is how the console silently degrades to an
     unstyled page -- exactly what this console was rebuilt to avoid.
     """
-    from zeno.server import WEB_ROOT, Playground
+    from zeno.server import ASSETS_ROOT, Playground
 
-    for relative in ("assets/css/bootstrap.min.css", "assets/js/chart.umd.js",
-                     "assets/js/theme.js", "assets/fonts/inter/files/inter-latin-400.woff2",
-                     "assets/icons/bootstrap-icons/fonts/bootstrap-icons.woff2"):
-        assert (WEB_ROOT / relative).is_file(), f"missing vendored asset: {relative}"
+    # the kit lives at the repository root so the Pages site serves it with the
+    # same relative paths the local server uses
+    for relative in ("css/bootstrap.min.css", "js/chart.umd.js",
+                     "js/theme.js", "fonts/inter/files/inter-latin-400.woff2",
+                     "icons/bootstrap-icons/fonts/bootstrap-icons.woff2", "CREDITS.md"):
+        assert (ASSETS_ROOT / relative).is_file(), f"missing vendored asset: {relative}"
 
     httpd, base = _serve(Playground())
     try:

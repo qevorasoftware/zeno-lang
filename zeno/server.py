@@ -76,6 +76,12 @@ WEB_ROOT = Path(__file__).resolve().parent / "web"
 #: :data:`ROOT_FILES` are servable, so this is not a path-traversal surface.
 ROOT = WEB_ROOT.parent.parent
 ROOT_FILES = ("dashboard.html", "dashboard-data.json")
+
+#: The UI kit (Bootstrap, icons, fonts, the Qevora theme) lives at the repository
+#: root so the GitHub Pages site serves it next to ``dashboard.html`` with the
+#: same relative paths the local server uses. One copy of the files, every
+#: surface.
+ASSETS_ROOT = ROOT / "assets"
 MAX_BODY = 256 * 1024
 
 #: Origins allowed to call this server from a different page. The dashboard on
@@ -946,10 +952,26 @@ class _Handler(BaseHTTPRequestHandler):
             if path.startswith("/static/"):
                 self._file(path.removeprefix("/static/"))
             if path.startswith("/assets/"):
-                # The admin console's UI kit is vendored under zeno/web/assets
-                # and served from there: no CDN, so the console renders even
-                # where third-party hosts are blocked.
-                self._file(path.removeprefix("/"))
+                # The UI kit is vendored at the repository root and served from
+                # there: no CDN, so every page renders even where third-party
+                # hosts are blocked.
+                target = (ASSETS_ROOT / path.removeprefix("/assets/")).resolve()
+                if ASSETS_ROOT not in target.parents:
+                    self._send(403, b"forbidden", "text/plain; charset=utf-8")
+                    return
+                if not target.is_file():
+                    self._send(404, b"not found", "text/plain; charset=utf-8")
+                    return
+                suffix = target.suffix.lower()
+                content_type = {
+                    ".css": "text/css; charset=utf-8",
+                    ".js": "text/javascript; charset=utf-8",
+                    ".json": "application/json",
+                    ".svg": "image/svg+xml",
+                    ".woff2": "font/woff2",
+                    ".woff": "font/woff",
+                }.get(suffix, "application/octet-stream")
+                self._send(200, target.read_bytes(), content_type)
                 return
             self._json({"error": {"code": "ZN0000", "message": f"no route {path}"}}, 404)
         except Exception as exc:  # pragma: no cover - defensive
