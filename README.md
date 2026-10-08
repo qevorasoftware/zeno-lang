@@ -36,7 +36,7 @@ reference the whole toolchain is tested against.
 
 ---
 
-**Deploying:** `render.yaml` is a Render blueprint — `zeno serve --production` with owner grants; GUIDE.md §6 walks the whole thing (owner key export, grants, honest limits).
+**Deploying:** `render.yaml` is a Render blueprint — it ships the open development posture (the site runs for anyone, no grant asked); adding `--production` to the start command turns on grants, nonces and opaque refusals. GUIDE.md §6 walks both postures (owner key export, grants, honest limits).
 
 ## The project guide
 

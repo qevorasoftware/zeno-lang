@@ -346,10 +346,13 @@ $("ask").onclick = doAsk;
 $("check").onclick = doCheck;
 
 api("/api/health").then((data) => {
+  // the health payload names the enforcement posture: this line is how the
+  // owner checks at a glance which posture (and therefore which deploy) is live
+  const mode = data.enforcement ? " · enforcement: " + data.enforcement : "";
   $("status").innerHTML = data.online
-    ? '<span class="good">● live model</span> · ' + data.provider + " · " + data.model
-    : '<span class="mid">● offline mode</span> · deterministic demo tools';
-  $("provider").textContent = "provider: " + data.provider + " · tokenizer: " + data.tokenizer;
+    ? '<span class="good">● live model</span> · ' + data.provider + " · " + data.model + mode
+    : '<span class="mid">● offline mode</span> · deterministic demo tools' + mode;
+  $("provider").textContent = "provider: " + data.provider + " · tokenizer: " + data.tokenizer + mode;
 }).catch(() => { $("status").textContent = "server unreachable"; });
 
 doAsk();

@@ -4,6 +4,11 @@
 # New > Blueprint > pick this repo, and the service below is created exactly as
 # written. The env var marked "sync: false" is a secret you paste in Render's
 # dashboard; nothing secret belongs in a file.
+#
+# POSTURE: this blueprint starts the server in the development posture — the
+# site works for anyone who opens it, no grant asked. The owner chose this
+# for now. To return to the production posture, add --production back to
+# startCommand: the env vars below are already shaped for it (GUIDE.md §6).
 services:
   - type: web
     name: zeno
@@ -11,10 +16,12 @@ services:
     plan: free
     region: oregon
     buildCommand: python -m pip install -e .[aegis]
-    startCommand: python -m zeno serve --host 0.0.0.0 --port $PORT --production
+    startCommand: python -m zeno serve --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
-      # Production for a surface driven by web pages: grants, nonces, the
+      # Dormant while the startCommand above runs the development posture;
+      # it matters the moment --production returns. Production for a surface
+      # driven by web pages: grants, nonces, the
       # audited ledger, the sentinel, the PQC backend and opaque refusals are
       # all mandatory; the four layers a page cannot physically satisfy
       # (biometric, zkp, polymorphic, device lock) are not required and

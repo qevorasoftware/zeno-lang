@@ -173,7 +173,20 @@ broken promises.
 **ઝડપી રીત (Gujarati):**
 
 1. **Render માં:** New → Blueprint → આ repo પસંદ કરો → `render.yaml` બધું જ રાખી લેશે
-   (build: `pip install -e .[aegis]`, start: `zeno serve --production`, health: `/api/health`).
+   (build: `pip install -e .[aegis]`, start: `zeno serve`, health: `/api/health`).
+2. **એટલે જ ચાલશે.** Blueprint હમણાં માટે **development posture** માં છે (owner એ એમ જ
+   કહ્યું છે): ન grant જોઈએ, ન nonce, ન watchtower — કોઈ પણ page ખોલીને Run/Save
+   સીધું ચાલશે. Playground ની status line માં `enforcement: development` લખાયેલું
+   આવશે — એ જોઈને એક નજરમાં ખબર પડે કે નવો કોડ live છે (જૂનો હોય તો Ctrl+Shift+R).
+
+**⚠️ ખુલ્લી સાઇટની સાચી વાત:** development posture માં URL જાણનાર **કોઈ પણ** બધું ચલાવી
+શકે — run, settings બદલવી, provider save કરવો. એટલે અસલી API key ક્યારેય public સર્વર
+પર નહીં (free plan માં તો deploy પર ભૂંસાઈ પણ જાય). સિક્યુરિટી પાછી જોઈએ ત્યારે નીચેનાં
+પગલાં — એ એક શબ્દનું અંતર છે.
+
+**સિક્યુરિટી પાછી ચાલુ કરવી (production posture):**
+1. Render ના startCommand ના છેલ્લે `--production` ઉમેરો → deploy.
+   (`python -m zeno serve --host 0.0.0.0 --port $PORT --production`)
 2. **તમારા કમ્પ્યુટર પર** (એક જ વાર):
    `python -m aegis owner init` → `python -m aegis owner export-public --out owner-public.json`
 3. **Render ના env માં** `ZENO_OWNER_PUBLIC` = એ file નું JSON પેસ્ટ કરો.

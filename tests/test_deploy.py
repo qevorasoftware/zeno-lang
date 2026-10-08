@@ -291,7 +291,15 @@ def test_the_render_blueprint_matches_the_real_commands():
         encoding="utf-8"
     )
     assert "python -m pip install -e .[aegis]" in yaml_text
-    assert "python -m zeno serve --host 0.0.0.0 --port $PORT --production" in yaml_text
+    start_line = next(
+        l for l in yaml_text.splitlines()
+        if l.strip().startswith("startCommand:")
+    )
+    assert "python -m zeno serve --host 0.0.0.0 --port $PORT" in start_line
+    assert "--production" not in start_line, (
+        "the blueprint ships the open development posture the owner asked for; "
+        "production is the documented one-word upgrade in GUIDE.md §6"
+    )
     assert "ZENO_OWNER_PUBLIC" in yaml_text
     assert "sync: false" in yaml_text  # secrets are pasted, never committed
     # the browser profile is the documented posture for a page-driven service
@@ -375,6 +383,9 @@ def test_the_playground_runs_with_a_header_grant_and_names_a_scope_gap(owner, mo
 
     httpd, base = _serve(playground)
     try:
+        status, health = _call(base, "GET", "/api/health")
+        assert status == 200 and health["enforcement"] == "production", health
+
         status, ran = _call(
             base, "POST", "/api/run", body={"payload": "@LOC[TYO] -> ?WX"}, token=runner
         )
