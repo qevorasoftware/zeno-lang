@@ -235,10 +235,12 @@ def test_the_server_renders_pages_with_live_data(site):
     assert status == 200 and "text/html" in headers.get("Content-Type", "")
     for truth in ("AI providers", "Your providers"):
         assert truth in page
-    # the voice page carries the request-time pills
+    # the voice page carries the request-time pills — whatever the server's
+    # actual mode is (development, production, or unavailable without the
+    # crypto wheels: the pill states the truth it was given)
     status, page, _ = _get(base, "/voice")
     assert status == 200
-    assert "enforcement: development" in page
+    assert f"enforcement: {playground.enforcement}" in page
     assert "memory: " in page
     # and the .html aliases still answer, because the pages cross-link that way
     for path in ("/settings.html", "/admin.html", "/voice.html", "/dashboard.html", "/playground.html"):
