@@ -36,6 +36,12 @@ reference the whole toolchain is tested against.
 
 ---
 
+## The project guide
+
+New here? **[`GUIDE.md`](GUIDE.md)** is the one-file tour: what the project is,
+every command, how each piece works, what is verified today, and a ranked list
+of what to build next (with a Gujarati quick-start at the top).
+
 ## Install
 
 ```bash
