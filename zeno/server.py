@@ -840,6 +840,11 @@ class _Handler(BaseHTTPRequestHandler):
             if path == "/api/tools":
                 self._json(self.playground.tools())
                 return
+            if path in ("/admin", "/admin/"):
+                # The admin console is a page: downloading it needs no grant, and
+                # every panel it can fill is authorized route by route.
+                self._file("admin.html")
+                return
             if path in ("/voice", "/voice/"):
                 # The page is a page: it needs no authorization to be downloaded,
                 # and everything it can *do* is authorized route by route.
@@ -876,6 +881,31 @@ class _Handler(BaseHTTPRequestHandler):
                 if self._permit(path, action="read:agents", read=True):
                     return
                 self._json({"agents": self.playground.peers.peers(), "bridge": self.playground.peers.describe()})
+                return
+            if path == "/api/admin/decisions":
+                if self._permit(path, action="read:decisions", read=True):
+                    return
+                boundary = self.playground.boundary
+                if boundary is None:
+                    self._json({"enabled": False, "decisions": []})
+                    return
+                query = self._query()
+                try:
+                    limit = max(1, min(int(query.get("limit", "25")), 100))
+                except ValueError:
+                    limit = 25
+                # The owner's view of each decision: code, sentence, layer
+                # verdicts -- exactly what a caller is never shown (S20/S21/S23).
+                decisions = [item.owner_view() for item in list(boundary.recent)[:limit]]
+                self._json(
+                    {
+                        "enabled": True,
+                        "attempts": boundary.attempts,
+                        "permitted": boundary.permitted,
+                        "refused": boundary.refused,
+                        "decisions": decisions,
+                    }
+                )
                 return
             if path == "/api/voice/health":
                 self._json(
