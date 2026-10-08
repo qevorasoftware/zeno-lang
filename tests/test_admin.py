@@ -41,13 +41,18 @@ def _serve(playground):
 
 
 def _get(base: str, path: str, headers: dict | None = None) -> tuple[int, dict | str]:
+    """GET a route; JSON bodies become dicts, text stays text, binary survives."""
     request = urllib.request.Request(base + path, headers=headers or {})
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
-            body = response.read().decode("utf-8")
+            raw = response.read()
+            kind = response.headers.get("Content-Type", "")
+            if "font/" in kind or "octet-stream" in kind:
+                return response.status, raw  # binary: bytes, untouched
+            body = raw.decode("utf-8", errors="replace")
             return response.status, (json.loads(body) if body.lstrip().startswith("{") else body)
     except urllib.error.HTTPError as error:
-        payload = error.read().decode("utf-8")
+        payload = error.read().decode("utf-8", errors="replace")
         try:
             return error.code, json.loads(payload)
         except ValueError:
@@ -64,9 +69,15 @@ def test_the_admin_console_is_served_and_names_its_contract():
     try:
         status, page = _get(base, "/admin")
         assert status == 200 and isinstance(page, str)
-        assert "Zeno Admin" in page
-        # it is the Bootstrap 5 kit the brief asked for
-        assert "bootstrap@5.3" in page and "bootstrap-icons" in page
+        assert "Zeno" in page and "AEGIS" in page
+        # the house UI kit, vendored locally: no CDN, so the console renders even
+        # where third-party hosts are blocked (which is where owners console from)
+        for asset in ("/assets/css/bootstrap.min.css", "/assets/icons/bootstrap-icons/bootstrap-icons.min.css",
+                      "/assets/css/style.css", "/assets/js/chart.umd.js", "/assets/js/theme.js"):
+            assert asset in page, f"the console must load its kit locally: {asset}"
+        assert "cdn.jsdelivr.net" not in page and "unpkg.com" not in page and "googleapis.com" not in page
+        # light and dark both exist: the pre-paint switch, the toggle, the storage key
+        assert "qevora-theme" in page and "data-theme-toggle" in page and "data-bs-theme" in page
         # and it says what it is not: a view, not a control surface
         assert "not a control surface" in page
         # the honesty box is on the page, not in a footnote elsewhere
@@ -74,6 +85,35 @@ def test_the_admin_console_is_served_and_names_its_contract():
         # every panel it fills is a real, gated route
         for route in ("/api/health", "/api/admin/decisions", "/api/watchtower", "/api/memory/sessions", "/api/agents"):
             assert route in page, f"the console must fill its panels from {route}"
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_the_console_assets_are_served_locally():
+    """The kit's files exist in the repo and the server hands them over.
+
+    A vendored asset that 404s is how the console silently degrades to an
+    unstyled page -- exactly what this console was rebuilt to avoid.
+    """
+    from zeno.server import WEB_ROOT, Playground
+
+    for relative in ("assets/css/bootstrap.min.css", "assets/js/chart.umd.js",
+                     "assets/js/theme.js", "assets/fonts/inter/files/inter-latin-400.woff2",
+                     "assets/icons/bootstrap-icons/fonts/bootstrap-icons.woff2"):
+        assert (WEB_ROOT / relative).is_file(), f"missing vendored asset: {relative}"
+
+    httpd, base = _serve(Playground())
+    try:
+        for path, binary in (("assets/css/style.css", False), ("assets/js/app.js", False),
+                             ("assets/icons/bootstrap-icons/fonts/bootstrap-icons.woff2", True),
+                             ("assets/fonts/inter/files/inter-latin-400.woff2", True)):
+            status, body = _get(base, "/" + path)
+            assert status == 200, f"{path} is not served"
+            if binary:
+                assert isinstance(body, bytes) and len(body) > 10000, f"{path} came back wrong"
+            else:
+                assert isinstance(body, str) and len(body) > 100, f"{path} came back suspiciously small"
     finally:
         httpd.shutdown()
         httpd.server_close()

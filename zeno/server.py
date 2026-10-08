@@ -788,6 +788,11 @@ class _Handler(BaseHTTPRequestHandler):
             ".js": "text/javascript; charset=utf-8",
             ".json": "application/json",
             ".svg": "image/svg+xml",
+            # The admin console's UI kit ships its fonts and icons as woff2 so
+            # the page has no CDN dependency: it renders even where third-party
+            # hosts are blocked, which is exactly where an owner consoles from.
+            ".woff2": "font/woff2",
+            ".woff": "font/woff",
         }.get(suffix, "application/octet-stream")
         self._send(200, target.read_bytes(), content_type)
 
@@ -940,6 +945,11 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/static/"):
                 self._file(path.removeprefix("/static/"))
+            if path.startswith("/assets/"):
+                # The admin console's UI kit is vendored under zeno/web/assets
+                # and served from there: no CDN, so the console renders even
+                # where third-party hosts are blocked.
+                self._file(path.removeprefix("/"))
                 return
             self._json({"error": {"code": "ZN0000", "message": f"no route {path}"}}, 404)
         except Exception as exc:  # pragma: no cover - defensive

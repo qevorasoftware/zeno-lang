@@ -329,11 +329,13 @@ no maximum peer count is imposed — concurrency (16 at a time) and timeout are 
 bounds; a peer that fails is reported as its own failure; nothing verifies what a
 remote agent claims about itself beyond the transport succeeding.
 
-The **admin console** lives at `/admin` on the same server: a Bootstrap 5
-dashboard over the live posture — decisions (owner view: codes and layer
-verdicts a caller never sees), the adversary feed, sealed-memory sessions and
-search, connected agents, and the eight layers with what this deployment
-actually requires. It is a view, not a control surface: nothing on it can weaken
+The **admin console** lives at `/admin` on the same server, built with the
+house **Qevora AI SaaS UI** kit (Bootstrap 5, Inter, light/dark without a
+flash) and served from assets vendored into the repo — no CDN, so it renders
+even where third-party hosts are blocked. It is a dashboard over the live
+posture: decisions (owner view: codes and layer verdicts a caller never sees),
+the adversary feed, sealed-memory sessions and search, connected agents, and
+the eight layers with what this deployment actually requires. It is a view, not a control surface: nothing on it can weaken
 a policy or issue a grant, and every panel is gated route by route
 (`read:decisions`, `read:memory`, `read:agents` — the same owner grants as the
 CLI).

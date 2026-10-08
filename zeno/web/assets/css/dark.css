@@ -1,0 +1,178 @@
+/* ==========================================================================
+   Qevora AI SaaS — Bootstrap 5 Admin & UI Kit
+   dark.css — Dark theme refinements
+   --------------------------------------------------------------------------
+   Core colour tokens for dark mode live in style.css under
+   [data-bs-theme="dark"]. This file contains the component-level polish that
+   only the dark theme needs (contrast corrections, image/asset handling,
+   Bootstrap defaults that cannot be expressed with a token alone).
+   ========================================================================== */
+
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* Images and media should never glare in dark mode */
+[data-bs-theme="dark"] img:not(.no-dim) {
+  opacity: 0.95;
+}
+
+/* --- Sidebar ------------------------------------------------------------ */
+
+[data-bs-theme="dark"] .q-sidebar {
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.02);
+}
+
+[data-bs-theme="dark"] .q-brand__mark {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Header ------------------------------------------------------------- */
+
+[data-bs-theme="dark"] .q-header {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+[data-bs-theme="dark"] .q-icon-btn__dot {
+  border-color: var(--q-surface);
+}
+
+/* --- Cards -------------------------------------------------------------- */
+
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .kpi-tile,
+[data-bs-theme="dark"] .pricing-card,
+[data-bs-theme="dark"] .component-tile,
+[data-bs-theme="dark"] .kanban__card {
+  background-color: var(--q-surface);
+}
+
+[data-bs-theme="dark"] .card-profile__avatar {
+  border-color: var(--q-surface);
+}
+
+/* --- Forms -------------------------------------------------------------- */
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+  background-color: var(--q-surface-alt);
+  color: var(--q-body-color);
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+  background-color: var(--q-surface);
+}
+
+[data-bs-theme="dark"] .form-check-input {
+  background-color: var(--q-surface-alt);
+}
+
+[data-bs-theme="dark"] .form-check-input:checked {
+  background-color: var(--q-primary);
+}
+
+[data-bs-theme="dark"] .form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238d96b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* --- Tables ------------------------------------------------------------- */
+
+[data-bs-theme="dark"] .table > thead th {
+  background: var(--q-surface-alt);
+  color: var(--q-muted-color);
+}
+
+[data-bs-theme="dark"] .table {
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.02);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.035);
+  --bs-table-color: var(--q-body-color);
+}
+
+/* --- Dropdowns / modals / offcanvas ------------------------------------- */
+
+[data-bs-theme="dark"] .dropdown-menu,
+[data-bs-theme="dark"] .modal-content,
+[data-bs-theme="dark"] .offcanvas,
+[data-bs-theme="dark"] .toast,
+[data-bs-theme="dark"] .popover {
+  background-color: var(--q-surface);
+  border-color: var(--q-border-color);
+}
+
+[data-bs-theme="dark"] .dropdown-notify__foot {
+  background: var(--q-surface-alt);
+}
+
+[data-bs-theme="dark"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+[data-bs-theme="dark"] .modal-backdrop.show {
+  opacity: 0.72;
+}
+
+/* --- Accordion ---------------------------------------------------------- */
+
+[data-bs-theme="dark"] .accordion-button {
+  background-color: var(--q-surface-alt);
+}
+
+[data-bs-theme="dark"] .accordion-button:not(.collapsed) {
+  color: var(--q-primary);
+  background-color: rgba(var(--q-primary-rgb), 0.12);
+}
+
+[data-bs-theme="dark"] .accordion-button::after {
+  filter: invert(1) brightness(180%);
+}
+
+[data-bs-theme="dark"] .accordion-item {
+  background-color: transparent;
+}
+
+/* --- Component showcase ------------------------------------------------- */
+
+[data-bs-theme="dark"] .demo-preview {
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-color: var(--q-surface);
+}
+
+[data-bs-theme="dark"] .demo-code {
+  border-top: 1px solid var(--q-border-color);
+}
+
+/* --- Kanban ------------------------------------------------------------- */
+
+[data-bs-theme="dark"] .kanban__col {
+  background: var(--q-surface-alt);
+}
+
+/* --- Avatars ------------------------------------------------------------ */
+
+[data-bs-theme="dark"] .avatar-more {
+  background: var(--q-surface-hover);
+  color: var(--q-body-color);
+}
+
+/* --- Auth --------------------------------------------------------------- */
+
+[data-bs-theme="dark"] .auth-aside {
+  background: linear-gradient(150deg, #0b1020 0%, #312e81 60%, #0891b2 150%);
+}
+
+/* --- Scrollbar ---------------------------------------------------------- */
+
+[data-bs-theme="dark"] .q-scroll {
+  scrollbar-color: var(--q-border-strong) transparent;
+}
+
+/* --- Charts ------------------------------------------------------------- */
+/* Chart.js grids are configured per page in JavaScript; these tokens are
+   read by assets/js/app.js so every chart follows the active theme. */
+
+[data-bs-theme="dark"] .chart-holder {
+  --q-chart-grid: rgba(255, 255, 255, 0.06);
+}

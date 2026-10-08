@@ -1,0 +1,2818 @@
+/* ==========================================================================
+   Qevora AI SaaS — Bootstrap 5 Admin & UI Kit
+   components.css — Reusable component layer built on Bootstrap 5
+   --------------------------------------------------------------------------
+   1.  Bootstrap brand-variable overrides
+   2.  Buttons
+   3.  Cards
+   4.  KPI / stat cards
+   5.  Avatars
+   6.  Badges & pills
+   7.  Alerts
+   8.  Dropdowns
+   9.  Form controls
+   10. Tables
+   11. Progress
+   12. Timeline
+   13. Activity feed
+   14. Kanban
+   15. Chat
+   16. Pricing
+   17. Empty / error / loading states
+   18. Code showcase (component library)
+   19. Auth pages
+   20. Misc (nav pills, list group, accordion, modal, toast, tooltip)
+   ========================================================================== */
+
+/* ==========================================================================
+   1. BOOTSTRAP BRAND-VARIABLE OVERRIDES
+   ========================================================================== */
+
+.btn-primary {
+  --bs-btn-bg: var(--q-primary);
+  --bs-btn-border-color: var(--q-primary);
+  --bs-btn-hover-bg: var(--q-primary-hover);
+  --bs-btn-hover-border-color: var(--q-primary-hover);
+  --bs-btn-active-bg: var(--q-primary-active);
+  --bs-btn-active-border-color: var(--q-primary-active);
+  --bs-btn-disabled-bg: var(--q-primary);
+  --bs-btn-disabled-border-color: var(--q-primary);
+  --bs-btn-focus-shadow-rgb: var(--q-primary-rgb);
+  --bs-btn-color: #fff;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-color: #fff;
+  --bs-btn-disabled-color: #fff;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--q-primary);
+  --bs-btn-border-color: var(--q-primary);
+  --bs-btn-hover-bg: var(--q-primary);
+  --bs-btn-hover-border-color: var(--q-primary);
+  --bs-btn-active-bg: var(--q-primary-active);
+  --bs-btn-active-border-color: var(--q-primary-active);
+  --bs-btn-disabled-color: var(--q-primary);
+  --bs-btn-disabled-border-color: var(--q-primary);
+  --bs-btn-focus-shadow-rgb: var(--q-primary-rgb);
+}
+
+.btn-success {
+  --bs-btn-bg: var(--q-success);
+  --bs-btn-border-color: var(--q-success);
+  --bs-btn-hover-bg: var(--q-success-hover);
+  --bs-btn-hover-border-color: var(--q-success-hover);
+  --bs-btn-active-bg: var(--q-success-hover);
+  --bs-btn-active-border-color: var(--q-success-hover);
+  --bs-btn-focus-shadow-rgb: var(--q-success-rgb);
+}
+
+.btn-danger {
+  --bs-btn-bg: var(--q-danger);
+  --bs-btn-border-color: var(--q-danger);
+  --bs-btn-hover-bg: var(--q-danger-hover);
+  --bs-btn-hover-border-color: var(--q-danger-hover);
+  --bs-btn-active-bg: var(--q-danger-hover);
+  --bs-btn-active-border-color: var(--q-danger-hover);
+  --bs-btn-focus-shadow-rgb: var(--q-danger-rgb);
+}
+
+.btn-warning {
+  --bs-btn-bg: var(--q-warning);
+  --bs-btn-border-color: var(--q-warning);
+  --bs-btn-hover-bg: var(--q-warning-hover);
+  --bs-btn-hover-border-color: var(--q-warning-hover);
+  --bs-btn-active-bg: var(--q-warning-hover);
+  --bs-btn-active-border-color: var(--q-warning-hover);
+  --bs-btn-focus-shadow-rgb: var(--q-warning-rgb);
+  --bs-btn-color: #1b1a12;
+  --bs-btn-hover-color: #1b1a12;
+  --bs-btn-active-color: #1b1a12;
+}
+
+.btn-info {
+  --bs-btn-bg: var(--q-info);
+  --bs-btn-border-color: var(--q-info);
+  --bs-btn-hover-bg: var(--q-info-hover);
+  --bs-btn-hover-border-color: var(--q-info-hover);
+  --bs-btn-active-bg: var(--q-info-hover);
+  --bs-btn-active-border-color: var(--q-info-hover);
+  --bs-btn-focus-shadow-rgb: var(--q-info-rgb);
+}
+
+.text-bg-primary {
+  background-color: var(--q-primary) !important;
+  color: #fff !important;
+}
+
+.text-bg-success {
+  background-color: var(--q-success) !important;
+  color: #fff !important;
+}
+
+.text-bg-warning {
+  background-color: var(--q-warning) !important;
+  color: #1b1a12 !important;
+}
+
+.text-bg-danger {
+  background-color: var(--q-danger) !important;
+  color: #fff !important;
+}
+
+.text-bg-info {
+  background-color: var(--q-info) !important;
+  color: #fff !important;
+}
+
+/* ==========================================================================
+   2. BUTTONS
+   ========================================================================== */
+
+.btn {
+  --bs-btn-font-size: 0.875rem;
+  --bs-btn-font-weight: 500;
+  --bs-btn-padding-y: 0.5rem;
+  --bs-btn-padding-x: 1rem;
+  --bs-btn-border-radius: var(--q-radius-sm);
+  --bs-btn-focus-box-shadow: 0 0 0 3px rgba(var(--q-primary-rgb), 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all var(--q-transition);
+}
+
+.btn i {
+  font-size: 1.05em;
+  line-height: 1;
+}
+
+.btn-lg {
+  --bs-btn-font-size: 0.9375rem;
+  --bs-btn-padding-y: 0.6875rem;
+  --bs-btn-padding-x: 1.4rem;
+  --bs-btn-border-radius: var(--q-radius);
+}
+
+.btn-sm {
+  --bs-btn-font-size: 0.8125rem;
+  --bs-btn-padding-y: 0.375rem;
+  --bs-btn-padding-x: 0.75rem;
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+.btn-icon.btn-sm {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.btn-icon.btn-lg {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+}
+
+/* Soft / tonal buttons — a Qevora UI Kit extension */
+.btn-soft-primary {
+  --bs-btn-color: var(--q-primary);
+  --bs-btn-bg: var(--q-primary-soft);
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: var(--q-primary-active);
+  --bs-btn-hover-bg: rgba(var(--q-primary-rgb), 0.18);
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-color: var(--q-primary-active);
+  --bs-btn-active-bg: rgba(var(--q-primary-rgb), 0.24);
+}
+
+.btn-soft-success {
+  --bs-btn-color: var(--q-success-hover);
+  --bs-btn-bg: var(--q-success-soft);
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-bg: rgba(var(--q-success-rgb), 0.2);
+  --bs-btn-hover-color: var(--q-success-hover);
+  --bs-btn-hover-border-color: transparent;
+}
+
+.btn-soft-danger {
+  --bs-btn-color: var(--q-danger-hover);
+  --bs-btn-bg: var(--q-danger-soft);
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-bg: rgba(var(--q-danger-rgb), 0.2);
+  --bs-btn-hover-color: var(--q-danger-hover);
+  --bs-btn-hover-border-color: transparent;
+}
+
+.btn-soft-warning {
+  --bs-btn-color: var(--q-warning-hover);
+  --bs-btn-bg: var(--q-warning-soft);
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-bg: rgba(var(--q-warning-rgb), 0.2);
+  --bs-btn-hover-color: var(--q-warning-hover);
+  --bs-btn-hover-border-color: transparent;
+}
+
+.btn-soft-info {
+  --bs-btn-color: var(--q-info-hover);
+  --bs-btn-bg: var(--q-info-soft);
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-bg: rgba(var(--q-info-rgb), 0.2);
+  --bs-btn-hover-color: var(--q-info-hover);
+  --bs-btn-hover-border-color: transparent;
+}
+
+.btn-soft-secondary {
+  --bs-btn-color: var(--q-body-color);
+  --bs-btn-bg: var(--q-surface-hover);
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-bg: var(--q-border-color);
+  --bs-btn-hover-color: var(--q-heading-color);
+  --bs-btn-hover-border-color: transparent;
+}
+
+/* Ghost button */
+.btn-ghost {
+  --bs-btn-color: var(--q-body-color);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-bg: var(--q-surface-hover);
+  --bs-btn-hover-color: var(--q-heading-color);
+  --bs-btn-hover-border-color: transparent;
+}
+
+.btn-white {
+  --bs-btn-bg: var(--q-surface);
+  --bs-btn-border-color: var(--q-border-color);
+  --bs-btn-color: var(--q-heading-color);
+  --bs-btn-hover-bg: var(--q-surface-hover);
+  --bs-btn-hover-border-color: var(--q-border-strong);
+  --bs-btn-hover-color: var(--q-heading-color);
+}
+
+/* Gradient brand button */
+.btn-gradient {
+  --bs-btn-color: #fff;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-border-color: transparent;
+  background-image: linear-gradient(120deg, var(--q-primary) 0%, var(--q-accent) 140%);
+  border: 0;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(var(--q-primary-rgb), 0.3);
+}
+
+.btn-gradient:hover,
+.btn-gradient:focus {
+  color: #fff;
+  filter: brightness(1.06);
+}
+
+/* ==========================================================================
+   3. CARDS
+   ========================================================================== */
+
+.card {
+  --bs-card-bg: var(--q-surface);
+  --bs-card-border-color: var(--q-border-color);
+  --bs-card-border-radius: var(--q-radius-lg);
+  --bs-card-inner-border-radius: calc(var(--q-radius-lg) - 1px);
+  --bs-card-cap-bg: transparent;
+  --bs-card-cap-padding-y: 1rem;
+  --bs-card-cap-padding-x: 1.25rem;
+  --bs-card-spacer-y: 1.25rem;
+  --bs-card-spacer-x: 1.25rem;
+  box-shadow: var(--q-shadow-xs);
+  transition: box-shadow var(--q-transition), transform var(--q-transition);
+}
+
+.card-header {
+  border-bottom: 1px solid var(--q-border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.125rem;
+  color: var(--q-heading-color);
+}
+
+.card-subtitle {
+  font-size: 0.8125rem;
+  color: var(--q-muted-color);
+  margin-bottom: 0;
+}
+
+.card-hover:hover {
+  box-shadow: var(--q-shadow);
+  transform: translateY(-2px);
+}
+
+.card-glass {
+  background: var(--q-surface);
+  border: 1px solid var(--q-border-color);
+  backdrop-filter: blur(10px);
+}
+
+.card-stat {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-stat__label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--q-muted-color);
+  margin-bottom: 0.5rem;
+}
+
+.card-stat__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--q-heading-color);
+  line-height: 1.15;
+  margin-bottom: 0.5rem;
+}
+
+.card-stat__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--q-radius);
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  flex: 0 0 auto;
+}
+
+.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--q-radius-xs);
+}
+
+.trend-up {
+  color: var(--q-success-hover);
+  background: var(--q-success-soft);
+}
+
+.trend-down {
+  color: var(--q-danger-hover);
+  background: var(--q-danger-soft);
+}
+
+.trend-flat {
+  color: var(--q-muted-color);
+  background: var(--q-surface-hover);
+}
+
+[data-bs-theme="dark"] .trend-up { color: var(--q-success); }
+[data-bs-theme="dark"] .trend-down { color: var(--q-danger); }
+
+/* Sparkline holder */
+.card-stat__spark {
+  height: 42px;
+  margin-top: 0.25rem;
+}
+
+/* Feature card */
+.card-feature {
+  text-align: start;
+  height: 100%;
+}
+
+.card-feature__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--q-radius);
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  margin-bottom: 1rem;
+  background: var(--q-primary-soft);
+  color: var(--q-primary);
+}
+
+/* Profile card */
+.card-profile__cover {
+  height: 96px;
+  border-start-start-radius: var(--q-radius-lg);
+  border-start-end-radius: var(--q-radius-lg);
+  background: linear-gradient(120deg, var(--q-primary) 0%, var(--q-accent) 130%);
+}
+
+.card-profile__avatar {
+  margin-top: -38px;
+  border: 4px solid var(--q-surface);
+  border-radius: 50%;
+}
+
+/* ==========================================================================
+   4. KPI / STAT TILES
+   ========================================================================== */
+
+.kpi-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--q-surface);
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius-lg);
+  box-shadow: var(--q-shadow-xs);
+  height: 100%;
+}
+
+.kpi-tile__body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.kpi-tile__label {
+  font-size: 0.8125rem;
+  color: var(--q-muted-color);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.kpi-tile__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--q-heading-color);
+  line-height: 1.2;
+}
+
+/* ==========================================================================
+   5. AVATARS
+   ========================================================================== */
+
+.avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: #fff;
+  background: var(--q-primary);
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Every size is a square: an avatar can never be stretched into an oval by a
+   flex row that wants more width than the row has. */
+.avatar-xs { width: 24px; height: 24px; min-width: 24px; font-size: 0.625rem; }
+.avatar-sm { width: 32px; height: 32px; min-width: 32px; font-size: 0.6875rem; }
+.avatar-md { width: 40px; height: 40px; font-size: 0.8125rem; }
+.avatar-lg { width: 52px; height: 52px; font-size: 1rem; }
+.avatar-xl { width: 72px; height: 72px; font-size: 1.375rem; }
+.avatar-xxl { width: 104px; height: 104px; font-size: 2rem; }
+
+.avatar-rounded { border-radius: var(--q-radius-sm); }
+.avatar-square { border-radius: 10px; }
+
+.bg-avatar-1 { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+.bg-avatar-2 { background: linear-gradient(135deg, #0ea5e9, #22d3ee); }
+.bg-avatar-3 { background: linear-gradient(135deg, #10b981, #34d399); }
+.bg-avatar-4 { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+.bg-avatar-5 { background: linear-gradient(135deg, #ef4444, #fb7185); }
+.bg-avatar-6 { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+.bg-avatar-7 { background: linear-gradient(135deg, #14b8a6, #06b6d4); }
+.bg-avatar-8 { background: linear-gradient(135deg, #64748b, #94a3b8); }
+
+.avatar-status {
+  position: absolute;
+  inset-inline-end: 0;
+  bottom: 0;
+  width: 28%;
+  height: 28%;
+  min-width: 9px;
+  min-height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--q-surface);
+}
+
+.avatar-status.online { background: var(--q-success); }
+.avatar-status.busy { background: var(--q-danger); }
+.avatar-status.away { background: var(--q-warning); }
+.avatar-status.offline { background: var(--q-faint-color); }
+
+.avatar-group {
+  display: inline-flex;
+  align-items: center;
+}
+
+.avatar-group .avatar {
+  border: 2px solid var(--q-surface);
+  margin-inline-start: -10px;
+}
+
+.avatar-group .avatar:first-child {
+  margin-inline-start: 0;
+}
+
+.avatar-group .avatar:hover {
+  z-index: 2;
+  transform: translateY(-2px);
+}
+
+.avatar-more {
+  background: var(--q-surface-hover);
+  color: var(--q-body-color);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   6. BADGES & PILLS
+   ========================================================================== */
+
+.badge {
+  --bs-badge-font-size: 0.6875rem;
+  --bs-badge-font-weight: 600;
+  --bs-badge-padding-x: 0.5rem;
+  --bs-badge-padding-y: 0.28rem;
+  --bs-badge-border-radius: var(--q-radius-xs);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  /* A badge sits in flex rows next to .chip pills, and a flex row stretches its
+     children to one height — inline-block left the label stuck to the top of
+     that taller pill. Centring the content keeps the label in the middle and
+     gives any icon inside the badge a gap instead of touching the text. */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.badge-pill { border-radius: var(--q-radius-pill); }
+
+.badge-soft-primary { background: var(--q-primary-soft); color: var(--q-primary); }
+.badge-soft-success { background: var(--q-success-soft); color: var(--q-success-hover); }
+.badge-soft-warning { background: var(--q-warning-soft); color: var(--q-warning-hover); }
+.badge-soft-danger { background: var(--q-danger-soft); color: var(--q-danger-hover); }
+.badge-soft-info { background: var(--q-info-soft); color: var(--q-info-hover); }
+.badge-soft-neutral,
+.badge-soft-secondary { background: var(--q-surface-hover); color: var(--q-muted-color); }
+
+[data-bs-theme="dark"] .badge-soft-success { color: var(--q-success); }
+[data-bs-theme="dark"] .badge-soft-warning { color: var(--q-warning); }
+[data-bs-theme="dark"] .badge-soft-danger { color: var(--q-danger); }
+[data-bs-theme="dark"] .badge-soft-info { color: var(--q-info); }
+
+.badge-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.badge-dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Counter / status chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--q-radius-pill);
+  border: 1px solid var(--q-border-color);
+  background: var(--q-surface);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--q-body-color);
+}
+
+.chip i { font-size: 0.85rem; line-height: 1; }
+
+/* A chip that is switched on: the fill tokens keep white readable in both
+   palettes (6.3:1 in light, 4.6:1 in dark). */
+.chip[aria-pressed="true"],
+.chip-active {
+  background: var(--q-fill-bg);
+  border-color: transparent;
+  color: #fff;
+}
+
+.chip[aria-pressed="true"]:hover,
+.chip-active:hover {
+  background: var(--q-fill-hover-bg);
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   The filter panel behind the board.
+   A tall list of chips must never run off the bottom of a phone, so the panel
+   is a column: the header carries its own close button, the groups scroll, and
+   the footer (summary + Clear) stays pinned. The panel keeps Bootstrap's
+   anchored placement — a panel pinned to the bottom of the screen sits a
+   thumb's journey away from the Filter button that opened it — and stays modest
+   in height so Popper can put it below the button, or above it when there is no
+   room below.
+   -------------------------------------------------------------------------- */
+.dropdown-menu-filter {
+  width: min(19rem, calc(100vw - 1.5rem));
+  min-width: 0;
+  padding: 0;
+  max-height: min(80vh, 34rem);
+  overflow: hidden;
+}
+
+/* Only the OPEN panel is a column. Bootstrap keeps a dropdown menu at
+   display: none until ".show" lands, and a panel that is always on screen is
+   both wrong on load and jumpy on the first click: Popper only positions a
+   menu it is showing, so before the click the panel sits in the markup flow
+   and snaps into place after it. */
+.dropdown-menu-filter.show {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The header row carries the panel's own close button, so a phone user does not
+   have to find a piece of the page to tap to dismiss it. */
+.dropdown-menu-filter__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.6rem 0.6rem 1rem;
+  border-bottom: 1px solid var(--q-border-color);
+}
+
+.dropdown-menu-filter__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+}
+
+.dropdown-menu-filter__head .btn-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: 0;
+  border-radius: var(--q-radius-xs);
+  background-size: 0.7em;
+  opacity: 0.55;
+  flex: 0 0 auto;
+}
+
+.dropdown-menu-filter__head .btn-close:hover,
+.dropdown-menu-filter__head .btn-close:focus-visible {
+  opacity: 1;
+}
+
+.dropdown-menu-filter__body {
+  padding: 1rem 1rem 0.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dropdown-menu-filter__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--q-border-color);
+  background: var(--q-surface);
+}
+
+.filter-group__title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--q-muted-color);
+  margin-bottom: 0.5rem;
+}
+
+/* The panel sits on a white card, so an idle chip takes the hover surface
+   instead of a hairline border: the options read as things you can press at a
+   glance, in both palettes. A pressed chip keeps the filled state. */
+.dropdown-menu-filter .chip {
+  min-height: 2rem;
+  background: var(--q-surface-hover);
+  border-color: transparent;
+}
+
+.dropdown-menu-filter .chip:hover {
+  border-color: var(--q-border-strong);
+}
+
+.dropdown-menu-filter .chip[aria-pressed="true"] {
+  background: var(--q-fill-bg);
+  border-color: transparent;
+  color: #fff;
+}
+
+.dropdown-menu-filter .chip[aria-pressed="true"]:hover {
+  background: var(--q-fill-hover-bg);
+  color: #fff;
+}
+
+@media (max-width: 575.98px) {
+  /* The panel stays where it belongs — anchored to the Filter button, a few
+     pixels under it. It is only made comfortable for a thumb: a wider cap that
+     still respects the viewport, a shorter maximum height (Popper flips it
+     above the button when there is no room below), and 36px per chip. */
+  .dropdown-menu-filter {
+    width: min(19rem, calc(100vw - 1.5rem));
+    max-height: min(65vh, 32rem);
+  }
+
+  .dropdown-menu-filter .chip {
+    min-height: 2.25rem;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.8125rem;
+  }
+
+  .dropdown-menu-filter__body {
+    padding: 0.875rem 1rem 0.5rem;
+  }
+
+  .dropdown-menu-filter__foot {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* ==========================================================================
+   7. ALERTS
+   ========================================================================== */
+
+.alert {
+  --bs-alert-border-radius: var(--q-radius);
+  --bs-alert-padding-x: 1rem;
+  --bs-alert-padding-y: 0.875rem;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.alert i.alert-icon {
+  font-size: 1.1rem;
+  line-height: 1.4;
+  flex: 0 0 auto;
+}
+
+.alert-primary {
+  --bs-alert-bg: var(--q-primary-soft);
+  --bs-alert-color: var(--q-primary-active);
+  --bs-alert-border-color: rgba(var(--q-primary-rgb), 0.22);
+}
+
+.alert-success {
+  --bs-alert-bg: var(--q-success-soft);
+  --bs-alert-color: #04684f;
+  --bs-alert-border-color: rgba(var(--q-success-rgb), 0.22);
+}
+
+.alert-warning {
+  --bs-alert-bg: var(--q-warning-soft);
+  --bs-alert-color: #8a5205;
+  --bs-alert-border-color: rgba(var(--q-warning-rgb), 0.24);
+}
+
+.alert-danger {
+  --bs-alert-bg: var(--q-danger-soft);
+  --bs-alert-color: #a01d1d;
+  --bs-alert-border-color: rgba(var(--q-danger-rgb), 0.22);
+}
+
+.alert-info {
+  --bs-alert-bg: var(--q-info-soft);
+  --bs-alert-color: #075985;
+  --bs-alert-border-color: rgba(var(--q-info-rgb), 0.22);
+}
+
+[data-bs-theme="dark"] .alert-primary { --bs-alert-color: #c3beff; }
+[data-bs-theme="dark"] .alert-success { --bs-alert-color: #86efc4; }
+[data-bs-theme="dark"] .alert-warning { --bs-alert-color: #fcd873; }
+[data-bs-theme="dark"] .alert-danger { --bs-alert-color: #fca5a5; }
+[data-bs-theme="dark"] .alert-info { --bs-alert-color: #7dd3fc; }
+
+.alert-solid-primary { background: var(--q-primary); color: #fff; border-color: transparent; }
+.alert-solid-success { background: var(--q-success); color: #fff; border-color: transparent; }
+.alert-solid-warning { background: var(--q-warning); color: #1b1a12; border-color: transparent; }
+.alert-solid-danger { background: var(--q-danger); color: #fff; border-color: transparent; }
+
+/* ==========================================================================
+   8. DROPDOWNS
+   ========================================================================== */
+
+.dropdown-menu {
+  --bs-dropdown-bg: var(--q-surface);
+  --bs-dropdown-border-color: var(--q-border-color);
+  --bs-dropdown-border-radius: var(--q-radius);
+  --bs-dropdown-link-hover-bg: var(--q-surface-hover);
+  --bs-dropdown-link-active-bg: rgba(var(--q-primary-rgb), 0.12);
+  --bs-dropdown-link-active-color: var(--q-primary);
+  --bs-dropdown-font-size: 0.875rem;
+  --bs-dropdown-item-padding-y: 0.45rem;
+  --bs-dropdown-item-padding-x: 0.85rem;
+  --bs-dropdown-header-color: var(--q-faint-color);
+  box-shadow: var(--q-shadow);
+  padding: 0.4rem;
+  min-width: 12rem;
+}
+
+.dropdown-header {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.5rem 0.85rem 0.35rem;
+}
+
+.dropdown-item {
+  border-radius: var(--q-radius-xs);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.dropdown-item i {
+  font-size: 1rem;
+  color: var(--q-muted-color);
+}
+
+.dropdown-item.active i,
+.dropdown-item:active i {
+  color: inherit;
+}
+
+.dropdown-divider {
+  border-color: var(--q-border-color);
+  margin: 0.35rem 0;
+}
+
+/* Notification style dropdown */
+.dropdown-notify {
+  width: 340px;
+  max-width: calc(100vw - 2rem);
+  padding: 0;
+  overflow: hidden;
+}
+
+.dropdown-notify__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--q-border-color);
+}
+
+.dropdown-notify__list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.dropdown-notify__item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--q-border-color);
+  transition: background-color var(--q-transition);
+  color: inherit;
+}
+
+.dropdown-notify__item:last-child { border-bottom: 0; }
+
+.dropdown-notify__item:hover {
+  background: var(--q-surface-hover);
+}
+
+.dropdown-notify__title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--q-heading-color);
+  margin-bottom: 0.15rem;
+}
+
+.dropdown-notify__meta {
+  font-size: 0.6875rem;
+  color: var(--q-faint-color);
+}
+
+.dropdown-notify__foot {
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--q-border-color);
+  text-align: center;
+  font-size: 0.8125rem;
+  background: var(--q-surface-alt);
+}
+
+/* ==========================================================================
+   9. FORM CONTROLS
+   ========================================================================== */
+
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--q-heading-color);
+  margin-bottom: 0.375rem;
+}
+
+.form-control,
+.form-select {
+  --bs-body-bg: var(--q-surface);
+  background-color: var(--q-surface);
+  border-color: var(--q-border-color);
+  border-radius: var(--q-radius-sm);
+  color: var(--q-body-color);
+  font-size: 0.875rem;
+  /* The caret is a background image, not a child: Bootstrap reserves room for
+     it with padding-inline-end and our shorthand used to throw that away, which
+     printed the arrow on top of the label ("All statuse▾s"). Logical padding
+     keeps the room in both directions — in RTL the arrow moves to the far left
+     and rtl.css mirrors the numbers. */
+  padding-block: 0.5rem;
+  padding-inline: 0.85rem 2.1rem;
+  background-position: right 0.85rem center;
+  transition: border-color var(--q-transition), box-shadow var(--q-transition);
+}
+
+.form-control::placeholder {
+  color: var(--q-faint-color);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--q-surface);
+  border-color: var(--q-primary);
+  box-shadow: 0 0 0 3px rgba(var(--q-primary-rgb), 0.16);
+  color: var(--q-body-color);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  background-color: var(--q-surface-hover);
+  color: var(--q-muted-color);
+}
+
+.form-control-sm {
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.7rem;
+}
+
+.form-select-sm {
+  font-size: 0.8125rem;
+  padding-block: 0.35rem;
+  padding-inline: 0.7rem 2rem;
+}
+
+.form-control-lg {
+  font-size: 0.9375rem;
+  padding: 0.6875rem 1rem;
+}
+
+.form-text {
+  font-size: 0.75rem;
+  color: var(--q-muted-color);
+}
+
+.input-group-text {
+  background: var(--q-surface-hover);
+  border-color: var(--q-border-color);
+  color: var(--q-muted-color);
+  font-size: 0.875rem;
+  border-radius: var(--q-radius-sm);
+}
+
+.form-check-input {
+  border-color: var(--q-border-strong);
+  background-color: var(--q-surface);
+  width: 1.05em;
+  height: 1.05em;
+  margin-top: 0.22em;
+}
+
+.form-check-input:checked {
+  background-color: var(--q-primary);
+  border-color: var(--q-primary);
+}
+
+.form-check-input:focus {
+  border-color: var(--q-primary);
+  box-shadow: 0 0 0 3px rgba(var(--q-primary-rgb), 0.16);
+}
+
+.form-check-label {
+  font-size: 0.875rem;
+  color: var(--q-body-color);
+}
+
+.form-switch .form-check-input {
+  width: 2.25em;
+  height: 1.2em;
+  margin-top: 0.1em;
+}
+
+.form-range::-webkit-slider-thumb { background: var(--q-primary); }
+.form-range::-moz-range-thumb { background: var(--q-primary); }
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--q-danger);
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+  border-color: var(--q-success);
+}
+
+.invalid-feedback { font-size: 0.75rem; color: var(--q-danger); }
+.valid-feedback { font-size: 0.75rem; color: var(--q-success-hover); }
+
+/* Search input with icon */
+.search-field {
+  position: relative;
+}
+
+.search-field .form-control {
+  padding-inline-start: 2.35rem;
+}
+
+.search-field__icon {
+  position: absolute;
+  inset-inline-start: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--q-faint-color);
+  pointer-events: none;
+}
+
+/* File upload dropzone */
+.upload-zone {
+  border: 2px dashed var(--q-border-strong);
+  border-radius: var(--q-radius);
+  padding: 2rem 1.25rem;
+  text-align: center;
+  background: var(--q-surface-alt);
+  transition: border-color var(--q-transition), background-color var(--q-transition);
+  cursor: pointer;
+}
+
+.upload-zone:hover,
+.upload-zone.is-dragover {
+  border-color: var(--q-primary);
+  background: var(--q-primary-soft);
+}
+
+.upload-zone__icon {
+  font-size: 2rem;
+  color: var(--q-primary);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* Floating label polish */
+.form-floating > .form-control,
+.form-floating > .form-select {
+  background: var(--q-surface);
+  border-color: var(--q-border-color);
+}
+
+/* ==========================================================================
+   10. TABLES
+   ========================================================================== */
+
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-border-color: var(--q-border-color);
+  --bs-table-hover-bg: var(--q-surface-hover);
+  --bs-table-striped-bg: var(--q-surface-alt);
+  --bs-table-color: var(--q-body-color);
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.table > thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--q-muted-color);
+  background: var(--q-surface-alt);
+  border-bottom: 1px solid var(--q-border-color);
+  padding: 0.75rem 1rem;
+  white-space: nowrap;
+}
+
+.table > tbody td {
+  padding: 0.85rem 1rem;
+  border-color: var(--q-border-color);
+}
+
+.table > tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-hover > tbody > tr:hover > * {
+  --bs-table-accent-bg: transparent;
+  background-color: var(--q-surface-hover);
+}
+
+.table-actions {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+/* Sortable header */
+.table-sort {
+  cursor: pointer;
+  user-select: none;
+}
+
+.table-sort i {
+  font-size: 0.75rem;
+  margin-inline-start: 0.25rem;
+  opacity: 0.5;
+}
+
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--q-border-color);
+}
+
+/* The card view of a data table. It is built by demo-ui.js inside the card that
+   holds the table, so it carries the same 1.25rem inset as the toolbar above it
+   and a grid that keeps card widths equal in every row. */
+[data-demo-grid] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+  gap: 1rem;
+  /* The cards keep a clear 1.25rem margin from the card's border on all four
+     sides. The margin reset matters: an older build of this script put the
+     Bootstrap .row class on the same element, whose negative gutters cancel
+     exactly this padding — with the reset the inset survives either way. */
+  margin: 0;
+  padding: 1.25rem;
+}
+
+@media (max-width: 575.98px) {
+  [data-demo-grid] {
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+}
+
+/* A single message that spans the whole grid (no rows match the filters). */
+[data-demo-grid] > .card[data-demo-grid-empty] {
+  grid-column: 1 / -1;
+}
+
+/* --------------------------------------------------------------------------
+   Tables on a small screen.
+
+   A .table-responsive wrapper scrolls, but a table only scrolls once it is
+   given something to scroll. With no floor it hugs the wrapper and every column
+   is squeezed to the width of its longest word: "Northstar Labs" stacked over
+   two lines, an invoice number broken into "INV-" / "2026-" / "0184" — the
+   hyphen is a legal break — and a status badge cut in half. A column squeezed
+   below the width of its content is worse still: the text leaves the cell and
+   runs over the column beside it.
+
+   So below 992px a data table keeps its cells on one line and takes the width
+   it needs, while min-content guarantees it can never be narrower than its own
+   content and the wrapper scrolls. Two things are allowed to wrap: the muted
+   second line inside a cell — "Annual subscription", "Oct 2, 2026 · 09:24" — is
+   an annotation rather than the value, and a column of prose opts out with
+   Bootstrap's .text-wrap on its cells (the documentation tables do).
+
+   Only the phone and tablet layouts are affected. On a desktop the table has
+   the room it needs and every one of these rules is off, so nothing scrolls
+   that did not scroll before.
+   -------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+  .table-responsive > .table {
+    /* First line: a browser that cannot read the keyword in the second. */
+    min-width: 36rem;
+    min-width: min-content;
+  }
+
+  /* A cell holds a value, and a value reads on one line: it does not wrap at
+     its spaces and it does not break at its hyphens. */
+  .table-responsive > .table > tbody > tr > td {
+    white-space: nowrap;
+  }
+
+  /* …except the annotation inside it. Child selectors on purpose: a cell whose
+     own class is .text-muted-2 (a SKU, a payment id) is still a value. */
+  .table-responsive > .table > tbody > tr > td > .fs-8,
+  .table-responsive > .table > tbody > tr > td > .text-muted-2,
+  .table-responsive > .table > tbody > tr > td > small {
+    white-space: normal;
+  }
+
+  /* A badge is one token: "Low stock" must never break in half. */
+  .table-responsive > .table .badge {
+    white-space: nowrap;
+  }
+
+  /* A whole column of prose opts out with Bootstrap's .text-wrap (which sets the
+     newer text-wrap property); the classic declaration is repeated here so the
+     opt-out works in a browser that only knows white-space. */
+  .table-responsive > .table > tbody > tr > td.text-wrap {
+    white-space: normal;
+  }
+
+  /* …and the inline code inside that prose stays whole: the sentence wraps at
+     its spaces, [data-demo-upload] does not break at its hyphens. */
+  .table-responsive > .table .text-wrap code {
+    white-space: nowrap;
+  }
+}
+
+.table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--q-border-color);
+}
+
+.table-responsive {
+  border-radius: 0 0 var(--q-radius-lg) var(--q-radius-lg);
+}
+
+/* ==========================================================================
+   11. PROGRESS
+   ========================================================================== */
+
+.progress {
+  --bs-progress-bg: var(--q-surface-hover);
+  --bs-progress-height: 7px;
+  --bs-progress-border-radius: var(--q-radius-pill);
+  --bs-progress-bar-bg: var(--q-primary);
+}
+
+.progress-sm { --bs-progress-height: 4px; }
+.progress-lg { --bs-progress-height: 12px; }
+
+.progress-circle {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+
+.progress-circle svg {
+  transform: rotate(-90deg);
+}
+
+.progress-circle__track {
+  stroke: var(--q-surface-hover);
+}
+
+.progress-circle__bar {
+  stroke: var(--q-primary);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 600ms ease;
+}
+
+.progress-circle__value {
+  position: absolute;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+}
+
+/* ==========================================================================
+   12. TIMELINE
+   ========================================================================== */
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.timeline__item {
+  position: relative;
+  padding-inline-start: 2rem;
+  padding-bottom: 1.5rem;
+}
+
+.timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline__item::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 8px;
+  top: 20px;
+  bottom: 0;
+  width: 2px;
+  background: var(--q-border-color);
+}
+
+.timeline__item:last-child::before {
+  display: none;
+}
+
+.timeline__dot {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid var(--q-surface);
+  background: var(--q-primary);
+  box-shadow: 0 0 0 1px var(--q-border-color);
+}
+
+.timeline__dot--success { background: var(--q-success); }
+.timeline__dot--warning { background: var(--q-warning); }
+.timeline__dot--danger { background: var(--q-danger); }
+.timeline__dot--muted { background: var(--q-faint-color); }
+
+.timeline__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+  margin-bottom: 0.2rem;
+}
+
+.timeline__meta {
+  font-size: 0.75rem;
+  color: var(--q-faint-color);
+}
+
+.timeline__text {
+  font-size: 0.8125rem;
+  color: var(--q-muted-color);
+  margin: 0.35rem 0 0;
+}
+
+/* ==========================================================================
+   13. ACTIVITY FEED
+   ========================================================================== */
+
+.activity {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.activity__item {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--q-border-color);
+}
+
+.activity__item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.activity__item:first-child {
+  padding-top: 0;
+}
+
+.activity__body { min-width: 0; flex: 1 1 auto; }
+
+.activity__text {
+  font-size: 0.8125rem;
+  color: var(--q-body-color);
+  margin-bottom: 0.15rem;
+}
+
+.activity__text strong {
+  color: var(--q-heading-color);
+  font-weight: 600;
+}
+
+.activity__time {
+  font-size: 0.6875rem;
+  color: var(--q-faint-color);
+}
+
+/* ==========================================================================
+   14. KANBAN
+   ========================================================================== */
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(260px, 1fr));
+  gap: 1rem;
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+@media (max-width: 1199.98px) {
+  .kanban {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    grid-auto-columns: 280px;
+  }
+}
+
+.kanban__col {
+  background: var(--q-surface-alt);
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius-lg);
+  padding: 0.875rem;
+  min-height: 160px;
+}
+
+/* Drop target for drag & drop boards; the markup adds d-flex flex-column */
+.kanban__col-body {
+  min-height: 36px;
+  border-radius: var(--q-radius);
+  transition: background-color var(--q-transition), box-shadow var(--q-transition);
+}
+
+/* The whole column lights up when the pointer aims at its empty space. */
+.kanban__col-body.is-drop-target {
+  background: var(--q-primary-soft);
+  box-shadow: inset 0 0 0 1px rgba(var(--q-primary-rgb), 0.35);
+}
+
+/* A note that keeps an empty column reading as a drop target. */
+.kanban__empty {
+  border: 1px dashed var(--q-border-color);
+  border-radius: var(--q-radius);
+  background: var(--q-surface);
+}
+
+/* The drag handle on a card. It is a real button, so the card can also be moved
+   from the keyboard or a touch screen through its menu. */
+.kanban__grip-wrap {
+  margin-inline-start: auto;
+}
+
+.kanban__grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--q-radius-sm);
+  background: transparent;
+  color: var(--q-muted-color);
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: grab;
+  transition: color var(--q-transition), background-color var(--q-transition);
+}
+
+.kanban__grip:hover,
+.kanban__grip:focus-visible {
+  background: var(--q-surface-hover);
+  color: var(--q-heading-color);
+}
+
+.kanban__grip:active {
+  cursor: grabbing;
+}
+
+.kanban__card.is-dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.kanban__col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.kanban__col-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.kanban__count {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--q-muted-color);
+  background: var(--q-surface);
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius-pill);
+  padding: 0.05rem 0.45rem;
+}
+
+.kanban__card {
+  background: var(--q-surface);
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius);
+  padding: 0.85rem;
+  margin-bottom: 0.6rem;
+  box-shadow: var(--q-shadow-xs);
+  cursor: grab;
+  transition: box-shadow var(--q-transition), transform var(--q-transition);
+}
+
+.kanban__card:last-child { margin-bottom: 0; }
+
+.kanban__card:hover {
+  box-shadow: var(--q-shadow);
+  transform: translateY(-1px);
+}
+
+.kanban__card.is-dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+/* Where the card will land: the dashed outline covers the gap the dragged card
+   would take, so a drop between two cards is obvious before the mouse is up. */
+.kanban__card.is-drop-target {
+  border-color: var(--q-primary);
+  border-style: dashed;
+  box-shadow: 0 0 0 3px var(--q-primary-soft);
+}
+
+.kanban__card-title {
+  font-size: 0.8438rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+  margin-bottom: 0.4rem;
+  line-height: 1.35;
+}
+
+.kanban__card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+/* ==========================================================================
+   15. CHAT
+   ========================================================================== */
+
+.chat-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius-lg);
+  background: var(--q-surface);
+  overflow: hidden;
+  height: calc(100vh - var(--q-header-height) - 8.5rem);
+  min-height: 480px;
+}
+
+@media (max-width: 991.98px) {
+  .chat-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-layout__aside {
+    display: none;
+  }
+
+  .chat-layout__aside.is-open {
+    display: flex;
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: var(--q-surface);
+  }
+
+  .chat-layout { position: relative; }
+}
+
+.chat-layout__aside {
+  border-inline-end: 1px solid var(--q-border-color);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--q-surface-alt);
+}
+
+.chat-layout__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-thread {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.msg {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 78%;
+}
+
+.msg__bubble {
+  padding: 0.7rem 0.95rem;
+  border-radius: var(--q-radius);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  background: var(--q-surface-hover);
+  color: var(--q-body-color);
+  border-start-start-radius: 4px;
+}
+
+.msg__meta {
+  font-size: 0.6875rem;
+  color: var(--q-faint-color);
+  margin-top: 0.35rem;
+}
+
+.msg--out {
+  margin-inline-start: auto;
+  flex-direction: row-reverse;
+}
+
+.msg--out .msg__bubble {
+  background: var(--q-primary);
+  color: #fff;
+  border-start-start-radius: var(--q-radius);
+  border-start-end-radius: 4px;
+}
+
+.msg--out .msg__meta {
+  text-align: end;
+}
+
+.msg__actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  opacity: 0;
+  transition: opacity var(--q-transition);
+}
+
+.msg:hover .msg__actions {
+  opacity: 1;
+}
+
+.composer {
+  border-top: 1px solid var(--q-border-color);
+  padding: 0.75rem 1rem;
+  background: var(--q-surface);
+}
+
+.composer .form-control {
+  border-color: transparent;
+  background: var(--q-surface-hover);
+}
+
+.composer .form-control:focus {
+  background: var(--q-surface);
+  border-color: var(--q-primary);
+}
+
+/* Typing indicator */
+.typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 0.7rem 0.95rem;
+}
+
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--q-faint-color);
+  animation: q-typing 1.2s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.15s; }
+.typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes q-typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ==========================================================================
+   16. PRICING
+   ========================================================================== */
+
+.pricing-card {
+  height: 100%;
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius-lg);
+  background: var(--q-surface);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow var(--q-transition), transform var(--q-transition), border-color var(--q-transition);
+}
+
+.pricing-card:hover {
+  box-shadow: var(--q-shadow);
+  transform: translateY(-3px);
+}
+
+.pricing-card--featured {
+  border-color: var(--q-primary);
+  box-shadow: 0 12px 36px rgba(var(--q-primary-rgb), 0.18);
+  position: relative;
+}
+
+.pricing-card__price {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--q-heading-color);
+  line-height: 1;
+}
+
+.pricing-card__period {
+  font-size: 0.875rem;
+  color: var(--q-muted-color);
+  font-weight: 400;
+}
+
+.pricing-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.875rem;
+  padding: 0.375rem 0;
+  color: var(--q-body-color);
+}
+
+.pricing-features li i {
+  color: var(--q-success);
+  font-size: 1rem;
+  margin-top: 0.15rem;
+}
+
+.pricing-features li.is-off {
+  color: var(--q-faint-color);
+}
+
+.pricing-features li.is-off i {
+  color: var(--q-faint-color);
+}
+
+/* ==========================================================================
+   17. EMPTY / ERROR / LOADING STATES
+   ========================================================================== */
+
+.state-block {
+  text-align: center;
+  padding: 2.5rem 1.25rem;
+}
+
+.state-block__icon {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--q-radius-xl);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 1rem;
+  font-size: 1.9rem;
+  background: var(--q-primary-soft);
+  color: var(--q-primary);
+}
+
+.state-block__title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+  margin-bottom: 0.35rem;
+}
+
+.state-block__text {
+  font-size: 0.875rem;
+  color: var(--q-muted-color);
+  max-width: 46ch;
+  margin: 0 auto 1.1rem;
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, var(--q-surface-hover) 25%, var(--q-border-color) 37%, var(--q-surface-hover) 63%);
+  background-size: 400% 100%;
+  animation: q-skeleton 1.4s ease infinite;
+  border-radius: var(--q-radius-xs);
+  height: 12px;
+}
+
+@keyframes q-skeleton {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* Spinner */
+.spinner-q {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(var(--q-primary-rgb), 0.22);
+  border-top-color: var(--q-primary);
+  border-radius: 50%;
+  animation: q-spin 0.7s linear infinite;
+}
+
+@keyframes q-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   18. CODE SHOWCASE (component library)
+   ========================================================================== */
+
+.demo-block {
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius-lg);
+  background: var(--q-surface);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.demo-block__head {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--q-border-color);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.demo-block__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+  margin-bottom: 0.15rem;
+}
+
+.demo-block__desc {
+  font-size: 0.8125rem;
+  color: var(--q-muted-color);
+  margin: 0;
+  max-width: 70ch;
+}
+
+.demo-block__tabs {
+  padding: 0 1.25rem;
+  border-bottom: 1px solid var(--q-border-color);
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.demo-tab {
+  border: 0;
+  background: transparent;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--q-muted-color);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--q-transition), border-color var(--q-transition);
+}
+
+.demo-tab:hover { color: var(--q-heading-color); }
+
+.demo-tab.is-active {
+  color: var(--q-primary);
+  border-bottom-color: var(--q-primary);
+}
+
+.demo-block__pane { display: none; }
+.demo-block__pane.is-active { display: block; }
+
+.demo-preview {
+  padding: 1.75rem 1.25rem;
+  background:
+    linear-gradient(var(--q-surface) 0 0) padding-box,
+    var(--q-surface);
+  background-image:
+    linear-gradient(90deg, rgba(var(--q-primary-rgb), 0.05) 1px, transparent 1px),
+    linear-gradient(rgba(var(--q-primary-rgb), 0.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-color: var(--q-surface);
+}
+
+.demo-preview--plain {
+  background-image: none;
+}
+
+.demo-code {
+  position: relative;
+  background: var(--q-code-bg);
+  color: var(--q-code-color);
+  margin: 0;
+  padding: 1.15rem 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  max-height: 420px;
+  tab-size: 2;
+}
+
+.demo-code code {
+  color: inherit;
+  background: none;
+  padding: 0;
+  white-space: pre;
+  font-family: inherit;
+}
+
+/* Minimal, dependency-free syntax highlighting for the code samples */
+.demo-code .tok-tag { color: #7dd3fc; }
+.demo-code .tok-attr { color: #c4b5fd; }
+.demo-code .tok-str { color: #86efac; }
+.demo-code .tok-com { color: #64748b; font-style: italic; }
+.demo-code .tok-key { color: #f0abfc; }
+.demo-code .tok-num { color: #fbbf24; }
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--q-radius-xs);
+  border: 1px solid var(--q-border-color);
+  background: var(--q-surface);
+  color: var(--q-body-color);
+  transition: all var(--q-transition);
+}
+
+.copy-btn:hover {
+  border-color: var(--q-primary);
+  color: var(--q-primary);
+}
+
+.copy-btn.is-copied {
+  background: var(--q-success-soft);
+  border-color: var(--q-success);
+  color: var(--q-success-hover);
+}
+
+.demo-code-wrap {
+  position: relative;
+}
+
+.demo-code-wrap .copy-btn {
+  position: absolute;
+  top: 0.6rem;
+  inset-inline-end: 0.6rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #cbd5e1;
+  z-index: 2;
+}
+
+.demo-code-wrap .copy-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.demo-code-wrap .copy-btn.is-copied {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #6ee7b7;
+}
+
+/* Component catalogue tiles */
+.component-tile {
+  display: block;
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius);
+  background: var(--q-surface);
+  padding: 1.1rem;
+  height: 100%;
+  color: inherit;
+  transition: all var(--q-transition);
+}
+
+.component-tile:hover {
+  border-color: var(--q-primary);
+  box-shadow: var(--q-shadow);
+  transform: translateY(-2px);
+  color: inherit;
+}
+
+.component-tile__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--q-radius-sm);
+  display: grid;
+  place-items: center;
+  background: var(--q-primary-soft);
+  color: var(--q-primary);
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.component-tile__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+  margin-bottom: 0.15rem;
+}
+
+.component-tile__text {
+  font-size: 0.75rem;
+  color: var(--q-muted-color);
+  margin: 0;
+}
+
+/* Swatch tiles (colours page) */
+.swatch {
+  border-radius: var(--q-radius);
+  padding: 1rem;
+  color: #fff;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-shadow: var(--q-shadow-xs);
+}
+
+.swatch__name { font-weight: 600; font-size: 0.8125rem; }
+.swatch__hex { font-size: 0.6875rem; opacity: 0.85; }
+
+/* ==========================================================================
+   19. AUTH PAGES
+   ========================================================================== */
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 991.98px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-aside {
+    display: none;
+  }
+}
+
+.auth-aside {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(150deg, #1e1b4b 0%, #4f46e5 55%, #06b6d4 140%);
+  color: #fff;
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.auth-aside::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -120px;
+  bottom: -140px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 70%);
+}
+
+.auth-aside__quote {
+  font-size: 1.375rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+  max-width: 34ch;
+}
+
+.auth-main {
+  display: grid;
+  place-items: center;
+  padding: 2.5rem 1.25rem;
+  background: var(--q-body-bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 2rem;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--q-faint-color);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 1.25rem 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--q-border-color);
+}
+
+.otp-input {
+  width: 52px;
+  height: 60px;
+  text-align: center;
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+@media (max-width: 575.98px) {
+  .otp-input {
+    width: 44px;
+    height: 52px;
+    font-size: 1.125rem;
+  }
+}
+
+/* Full-screen utility pages (404, 500, maintenance, coming soon) */
+.util-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.util-shell::before {
+  content: "";
+  position: absolute;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 620px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--q-primary-rgb), 0.18), transparent 68%);
+  pointer-events: none;
+}
+
+.util-code {
+  font-size: clamp(4.5rem, 14vw, 9rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  background: linear-gradient(120deg, var(--q-primary), var(--q-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ==========================================================================
+   20. MISC
+   ========================================================================== */
+
+/* Nav pills / tabs */
+.nav-pills {
+  --bs-nav-pills-border-radius: var(--q-radius-sm);
+  --bs-nav-pills-link-active-bg: var(--q-fill-bg);
+  --bs-nav-pills-link-active-color: #fff;
+  gap: 0.25rem;
+}
+
+.nav-pills .nav-link {
+  font-size: 0.8438rem;
+  font-weight: 500;
+  color: var(--q-muted-color);
+  padding: 0.45rem 0.9rem;
+}
+
+/* The hover tint belongs to the idle pills only. It used to apply to the
+   active pill as well, and because it came after the .active rule the light
+   hover surface landed under the white label — hovering "All" made the text
+   disappear. The active pill now keeps its own colours in every state. */
+.nav-pills .nav-link:not(.active):hover,
+.nav-pills .nav-link:not(.active):focus-visible {
+  color: var(--q-heading-color);
+  background: var(--q-surface-hover);
+}
+
+.nav-pills .nav-link.active {
+  color: var(--bs-nav-pills-link-active-color);
+  background-color: var(--bs-nav-pills-link-active-bg);
+}
+
+.nav-pills .nav-link.active:hover,
+.nav-pills .nav-link.active:focus-visible {
+  color: var(--bs-nav-pills-link-active-color);
+  background-color: var(--q-fill-hover-bg);
+}
+
+.nav-tabs {
+  --bs-nav-tabs-border-color: var(--q-border-color);
+  --bs-nav-tabs-link-active-color: var(--q-primary);
+  --bs-nav-tabs-link-active-bg: transparent;
+  --bs-nav-tabs-link-active-border-color: var(--q-border-color) var(--q-border-color) transparent;
+  --bs-nav-link-color: var(--q-muted-color);
+  --bs-nav-link-hover-color: var(--q-heading-color);
+  gap: 0.15rem;
+}
+
+.nav-tabs .nav-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--q-radius-sm) var(--q-radius-sm) 0 0;
+}
+
+.nav-tabs-q {
+  border-bottom: 1px solid var(--q-border-color);
+}
+
+/* List group */
+.list-group {
+  --bs-list-group-bg: transparent;
+  --bs-list-group-border-color: var(--q-border-color);
+  --bs-list-group-color: var(--q-body-color);
+  --bs-list-group-action-hover-bg: var(--q-surface-hover);
+}
+
+.list-group-item {
+  padding: 0.85rem 1.1rem;
+}
+
+.list-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+/* Accordion */
+.accordion {
+  --bs-accordion-bg: transparent;
+  --bs-accordion-border-color: var(--q-border-color);
+  --bs-accordion-border-radius: var(--q-radius);
+  --bs-accordion-btn-color: var(--q-heading-color);
+  --bs-accordion-btn-focus-box-shadow: 0 0 0 3px rgba(var(--q-primary-rgb), 0.16);
+  --bs-accordion-active-color: var(--q-primary);
+  --bs-accordion-active-bg: rgba(var(--q-primary-rgb), 0.06);
+  --bs-accordion-btn-icon-width: 1rem;
+  --bs-accordion-body-padding-x: 1.25rem;
+  --bs-accordion-body-padding-y: 1rem;
+}
+
+.accordion-button {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.accordion-body {
+  font-size: 0.875rem;
+  color: var(--q-muted-color);
+}
+
+/* Modal */
+.modal-content {
+  --bs-modal-bg: var(--q-surface);
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius-lg);
+  box-shadow: var(--q-shadow-lg);
+}
+
+.modal-header,
+.modal-footer {
+  border-color: var(--q-border-color);
+}
+
+.modal-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+/* Toast */
+.toast {
+  --bs-toast-bg: var(--q-surface);
+  --bs-toast-border-color: var(--q-border-color);
+  --bs-toast-header-bg: var(--q-surface);
+  border-radius: var(--q-radius);
+  box-shadow: var(--q-shadow-lg);
+}
+
+/* Tooltip / popover */
+.tooltip {
+  /* Both tooltip colours come from tokens: Bootstrap derives the text colour
+     from --bs-body-bg, which in dark mode is almost the same value as a dark
+     bubble — the label became unreadable. */
+  --bs-tooltip-bg: var(--q-tooltip-bg);
+  --bs-tooltip-color: var(--q-tooltip-color);
+  --bs-tooltip-border-radius: var(--q-radius-xs);
+  --bs-tooltip-font-size: 0.75rem;
+  --bs-tooltip-opacity: 1;
+}
+
+.tooltip-inner {
+  box-shadow: var(--q-tooltip-shadow);
+}
+
+.popover {
+  --bs-popover-bg: var(--q-surface);
+  --bs-popover-border-color: var(--q-border-color);
+  --bs-popover-border-radius: var(--q-radius);
+  --bs-popover-header-bg: var(--q-surface-alt);
+  box-shadow: var(--q-shadow);
+}
+
+/* Offcanvas */
+.offcanvas {
+  --bs-offcanvas-bg: var(--q-surface);
+  --bs-offcanvas-border-color: var(--q-border-color);
+}
+
+/* Breadcrumb separation line */
+.q-breadcrumb-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+/* Stat strip */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* Chart holders */
+.chart-holder {
+  position: relative;
+  width: 100%;
+}
+
+.chart-holder--sm { height: 200px; }
+.chart-holder--md { height: 280px; }
+.chart-holder--lg { height: 340px; }
+
+/* Legend dots for charts */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--q-muted-color);
+}
+
+.legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--q-primary);
+}
+
+/* File / asset list rows */
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--q-border-color);
+}
+
+.file-row:last-child { border-bottom: 0; }
+
+.file-row__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--q-radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+  flex: 0 0 auto;
+  background: var(--q-primary-soft);
+  color: var(--q-primary);
+}
+
+/* Role / permission matrix */
+.perm-table td,
+.perm-table th {
+  text-align: center;
+}
+
+.perm-table td:first-child,
+.perm-table th:first-child {
+  text-align: start;
+}
+
+/* Sticky sidebar in detail pages */
+@media (min-width: 992px) {
+  .sticky-lg {
+    position: sticky;
+    top: calc(var(--q-header-height) + 1.5rem);
+  }
+}
+
+/* ============================ Calendar =================================== */
+/* The month grid is a real table so every cell keeps its column; the week and
+   day views are card layouts drawn from the same event list. */
+
+.q-cal {
+  table-layout: fixed;
+}
+
+.q-cal__head {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--q-faint-color);
+  padding-bottom: 0.6rem;
+}
+
+.q-cal__cell {
+  cursor: pointer;
+  padding: 0.6rem 0.55rem 0.5rem;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.q-cal__cell:hover {
+  background: var(--q-surface-hover);
+}
+
+.q-cal__cell.is-weekend {
+  background: var(--q-surface-alt);
+}
+
+.q-cal__cell.is-muted {
+  background: var(--q-surface-alt);
+}
+
+.q-cal__cell.is-muted .q-cal__num {
+  color: var(--q-faint-color);
+  font-weight: 500;
+}
+
+.q-cal__cell.is-today {
+  box-shadow: inset 0 0 0 2px rgba(var(--q-primary-rgb), 0.35);
+  border-radius: var(--q-radius-sm);
+}
+
+.q-cal__cell.is-selected {
+  background: var(--q-primary-soft);
+  box-shadow: inset 0 0 0 2px rgba(var(--q-primary-rgb), 0.35);
+  border-radius: var(--q-radius-sm);
+}
+
+.q-cal__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: var(--q-radius-xs);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+}
+
+.q-cal__cell.is-today .q-cal__num {
+  background: var(--q-fill-bg);
+  color: #fff;
+}
+
+.q-cal__today {
+  margin-inline-start: 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--q-primary);
+}
+
+.q-cal__events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+
+.q-cal__event {
+  border: 0;
+  cursor: pointer;
+  max-width: 100%;
+  text-align: start;
+  transition: box-shadow 0.15s ease;
+}
+
+.q-cal__event:hover {
+  box-shadow: 0 0 0 2px rgba(var(--q-primary-rgb), 0.25);
+}
+
+/* The "just added" ring: on the chip itself, never behind the whole card. */
+.q-cal__event.is-new {
+  box-shadow: 0 0 0 3px rgba(var(--q-primary-rgb), 0.35);
+}
+
+.q-cal__more {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--q-muted-color);
+  cursor: pointer;
+}
+
+.q-cal__more:hover {
+  color: var(--q-primary);
+  text-decoration: underline;
+}
+
+/* Honest empty state: says why nothing is drawn and offers the way back. */
+.q-cal-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1rem;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--q-border-strong);
+  border-radius: var(--q-radius);
+  text-align: center;
+}
+
+.q-cal-note__text {
+  font-size: 0.85rem;
+  color: var(--q-muted-color);
+}
+
+/* Week view */
+.q-cal-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
+  gap: 0.5rem;
+  min-width: 700px;
+  padding: 0.75rem;
+}
+
+.q-cal-week__col {
+  display: flex;
+  flex-direction: column;
+  padding: 0.55rem;
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius);
+  background: var(--q-surface-alt);
+}
+
+.q-cal-week__col.is-today {
+  box-shadow: inset 0 0 0 2px rgba(var(--q-primary-rgb), 0.35);
+}
+
+.q-cal-week__col.is-selected {
+  background: var(--q-primary-soft);
+  border-color: rgba(var(--q-primary-rgb), 0.35);
+}
+
+.q-cal-week__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.15rem 0.2rem;
+  border: 0;
+  border-radius: var(--q-radius-xs);
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+.q-cal-week__head:hover .q-cal-week__day {
+  color: var(--q-primary);
+}
+
+.q-cal-week__day {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--q-faint-color);
+}
+
+.q-cal-week__num {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--q-heading-color);
+}
+
+.q-cal-week__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+  min-height: 2.5rem;
+}
+
+.q-cal-week__none {
+  font-size: 0.8rem;
+  color: var(--q-faint-color);
+}
+
+.q-cal-week__add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px dashed var(--q-border-strong);
+  border-radius: var(--q-radius-sm);
+  background: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--q-muted-color);
+  cursor: pointer;
+}
+
+.q-cal-week__add:hover {
+  color: var(--q-primary);
+  border-color: rgba(var(--q-primary-rgb), 0.5);
+}
+
+/* Day view */
+.q-cal-day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.9rem;
+}
+
+.q-cal-day__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius);
+  background: var(--q-surface-alt);
+  text-align: start;
+  cursor: pointer;
+}
+
+.q-cal-day__row:hover {
+  border-color: rgba(var(--q-primary-rgb), 0.4);
+}
+
+.q-cal-day__row .timeline__dot {
+  margin-top: 0.5rem;
+}
+
+.q-cal-day__time {
+  min-width: 6.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+}
+
+.q-cal-day__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.q-cal-day__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+}
+
+.q-cal-day__meta {
+  font-size: 0.75rem;
+  color: var(--q-faint-color);
+}
+
+/* The legend works as a filter: a pressed dot is on, a struck-through one off */
+button.legend__item {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button.legend__item:hover {
+  color: var(--q-heading-color);
+}
+
+button.legend__item:focus-visible {
+  outline: 2px solid var(--q-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.legend__item.is-off {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.form-check-label.is-off {
+  opacity: 0.55;
+}
+
+/* Agenda rows are buttons: the whole line opens the event */
+.q-cal-agenda__item {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+.q-cal-agenda__item .timeline__title,
+.q-cal-agenda__item .timeline__meta {
+  display: block;
+  margin: 0;
+}
+
+.q-cal-agenda__item:hover .timeline__title {
+  color: var(--q-primary);
+}
+
+@media (max-width: 575.98px) {
+  .q-cal-week {
+    min-width: 620px;
+  }
+}
