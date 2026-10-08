@@ -27,6 +27,10 @@
   <link rel="stylesheet" href="/assets/css/style.css">
   <link rel="stylesheet" href="/assets/css/components.css">
   <link rel="stylesheet" href="/assets/css/dark.css">
+  <style>
+    /* The one class of ours the kit does not have. */
+    .code-chip { font-family: var(--q-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: .78rem; }
+  </style>
 </head>
 
 <body class="q-app">
@@ -55,36 +59,75 @@
     <nav class="q-sidebar__body q-scroll">
       <p class="q-sidebar__group-label">Console</p>
       <ul class="q-nav">
-        <li class="q-nav-item"><a class="q-nav__link" href="#overview" data-view="overview">
-          <i class="q-nav__icon bi bi-grid-1x2" aria-hidden="true"></i><span class="q-nav__text">Overview</span></a></li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="#overview" data-view="overview">
+            <i class="q-nav__icon bi bi-grid-1x2" aria-hidden="true"></i>
+            <span class="q-nav__text">Overview</span>
+          </a>
+        </li>
       </ul>
 
       <p class="q-sidebar__group-label">Security</p>
       <ul class="q-nav">
-        <li class="q-nav-item"><a class="q-nav__link" href="#audit" data-view="audit">
-          <i class="q-nav__icon bi bi-list-check" aria-hidden="true"></i><span class="q-nav__text">Audit trail</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="#adversary" data-view="adversary">
-          <i class="q-nav__icon bi bi-shield-exclamation" aria-hidden="true"></i><span class="q-nav__text">Adversary feed</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="#posture" data-view="posture">
-          <i class="q-nav__icon bi bi-layers" aria-hidden="true"></i><span class="q-nav__text">Posture</span></a></li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="#audit" data-view="audit">
+            <i class="q-nav__icon bi bi-list-check" aria-hidden="true"></i>
+            <span class="q-nav__text">Audit trail</span>
+            <span class="badge badge-soft-secondary badge-pill ms-auto" id="nav-audit-count" hidden>0</span>
+          </a>
+        </li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="#adversary" data-view="adversary">
+            <i class="q-nav__icon bi bi-shield-exclamation" aria-hidden="true"></i>
+            <span class="q-nav__text">Adversary feed</span>
+            <span class="badge badge-soft-danger badge-pill ms-auto" id="nav-alert-count" hidden>0</span>
+          </a>
+        </li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="#posture" data-view="posture">
+            <i class="q-nav__icon bi bi-layers" aria-hidden="true"></i>
+            <span class="q-nav__text">Posture</span>
+          </a>
+        </li>
       </ul>
 
       <p class="q-sidebar__group-label">Intelligence</p>
       <ul class="q-nav">
-        <li class="q-nav-item"><a class="q-nav__link" href="#memory" data-view="memory">
-          <i class="q-nav__icon bi bi-database-lock" aria-hidden="true"></i><span class="q-nav__text">Memory</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="#agents" data-view="agents">
-          <i class="q-nav__icon bi bi-diagram-3" aria-hidden="true"></i><span class="q-nav__text">Agents</span></a></li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="#memory" data-view="memory">
+            <i class="q-nav__icon bi bi-database-lock" aria-hidden="true"></i>
+            <span class="q-nav__text">Memory</span>
+          </a>
+        </li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="#agents" data-view="agents">
+            <i class="q-nav__icon bi bi-diagram-3" aria-hidden="true"></i>
+            <span class="q-nav__text">Agents</span>
+            <span class="badge badge-soft-secondary badge-pill ms-auto" id="nav-agent-count" hidden>0</span>
+          </a>
+        </li>
       </ul>
 
       <p class="q-sidebar__group-label">Surfaces</p>
       <ul class="q-nav">
-        <li class="q-nav-item"><a class="q-nav__link" href="/voice">
-          <i class="q-nav__icon bi bi-mic" aria-hidden="true"></i><span class="q-nav__text">Talk to the agent</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="/">
-          <i class="q-nav__icon bi bi-terminal" aria-hidden="true"></i><span class="q-nav__text">Playground</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="/dashboard.html">
-          <i class="q-nav__icon bi bi-speedometer2" aria-hidden="true"></i><span class="q-nav__text">Language dashboard</span></a></li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="/voice">
+            <i class="q-nav__icon bi bi-mic" aria-hidden="true"></i>
+            <span class="q-nav__text">Talk to the agent</span>
+          </a>
+        </li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="/">
+            <i class="q-nav__icon bi bi-terminal" aria-hidden="true"></i>
+            <span class="q-nav__text">Playground</span>
+          </a>
+        </li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="/dashboard.html">
+            <i class="q-nav__icon bi bi-speedometer2" aria-hidden="true"></i>
+            <span class="q-nav__text">Language dashboard</span>
+          </a>
+        </li>
       </ul>
 
       <div class="q-sidebar__footer">
@@ -117,23 +160,6 @@
           <span class="badge badge-soft-secondary badge-pill" id="pill-provider" hidden></span>
         </div>
 
-        <!-- Owner grant: the one credential this console accepts -->
-        <div class="dropdown">
-          <button class="q-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                  title="Owner grant" aria-label="Owner grant">
-            <i class="bi bi-key" aria-hidden="true"></i>
-          </button>
-          <div class="dropdown-menu dropdown-menu-end p-3" style="width: 300px;">
-            <p class="fs-8 fw-600 text-uppercase text-faint mb-2">Owner grant</p>
-            <input type="password" class="form-control form-control-sm" id="grant"
-                   placeholder="paste an owner-issued grant">
-            <p class="fs-8 text-muted-2 mb-0 mt-2">
-              Development needs none; production refuses every panel without one.
-              Stored in this browser only, sent as <code>X-Zeno-Capability</code>.
-            </p>
-          </div>
-        </div>
-
         <!-- Live auto-refresh -->
         <button class="q-icon-btn" type="button" id="live" aria-pressed="true"
                 title="Pause auto-refresh" aria-label="Toggle live refresh">
@@ -145,6 +171,81 @@
                 title="Switch to dark mode" aria-label="Toggle colour mode">
           <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
         </button>
+
+        <!-- Quick apps -->
+        <div class="dropdown d-none d-sm-block">
+          <button class="q-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                  aria-label="Quick access" title="Quick access">
+            <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end p-3" style="width: 280px;">
+            <p class="fs-8 fw-600 text-uppercase text-faint mb-2">Quick access</p>
+            <div class="row g-2">
+              <div class="col-4"><a class="component-tile text-center p-2" href="#overview">
+                <i class="bi bi-grid-1x2 fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Overview</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="/voice">
+                <i class="bi bi-mic fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Voice</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="#adversary">
+                <i class="bi bi-shield-exclamation fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Feed</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="#memory">
+                <i class="bi bi-database-lock fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Memory</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="#agents">
+                <i class="bi bi-diagram-3 fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Agents</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="/dashboard.html">
+                <i class="bi bi-speedometer2 fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Language</span></a></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications: the watchtower's alerts, live -->
+        <div class="dropdown">
+          <button class="q-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                  aria-label="Notifications" title="Watchtower alerts">
+            <i class="bi bi-bell" aria-hidden="true"></i>
+            <span class="q-icon-btn__dot" id="notify-dot" hidden aria-hidden="true"></span>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end dropdown-notify">
+            <div class="dropdown-notify__head">
+              <span class="fw-600 text-heading">Watchtower alerts</span>
+              <span class="badge badge-soft-primary badge-pill" id="notify-count">0</span>
+            </div>
+            <div class="dropdown-notify__list q-scroll" id="notify-list">
+              <span class="d-block p-3 fs-8 text-muted-2">no alerts — nothing has crossed the strike threshold</span>
+            </div>
+            <div class="dropdown-notify__foot">
+              <a href="#adversary" class="fw-500" data-goto="adversary">Open the adversary feed</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Owner -->
+        <div class="dropdown">
+          <button class="q-header__user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="avatar avatar-sm bg-avatar-1" aria-hidden="true">OW</span>
+            <span class="q-header__user-meta">
+              <span class="d-block q-header__user-name">Owner</span>
+              <span class="d-block q-header__user-role" id="user-role">root of trust</span>
+            </span>
+            <i class="bi bi-chevron-down fs-8 text-muted-2 d-none d-md-block" aria-hidden="true"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li class="dropdown-header" id="user-grant-state">no grant stored in this browser</li>
+            <li><a class="dropdown-item" href="#posture" data-goto="posture"><i class="bi bi-layers"></i> Posture</a></li>
+            <li><a class="dropdown-item" href="/voice"><i class="bi bi-mic"></i> Talk to the agent</a></li>
+            <li><a class="dropdown-item" href="/dashboard.html"><i class="bi bi-speedometer2"></i> Language dashboard</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <button class="dropdown-item" type="button" id="user-grant">
+                <i class="bi bi-key"></i> Owner grant…
+              </button>
+            </li>
+            <li>
+              <button class="dropdown-item text-danger" type="button" id="user-clear-grant">
+                <i class="bi bi-box-arrow-right"></i> Clear stored grant
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </header>
 
@@ -171,7 +272,7 @@
         </div>
       </div>
 
-      <!-- ============ Overview ============ -->
+      <!-- ============ Overview: KPI cards ============ -->
       <section data-panel="overview">
         <div class="row g-3 q-section">
           <div class="col-sm-6 col-xl-3">
@@ -184,9 +285,8 @@
                 <span class="card-stat__icon bg-primary-soft text-primary-2"><i class="bi bi-list-check"></i></span>
               </div>
               <div class="d-flex align-items-center gap-2">
-                <span class="badge badge-soft-success badge-pill" id="st-allowed">–</span>
-                <span class="badge badge-soft-danger badge-pill" id="st-refused">–</span>
-                <span class="fs-8 text-muted-2">allowed · refused</span>
+                <span class="trend" id="st-allowed-trend"><i class="bi bi-check2"></i> <span id="st-allowed">–</span> allowed</span>
+                <span class="trend trend-down" id="st-refused-trend"><i class="bi bi-x-lg"></i> <span id="st-refused">–</span> refused</span>
               </div>
               <div class="card-stat__spark"><canvas id="spark-decisions" height="36"></canvas></div>
             </div></div>
@@ -201,7 +301,7 @@
                 <span class="card-stat__icon bg-danger-soft text-danger"><i class="bi bi-shield-exclamation"></i></span>
               </div>
               <div class="d-flex align-items-center gap-2">
-                <span class="fs-8 text-muted-2"><span id="st-decoys">–</span> decoys · <span id="st-tarpit">–</span> ms tarpit</span>
+                <span class="fs-8 text-muted-2"><span id="st-decoys">–</span> decoys served · <span id="st-tarpit">–</span> ms tarpit</span>
               </div>
               <div class="card-stat__spark"><canvas id="spark-intrusions" height="36"></canvas></div>
             </div></div>
@@ -216,7 +316,7 @@
                 <span class="card-stat__icon bg-info-soft text-info"><i class="bi bi-database-lock"></i></span>
               </div>
               <div class="d-flex align-items-center gap-2">
-                <span class="fs-8 text-muted-2" id="st-sealed">sealing: …</span>
+                <span class="trend" id="st-sealed-trend"><i class="bi bi-lock-fill"></i> <span id="st-sealed">sealing: …</span></span>
               </div>
               <div class="card-stat__spark"><canvas id="spark-sessions" height="36"></canvas></div>
             </div></div>
@@ -238,148 +338,316 @@
           </div>
         </div>
 
+        <!-- ============ Overview: charts ============ -->
         <div class="row g-3 q-section">
-          <div class="col-lg-5">
-            <div class="card h-100"><div class="card-body">
-              <p class="fw-600 text-heading mb-3">Allowed vs refused</p>
-              <canvas id="chart-split" height="190"></canvas>
-            </div></div>
+          <div class="col-xl-8">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Boundary decisions</h2>
+                  <p class="card-subtitle">Allowed and refused, counted since this page opened</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart-holder chart-holder--lg"><canvas id="chart-live"></canvas></div>
+              </div>
+            </div>
           </div>
-          <div class="col-lg-7">
-            <div class="card h-100"><div class="card-body">
-              <p class="fw-600 text-heading mb-3">Live decisions
-                <span class="fs-8 text-muted-2 fw-400">(counted since this page opened)</span></p>
-              <canvas id="chart-live" height="190"></canvas>
-            </div></div>
+          <div class="col-xl-4">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Refusals by code</h2>
+                  <p class="card-subtitle">The opaque codes this boundary has answered with</p>
+                </div>
+              </div>
+              <div class="card-body" id="code-breakdown">
+                <p class="fs-8 text-muted-2 mb-0">no refusals recorded yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ Overview: recent decisions + timeline ============ -->
+        <div class="row g-3 q-section">
+          <div class="col-xl-7">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Latest decisions</h2>
+                  <p class="card-subtitle">The boundary's own view, newest first</p>
+                </div>
+                <a class="btn btn-sm btn-white" href="#audit" data-goto="audit">Open the audit trail <i class="bi bi-arrow-right"></i></a>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead><tr><th>Decision</th><th>Result</th><th>Code</th><th>Why (owner-only)</th></tr></thead>
+                  <tbody id="overview-rows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-5">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Watchtower timeline</h2>
+                  <p class="card-subtitle">Recent refusals, as they were seen</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <ul class="timeline" id="refusal-timeline">
+                  <li class="timeline__item">
+                    <span class="timeline__dot timeline__dot--muted"></span>
+                    <p class="timeline__title">no refusals recorded</p>
+                    <p class="timeline__meta">the feed stores digests, never bodies</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- ============ Audit trail ============ -->
       <section data-panel="audit" hidden>
-        <div class="card q-section"><div class="card-header d-flex flex-wrap gap-2 align-items-center">
-          <p class="mb-0 fw-600 text-heading">Boundary decisions</p>
-          <span class="fs-8 text-muted-2">owner view — codes, sentences and layer verdicts a caller is never shown</span>
-          <span class="ms-auto fs-8 text-muted-2" id="audit-counters"></span>
-        </div><div class="card-body">
-          <div class="table-responsive"><table class="table table-hover align-middle">
-            <thead><tr><th>Decision</th><th>Result</th><th>Code</th><th>Why (owner-only)</th><th class="text-end">Ledger</th></tr></thead>
-            <tbody id="audit-rows"></tbody>
-          </table></div>
-        </div></div>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Boundary decisions</h2>
+              <p class="card-subtitle">Codes, sentences and layer verdicts a caller is never shown (S20/S21/S23). Reads are audited too, and marked read-only.</p>
+            </div>
+            <span class="fs-8 text-muted-2" id="audit-counters"></span>
+          </div>
+          <div class="table-toolbar">
+            <div class="search-field" style="max-width: 280px;">
+              <i class="bi bi-search search-field__icon" aria-hidden="true"></i>
+              <label class="visually-hidden" for="audit-filter">Filter decisions</label>
+              <input type="search" class="form-control" id="audit-filter" placeholder="Filter by code, actor, reason…">
+            </div>
+            <span class="ms-auto fs-8 text-muted-2" id="audit-shown"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="audit-table">
+              <thead><tr><th>Decision</th><th>Result</th><th>Code</th><th>Why (owner-only)</th><th>Layers</th><th class="text-end">Ledger</th></tr></thead>
+              <tbody id="audit-rows"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- ============ Adversary feed ============ -->
       <section data-panel="adversary" hidden>
-        <div class="card q-section"><div class="card-header d-flex flex-wrap gap-2 align-items-center">
-          <p class="mb-0 fw-600 text-heading">Flagged sources</p>
-          <span class="ms-auto fs-8 text-muted-2" id="tower-counters"></span>
-        </div><div class="card-body">
-          <div class="table-responsive"><table class="table table-hover align-middle">
-            <thead><tr><th>Source</th><th>Strikes</th><th>Client fingerprint</th><th>User agent</th><th>Last seen</th></tr></thead>
-            <tbody id="intruder-rows"></tbody>
-          </table></div>
-        </div></div>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Flagged sources</h2>
+              <p class="card-subtitle">Strikes, fingerprints and user agents — digests only, never request bodies</p>
+            </div>
+            <span class="fs-8 text-muted-2" id="tower-counters"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Source</th><th>Strikes</th><th>Client fingerprint</th><th>User agent</th><th>Last seen</th></tr></thead>
+              <tbody id="intruder-rows"></tbody>
+            </table>
+          </div>
+        </div>
         <div class="row g-3 q-section">
-          <div class="col-lg-6"><div class="card h-100"><div class="card-body">
-            <p class="fw-600 text-heading mb-3">Recent refusals (the feed)</p>
-            <div id="recent-refusals" class="d-flex flex-column gap-2 fs-7" style="max-height: 18rem; overflow: auto;"></div>
-          </div></div></div>
-          <div class="col-lg-6"><div class="card h-100"><div class="card-body">
-            <p class="fw-600 text-heading mb-3">What the watchtower is, honestly</p>
-            <ul class="fs-7 text-muted-2 mb-0" id="tower-limits"></ul>
-          </div></div></div>
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Recent refusals</h2>
+                  <p class="card-subtitle">The feed, newest first</p>
+                </div>
+              </div>
+              <div class="card-body"><ul class="timeline" id="recent-refusals"></ul></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">What the watchtower is, honestly</h2>
+                  <p class="card-subtitle">Its own limits, verbatim</p>
+                </div>
+              </div>
+              <div class="card-body"><ul class="timeline" id="tower-limits"></ul></div>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- ============ Memory ============ -->
       <section data-panel="memory" hidden>
-        <div class="card q-section"><div class="card-header d-flex flex-wrap gap-2 align-items-center">
-          <p class="mb-0 fw-600 text-heading">Sessions</p>
-          <span class="fs-8 text-muted-2">sealed to the owner's key when one is configured</span>
-          <button class="btn btn-sm btn-white ms-auto" id="verify"><i class="bi bi-patch-check me-1"></i>Verify chain</button>
-        </div><div class="card-body">
-          <div class="table-responsive"><table class="table table-hover align-middle">
-            <thead><tr><th>Session</th><th>Records</th><th>Languages</th><th>Last activity</th><th class="text-end">Forget</th></tr></thead>
-            <tbody id="memory-rows"></tbody>
-          </table></div>
-          <pre id="verify-out" class="code-chip mt-3 mb-0" hidden style="max-height: 14rem; overflow: auto;"></pre>
-        </div></div>
-        <div class="card q-section"><div class="card-body">
-          <p class="fw-600 text-heading mb-3">Search what was said</p>
-          <div class="d-flex gap-2 mb-3">
-            <input id="search" class="form-control form-control-sm" placeholder='e.g. "varsad" — a substring scan over decrypted records, not a semantic index'>
-            <button class="btn btn-sm btn-primary" id="search-go">Search</button>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Sessions</h2>
+              <p class="card-subtitle">Sealed to the owner's key when one is configured; forgetting is destructive on purpose</p>
+            </div>
+            <button class="btn btn-sm btn-white ms-auto" id="verify"><i class="bi bi-patch-check me-1"></i>Verify chain</button>
           </div>
-          <div id="search-out" class="fs-7 d-flex flex-column gap-2" style="max-height: 14rem; overflow: auto;"></div>
-        </div></div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Session</th><th>Records</th><th>Languages</th><th>Last activity</th><th class="text-end">Forget</th></tr></thead>
+              <tbody id="memory-rows"></tbody>
+            </table>
+          </div>
+          <div class="card-body"><pre id="verify-out" class="code-chip mb-0" hidden style="max-height: 14rem; overflow: auto;"></pre></div>
+        </div>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Search what was said</h2>
+              <p class="card-subtitle">A substring scan over decrypted records, not a semantic index</p>
+            </div>
+          </div>
+          <div class="table-toolbar">
+            <div class="search-field" style="max-width: 360px;">
+              <i class="bi bi-search search-field__icon" aria-hidden="true"></i>
+              <label class="visually-hidden" for="search">Search memory</label>
+              <input type="search" class="form-control" id="search" placeholder='e.g. "varsad"'>
+            </div>
+            <button class="btn btn-sm btn-primary ms-auto" id="search-go">Search</button>
+          </div>
+          <div class="card-body"><div id="search-out" class="d-flex flex-column gap-2 fs-7" style="max-height: 14rem; overflow: auto;"></div></div>
+        </div>
       </section>
 
       <!-- ============ Agents ============ -->
       <section data-panel="agents" hidden>
-        <div class="card q-section"><div class="card-header d-flex flex-wrap gap-2 align-items-center">
-          <p class="mb-0 fw-600 text-heading">Connected agents</p>
-          <span class="fs-8 text-muted-2">each holds its own grant, never the owner key</span>
-          <span class="ms-auto fs-8 text-muted-2" id="bridge-limits"></span>
-        </div><div class="card-body">
-          <div class="table-responsive"><table class="table table-hover align-middle">
-            <thead><tr><th>Name</th><th>Endpoint</th><th>Grant</th><th>Calls</th><th>Failures</th><th>Last</th><th class="text-end">Actions</th></tr></thead>
-            <tbody id="agent-rows"></tbody>
-          </table></div>
-        </div></div>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Connected agents</h2>
+              <p class="card-subtitle">Each holds its own grant, never the owner key; replies are recorded as that peer's claim</p>
+            </div>
+            <span class="fs-8 text-muted-2 ms-auto" id="bridge-limits"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Name</th><th>Endpoint</th><th>Grant</th><th>Calls</th><th>Failures</th><th>Last</th><th class="text-end">Actions</th></tr></thead>
+              <tbody id="agent-rows"></tbody>
+            </table>
+          </div>
+        </div>
         <div class="row g-3 q-section">
-          <div class="col-lg-6"><div class="card h-100"><div class="card-body">
-            <p class="fw-600 text-heading mb-3">Connect an agent</p>
-            <div class="row g-2">
-              <div class="col-6 col-md-4"><input id="peer-name" class="form-control form-control-sm" placeholder="name"></div>
-              <div class="col-6 col-md-8"><input id="peer-url" class="form-control form-control-sm" placeholder="https://…  (POSTs to <url>/ask)"></div>
-              <div class="col-8 col-md-8"><input id="peer-grant" type="password" class="form-control form-control-sm" placeholder="its grant (optional)"></div>
-              <div class="col-4 col-md-4"><button class="btn btn-sm btn-primary w-100" id="peer-add">Connect</button></div>
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Connect an agent</h2>
+                  <p class="card-subtitle">No artificial cap: concurrency and timeout are the declared bounds</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="row g-2">
+                  <div class="col-6 col-md-4"><input id="peer-name" class="form-control form-control-sm" placeholder="name"></div>
+                  <div class="col-6 col-md-8"><input id="peer-url" class="form-control form-control-sm" placeholder="https://…  (POSTs to <url>/ask)"></div>
+                  <div class="col-8 col-md-8"><input id="peer-grant" type="password" class="form-control form-control-sm" placeholder="its grant (optional)"></div>
+                  <div class="col-4 col-md-4"><button class="btn btn-sm btn-primary w-100" id="peer-add">Connect</button></div>
+                </div>
+              </div>
             </div>
-          </div></div></div>
-          <div class="col-lg-6"><div class="card h-100"><div class="card-body">
-            <p class="fw-600 text-heading mb-3">Broadcast</p>
-            <div class="d-flex gap-2">
-              <input id="broadcast-text" class="form-control form-control-sm" placeholder="ask every connected agent at once">
-              <button class="btn btn-sm btn-primary" id="broadcast-go">Send</button>
+          </div>
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Broadcast</h2>
+                  <p class="card-subtitle">Ask every connected agent at once</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="d-flex gap-2">
+                  <input id="broadcast-text" class="form-control form-control-sm" placeholder="ask every connected agent at once">
+                  <button class="btn btn-sm btn-primary" id="broadcast-go">Send</button>
+                </div>
+                <pre id="broadcast-out" class="code-chip mt-3 mb-0" hidden style="max-height: 10rem; overflow: auto;"></pre>
+              </div>
             </div>
-            <pre id="broadcast-out" class="code-chip mt-3 mb-0" hidden style="max-height: 10rem; overflow: auto;"></pre>
-          </div></div></div>
+          </div>
         </div>
       </section>
 
       <!-- ============ Posture ============ -->
       <section data-panel="posture" hidden>
         <div class="row g-3 q-section">
-          <div class="col-lg-7"><div class="card h-100"><div class="card-body">
-            <p class="fw-600 text-heading mb-3">The eight layers, and what this deployment actually requires</p>
-            <div class="table-responsive"><table class="table table-hover align-middle">
-              <thead><tr><th>#</th><th>Layer</th><th>Required here</th><th>Note</th></tr></thead>
-              <tbody id="layer-rows"></tbody>
-            </table></div>
-          </div></div></div>
-          <div class="col-lg-5"><div class="card h-100"><div class="card-body">
-            <p class="fw-600 text-heading mb-3">Policy switches</p>
-            <div id="policy-flags" class="d-flex flex-column gap-2 fs-7"></div>
-            <hr>
-            <p class="fw-600 text-heading mb-2">Memory store</p>
-            <div id="memory-info" class="fs-7 text-muted-2"></div>
-            <hr>
-            <p class="fw-600 text-heading mb-2">What this console is not</p>
-            <p class="fs-7 text-muted-2 mb-0">
-              It is a view, not a control surface: nothing here can weaken a policy or issue a grant —
-              those stay with the owner's key and the CLI. A tarpit delays and a decoy misleads; nothing
-              here traps anyone. Panels that need a grant say so in production; a refusal is a code, and
-              this page does not guess at it.
-            </p>
-          </div></div></div>
+          <div class="col-lg-7">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">The eight layers</h2>
+                  <p class="card-subtitle">What this deployment actually requires of them</p>
+                </div>
+                <span class="badge badge-soft-primary badge-pill" id="layers-required-badge">–</span>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead><tr><th>#</th><th>Layer</th><th>Required here</th><th>Note</th></tr></thead>
+                  <tbody id="layer-rows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Policy switches</h2>
+                  <p class="card-subtitle">In force on this server right now</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div id="policy-flags" class="d-flex flex-column gap-2 fs-7"></div>
+                <hr>
+                <h2 class="card-title">Memory store</h2>
+                <div id="memory-info" class="fs-7 text-muted-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">What this console is not</h2>
+              <p class="card-subtitle">The line it does not cross</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <ul class="timeline">
+              <li class="timeline__item">
+                <span class="timeline__dot timeline__dot--muted"></span>
+                <p class="timeline__title">A view, not a control surface</p>
+                <p class="timeline__meta">nothing here can weaken a policy or issue a grant — those stay with the owner's key and the CLI</p>
+              </li>
+              <li class="timeline__item">
+                <span class="timeline__dot timeline__dot--muted"></span>
+                <p class="timeline__title">A tarpit delays and a decoy misleads</p>
+                <p class="timeline__meta">nothing here traps anyone, and no inescapability is claimed</p>
+              </li>
+              <li class="timeline__item">
+                <span class="timeline__dot timeline__dot--muted"></span>
+                <p class="timeline__title">A refusal is a code, and this page does not guess at it</p>
+                <p class="timeline__meta">panels that need a grant say so in production</p>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
-      <p class="fs-8 text-muted-2 mt-4 mb-0">
-        Zeno · AEGIS gateway · UI kit vendored locally (assets/CREDITS.md) ·
-        <a href="/voice">talk to the agent</a> · <a href="/dashboard.html">language dashboard</a>
-      </p>
+      <footer class="q-footer">
+        <div class="q-footer__inner">
+          <span>Zeno · AEGIS gateway · live figures from this server, not demo data · UI kit vendored locally (assets/CREDITS.md)</span>
+          <nav class="d-flex flex-wrap gap-3" aria-label="Footer">
+            <a href="/voice">Talk to the agent</a>
+            <a href="/dashboard.html">Language dashboard</a>
+            <a href="/">Playground</a>
+          </nav>
+        </div>
+      </footer>
     </main>
   </div>
 
@@ -399,8 +667,9 @@
     timer: null,
     history: [],
     lastDecisionId: "",
-    charts: { split: null, live: null, sparks: {} },
+    charts: { live: null, sparks: {} },
     last: { permitted: 0, refused: 0, intrusions: 0, sessions: 0, agents: 0 },
+    decisions: [],
   };
 
   const SUBTITLES = {
@@ -487,6 +756,38 @@
     row.appendChild(td);
     return td;
   }
+  function avatarCell(row, initials, tone, icon) {
+    const td = document.createElement("td");
+    const wrap = document.createElement("div");
+    wrap.className = "d-flex align-items-center gap-2";
+    const avatar = document.createElement("span");
+    avatar.className = "avatar avatar-xs bg-avatar-" + tone;
+    if (icon) {
+      const glyph = document.createElement("i");
+      glyph.className = "bi " + icon;
+      avatar.appendChild(glyph);
+    } else {
+      avatar.textContent = initials;
+    }
+    wrap.appendChild(avatar);
+    td.appendChild(wrap);
+    row.appendChild(td);
+    return td;
+  }
+  function timelineItem(list, dot, title, meta) {
+    const li = document.createElement("li");
+    li.className = "timeline__item";
+    const dotEl = document.createElement("span");
+    dotEl.className = "timeline__dot " + dot;
+    const titleEl = document.createElement("p");
+    titleEl.className = "timeline__title";
+    titleEl.textContent = title;
+    const metaEl = document.createElement("p");
+    metaEl.className = "timeline__meta";
+    metaEl.textContent = meta;
+    li.appendChild(dotEl); li.appendChild(titleEl); li.appendChild(metaEl);
+    list.appendChild(li);
+  }
 
   // -- theme-aware chart colours (kit palette; rebuilt on mode change) --------
   function chartColors() {
@@ -498,6 +799,8 @@
       info: dark ? "#38bdf8" : "#0891b2",
       tick: dark ? "#94a3b8" : "#64748b",
       grid: dark ? "rgba(148,163,184,.14)" : "rgba(100,116,139,.14)",
+      area: dark ? "rgba(99,102,241,.20)" : "rgba(79,70,229,.14)",
+      areaDanger: dark ? "rgba(248,113,113,.16)" : "rgba(220,38,38,.10)",
     };
   }
 
@@ -521,24 +824,19 @@
     if (typeof Chart === "undefined") return;
     const colors = chartColors();
     const data = state.last;
-    if (state.charts.split) state.charts.split.destroy();
-    state.charts.split = new Chart($("chart-split"), {
-      type: "doughnut",
-      data: { labels: ["allowed", "refused"], datasets: [{ data: [data.permitted || 0, data.refused || 0],
-        backgroundColor: [colors.success, colors.danger], borderWidth: 0 }] },
-      options: { cutout: "64%", maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { color: colors.tick } } } },
-    });
     if (state.charts.live) state.charts.live.destroy();
     const first = state.history[0] || { permitted: 0, refused: 0 };
     state.charts.live = new Chart($("chart-live"), {
       type: "line",
       data: { labels: state.history.map((s) => new Date(s.at).toLocaleTimeString()), datasets: [
-        { label: "allowed", data: state.history.map((s) => s.permitted - first.permitted), borderColor: colors.success, backgroundColor: "transparent", tension: .3, pointRadius: 0 },
-        { label: "refused", data: state.history.map((s) => s.refused - first.refused), borderColor: colors.danger, backgroundColor: "transparent", tension: .3, pointRadius: 0 },
+        { label: "allowed", data: state.history.map((s) => s.permitted - first.permitted), borderColor: colors.success,
+          backgroundColor: colors.area, fill: true, tension: .35, pointRadius: 0, borderWidth: 2 },
+        { label: "refused", data: state.history.map((s) => s.refused - first.refused), borderColor: colors.danger,
+          backgroundColor: colors.areaDanger, fill: true, tension: .35, pointRadius: 0, borderWidth: 2 },
       ] },
       options: { animation: false, maintainAspectRatio: false,
         plugins: { legend: { position: "bottom", labels: { color: colors.tick } } },
-        scales: { x: { ticks: { display: false }, grid: { color: colors.grid } }, y: { grid: { color: colors.grid }, ticks: { color: colors.tick, precision: 0 } } } },
+        scales: { x: { ticks: { display: false }, grid: { color: colors.grid } }, y: { grid: { color: colors.grid }, ticks: { color: colors.tick, precision: 0 }, beginAtZero: true } } },
     });
     spark("spark-decisions", state.history.map((s) => s.permitted + s.refused), "primary2");
     spark("spark-intrusions", state.history.map((s) => s.intrusions), "danger");
@@ -546,12 +844,64 @@
     spark("spark-agents", state.history.map((s) => s.agents), "success");
   }
 
+  function renderCodeBreakdown() {
+    const box = $("code-breakdown");
+    box.textContent = "";
+    const counts = {};
+    state.decisions.forEach((item) => {
+      if (item.code) counts[item.code] = (counts[item.code] || 0) + 1;
+    });
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    if (!entries.length) {
+      const none = document.createElement("p");
+      none.className = "fs-8 text-muted-2 mb-0";
+      none.textContent = "no refusals recorded yet";
+      box.appendChild(none);
+      return;
+    }
+    const worst = entries[0][1];
+    entries.forEach(([code, count]) => {
+      const row = document.createElement("div");
+      row.className = "d-flex justify-content-between align-items-center fs-7 mb-1";
+      const name = document.createElement("span");
+      name.className = "code-chip";
+      name.textContent = code;
+      const value = document.createElement("span");
+      value.className = "text-muted-2";
+      value.textContent = String(count);
+      row.appendChild(name); row.appendChild(value);
+      box.appendChild(row);
+      const progress = document.createElement("div");
+      progress.className = "progress mb-2";
+      progress.style.height = "6px";
+      const bar = document.createElement("div");
+      bar.className = "progress-bar bg-danger";
+      bar.style.width = Math.max(6, Math.round((count / worst) * 100)) + "%";
+      progress.appendChild(bar);
+      box.appendChild(progress);
+    });
+  }
+
+  function renderOverviewRows() {
+    const rows = $("overview-rows");
+    rows.textContent = "";
+    state.decisions.slice(0, 6).forEach((item) => {
+      const tr = document.createElement("tr");
+      avatarCell(tr, "", item.allowed ? (item.read_only ? 8 : 3) : 5, item.allowed ? (item.read_only ? "bi-eye" : "bi-check2") : "bi-x-lg");
+      badgeCell(tr, item.allowed ? (item.read_only ? "read" : "allow") : "refuse", item.allowed ? "success" : "danger");
+      badgeCell(tr, item.code || "—", item.code ? "danger" : "secondary");
+      const why = cell(tr, item.human_reason || item.reason || "", "fs-7 text-muted-2");
+      why.style.maxWidth = "20rem";
+      rows.appendChild(tr);
+    });
+  }
+
   // -- data ------------------------------------------------------------------
   async function loadHealth() {
     const health = await api("/api/health");
-    const pill = (id, text, tone, hidden) => {
+    const pill = (id, text, tone) => {
       const element = $(id);
-      element.hidden = !!hidden;
+      element.hidden = false;
       element.textContent = text;
       element.className = "badge badge-soft-" + tone + " badge-pill";
     };
@@ -560,15 +910,24 @@
     const sealed = health.memory && health.memory.encrypted;
     pill("pill-memory", sealed ? "memory: sealed" : "memory: NOT sealed", sealed ? "success" : "warning");
     pill("pill-provider", "answerer: " + health.provider + (health.online ? "" : " (rule-based)"), "secondary");
+    $("user-role").textContent = sealed ? "root of trust · memory sealed" : "root of trust";
     return health;
   }
 
   async function loadDecisions() {
     const data = await api("/api/admin/decisions?limit=50");
-    if (!data.enabled) { $("st-decisions").textContent = "off"; return data; }
+    const auditCount = $("nav-audit-count");
+    if (!data.enabled) {
+      $("st-decisions").textContent = "off";
+      auditCount.hidden = true;
+      return data;
+    }
+    state.decisions = data.decisions;
     $("st-decisions").textContent = data.attempts;
-    $("st-allowed").textContent = data.permitted + " allowed";
-    $("st-refused").textContent = data.refused + " refused";
+    $("st-allowed").textContent = data.permitted;
+    $("st-refused").textContent = data.refused;
+    auditCount.hidden = false;
+    auditCount.textContent = String(data.attempts);
     state.last.permitted = data.permitted;
     state.last.refused = data.refused;
     state.history.push({ at: Date.now(), permitted: data.permitted, refused: data.refused,
@@ -585,18 +944,35 @@
     rows.textContent = "";
     data.decisions.forEach((item) => {
       const tr = document.createElement("tr");
+      avatarCell(tr, "", item.allowed ? (item.read_only ? 8 : 3) : 5, item.allowed ? (item.read_only ? "bi-eye" : "bi-check2") : "bi-x-lg");
       const decision = cell(tr, item.decision_id.slice(0, 10) + "…", "fw-500 text-heading code-chip");
       decision.title = item.decision_id;
       badgeCell(tr, item.allowed ? (item.read_only ? "read" : "allow") : "refuse", item.allowed ? "success" : "danger");
       badgeCell(tr, item.code || "—", item.code ? "danger" : "secondary");
       const why = cell(tr, item.human_reason || item.reason || "", "fs-7 text-muted-2");
-      why.style.maxWidth = "26rem";
+      why.style.maxWidth = "22rem";
+      const layers = cell(tr, item.layers ? item.layers.filter((l) => l.required).length + "/8" : "—", "code-chip");
+      layers.title = (item.layers || []).map((l) => l.layer + ": " + (l.ok ? "ok" : "refused")).join("\n");
       cell(tr, item.ledger_seq ? "#" + item.ledger_seq : "—", "text-end code-chip");
       rows.appendChild(tr);
     });
     $("audit-counters").textContent = data.attempts + " attempts · " + data.permitted + " allowed · " + data.refused + " refused";
+    renderCodeBreakdown();
+    renderOverviewRows();
+    filterAudit();
     drawCharts();
     return data;
+  }
+
+  function filterAudit() {
+    const needle = ($("audit-filter").value || "").toLowerCase();
+    let shown = 0;
+    document.querySelectorAll("#audit-rows tr").forEach((row) => {
+      const match = !needle || row.textContent.toLowerCase().includes(needle);
+      row.style.display = match ? "" : "none";
+      if (match) shown += 1;
+    });
+    $("audit-shown").textContent = shown + " shown";
   }
 
   async function loadWatchtower() {
@@ -607,6 +983,45 @@
     $("st-decoys").textContent = tower.decoys_served;
     $("st-tarpit").textContent = tower.tarpit_ms_total;
     $("feed-path").textContent = tower.feed || "";
+
+    // the bell: alerts, live
+    const alerts = tower.alerts || [];
+    $("notify-count").textContent = String(alerts.length);
+    $("notify-dot").hidden = !alerts.length;
+    const list = $("notify-list");
+    list.textContent = "";
+    if (!alerts.length) {
+      const none = document.createElement("span");
+      none.className = "d-block p-3 fs-8 text-muted-2";
+      none.textContent = "no alerts — nothing has crossed the strike threshold";
+      list.appendChild(none);
+    }
+    alerts.slice(0, 6).forEach((alert) => {
+      const item = document.createElement("a");
+      item.className = "dropdown-notify__item";
+      item.href = "#adversary";
+      item.dataset.goto = "adversary";
+      const avatar = document.createElement("span");
+      avatar.className = "avatar avatar-sm bg-avatar-5";
+      const glyph = document.createElement("i");
+      glyph.className = "bi bi-shield-exclamation";
+      avatar.appendChild(glyph);
+      const body = document.createElement("span");
+      body.className = "min-w-0";
+      const title = document.createElement("span");
+      title.className = "d-block dropdown-notify__title";
+      title.textContent = (alert.source || "a source") + " crossed the strike threshold";
+      const meta = document.createElement("span");
+      meta.className = "d-block dropdown-notify__meta";
+      meta.textContent = (alert.strikes || "?") + " strikes · " + (alert.at_iso ? String(alert.at_iso).slice(11, 19) : "");
+      body.appendChild(title); body.appendChild(meta);
+      item.appendChild(avatar); item.appendChild(body);
+      list.appendChild(item);
+    });
+    const alertBadge = $("nav-alert-count");
+    alertBadge.hidden = !alerts.length;
+    alertBadge.textContent = String(alerts.length);
+
     const intruders = Object.entries(tower.intruders || {});
     const rows = $("intruder-rows");
     rows.textContent = "";
@@ -629,30 +1044,25 @@
 
     const recent = $("recent-refusals");
     recent.textContent = "";
+    const timeline = $("refusal-timeline");
+    timeline.textContent = "";
+    let first = true;
     (tower.recent || []).forEach((item) => {
-      const wrap = document.createElement("div");
-      wrap.className = "d-flex gap-2 align-items-center border rounded p-2";
-      const code = document.createElement("span");
-      code.className = "badge badge-soft-danger badge-pill code-chip";
-      code.textContent = item.code || "refused";
-      const path = document.createElement("span");
-      path.className = "code-chip text-truncate";
-      path.textContent = item.path || item.action || "";
-      const note = document.createElement("span");
-      note.className = "text-muted-2 ms-auto fs-8";
-      note.textContent = (item.verdict ? item.verdict + " · " : "") + (item.at_iso ? String(item.at_iso).slice(11, 19) : "");
-      wrap.appendChild(code); wrap.appendChild(path); wrap.appendChild(note);
-      recent.appendChild(wrap);
+      if (first) {
+        timelineItem(timeline, "timeline__dot--danger", item.code || "refused",
+          (item.path || item.action || "") + " · " + (item.at_iso ? String(item.at_iso).slice(11, 19) : ""));
+        first = false;
+      }
+      timelineItem(recent, (item.verdict === "decoy") ? "timeline__dot--warning" : "timeline__dot--danger",
+        item.code || "refused",
+        (item.path || item.action || "") + " · " + (item.verdict ? item.verdict + " · " : "") + (item.at_iso ? String(item.at_iso).slice(11, 19) : ""));
     });
-    if (!(tower.recent || []).length) recent.textContent = "no refusals recorded.";
+    if (!(tower.recent || []).length) {
+      timelineItem(recent, "timeline__dot--muted", "no refusals recorded", "the feed stores digests, never bodies");
+    }
     const limits = $("tower-limits");
     limits.textContent = "";
-    (tower.limits || []).forEach((line) => {
-      const li = document.createElement("li");
-      li.className = "mb-1";
-      li.textContent = line;
-      limits.appendChild(li);
-    });
+    (tower.limits || []).forEach((line) => timelineItem(limits, "timeline__dot--muted", line.split(":")[0], line.split(":").slice(1).join(":").trim() || "—"));
     return tower;
   }
 
@@ -669,6 +1079,7 @@
     }
     sessions.forEach((item) => {
       const tr = document.createElement("tr");
+      avatarCell(tr, (item.languages || [])[0] ? String(item.languages[0]).slice(0, 2).toUpperCase() : "—", 2, "");
       cell(tr, item.id, "code-chip fw-500 text-heading");
       cell(tr, String(item.turns));
       cell(tr, (item.languages || []).join(", ") || "—");
@@ -693,7 +1104,7 @@
     });
     const health = await api("/api/health");
     const sealed = health.memory && health.memory.encrypted;
-    $("st-sealed").textContent = sealed ? "sealed (" + String(health.memory.scheme || "").split(" ")[0] + ")" : "NOT sealed — set ZENO_MEMORY_KEY";
+    $("st-sealed").textContent = sealed ? "sealed" : "NOT sealed — set ZENO_MEMORY_KEY";
     const info = $("memory-info");
     info.textContent = "";
     ((health.memory && health.memory.limits) || []).forEach((line) => {
@@ -708,6 +1119,9 @@
     const { agents, bridge } = await api("/api/agents");
     $("st-agents").textContent = agents.length;
     state.last.agents = agents.length;
+    const navCount = $("nav-agent-count");
+    navCount.hidden = !agents.length;
+    navCount.textContent = String(agents.length);
     $("st-bridge").textContent = "concurrency " + bridge.concurrency + " · timeout " + bridge.timeout_seconds + "s";
     $("bridge-limits").textContent = (bridge.limits || []).join("  ·  ");
     const rows = $("agent-rows");
@@ -719,6 +1133,7 @@
     }
     agents.forEach((peer) => {
       const tr = document.createElement("tr");
+      avatarCell(tr, peer.name.slice(0, 2).toUpperCase(), 7, "");
       cell(tr, peer.name, "fw-600 text-heading");
       cell(tr, peer.endpoint, "code-chip fs-7");
       badgeCell(tr, peer.capability ? "set" : "none", peer.capability ? "success" : "secondary");
@@ -770,15 +1185,18 @@
     const mandatory = new Set(policy.mandatory_layers || []);
     const rows = $("layer-rows");
     rows.textContent = "";
+    let requiredCount = 0;
     Object.keys(LAYER_NOTES).forEach((key, index) => {
       const tr = document.createElement("tr");
       cell(tr, String(index + 1), "text-muted-2");
       cell(tr, key, "code-chip");
       const isRequired = mandatory.has(key) || required[key.replace(/^\d+-/, "").replace(/-/g, "_")] === true;
+      if (isRequired) requiredCount += 1;
       badgeCell(tr, isRequired ? "required" : "optional", isRequired ? "success" : "secondary");
       cell(tr, LAYER_NOTES[key], "fs-7 text-muted-2");
       rows.appendChild(tr);
     });
+    $("layers-required-badge").textContent = requiredCount + " of 8 required";
     const flags = $("policy-flags");
     flags.textContent = "";
     [
@@ -833,7 +1251,7 @@
   function setView(view) {
     state.view = view;
     document.querySelectorAll("#qevora-sidebar .q-nav__link[data-view]").forEach((link) => {
-      link.classList.toggle("active", link.dataset.view === view);
+      link.classList.toggle("is-active", link.dataset.view === view);
     });
     document.querySelectorAll("[data-panel]").forEach((panel) => {
       panel.hidden = panel.dataset.panel !== view;
@@ -851,6 +1269,13 @@
       setView(link.dataset.view);
     });
   });
+  // dropdown links that switch views too (notifications, user menu, overview cards)
+  document.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-goto]");
+    if (!target) return;
+    event.preventDefault();
+    setView(target.dataset.goto);
+  });
 
   $("q-header-search").addEventListener("keydown", (event) => {
     if (event.key !== "Enter") return;
@@ -861,20 +1286,36 @@
     runSearch();
   });
 
-  $("grant").value = state.token;
-  $("grant").addEventListener("change", () => {
-    state.token = $("grant").value.trim();
+  function askForGrant() {
+    const value = window.prompt(
+      "Owner grant\n\nPaste an owner-issued grant (python -m aegis owner issue …).\nDevelopment needs none; production refuses every panel without one.",
+      state.token
+    );
+    if (value === null) return;
+    state.token = value.trim();
     if (state.token) localStorage.setItem("zeno.token", state.token);
     else localStorage.removeItem("zeno.token");
+    $("user-grant-state").textContent = state.token ? "grant stored in this browser" : "no grant stored in this browser";
     toast("Grant", state.token ? "stored in this browser" : "cleared", "secondary");
     refresh();
+  }
+  $("user-grant").addEventListener("click", askForGrant);
+  $("user-clear-grant").addEventListener("click", () => {
+    state.token = "";
+    localStorage.removeItem("zeno.token");
+    $("user-grant-state").textContent = "no grant stored in this browser";
+    toast("Grant", "cleared", "secondary");
+    refresh();
   });
+  $("user-grant-state").textContent = state.token ? "grant stored in this browser" : "no grant stored in this browser";
 
   $("live").addEventListener("click", () => setLive(!state.live));
   $("refresh-now").addEventListener("click", () => { refresh(); });
   if (window.QevoraTheme) {
     window.QevoraTheme.onChange(() => drawCharts());
   }
+
+  $("audit-filter").addEventListener("input", filterAudit);
 
   $("verify").addEventListener("click", async () => {
     const out = $("verify-out");
@@ -902,9 +1343,9 @@
       }
       hits.forEach((hit) => {
         const line = document.createElement("div");
-        line.className = "border rounded p-2";
+        line.className = "border rounded p-2 d-flex gap-2";
         const who = document.createElement("span");
-        who.className = "badge badge-soft-secondary badge-pill me-2";
+        who.className = "badge badge-soft-secondary badge-pill";
         who.textContent = hit.role + " · " + (hit.lang || "—");
         const text = document.createElement("span");
         text.textContent = hit.text;
