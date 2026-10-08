@@ -185,8 +185,15 @@ async function api(path, body) {
     init.body = JSON.stringify(Object.assign({ nonce: freshNonce() }, body));
   }
   const response = await fetch(path, init);
-  const data = await response.json();
-  if (!response.ok) throw data;
+  let data = null;
+  try { data = await response.json(); } catch (_) { data = null; }
+  if (!response.ok) {
+    if (data && data.error) throw data;
+    const offline = response.status === 502 || response.status === 503 || response.status === 504;
+    throw { error: { code: "HTTP " + response.status, message: offline
+      ? "the server did not answer \u2014 a free-plan service sleeps when idle and the wake-up call can fail. Wait ~30 seconds, refresh (Ctrl+Shift+R), then try once"
+      : "" } };
+  }
   if (data && data.decoy === true) {
     throw { error: { code: "TARPIT", message: "the guardian is tarpitting this browser: repeated refused attempts are answered with fabricated decoys, so nothing actually happened — fix the refusal underneath (usually the grant) and try once" } };
   }

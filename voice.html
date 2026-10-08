@@ -277,7 +277,10 @@ async function api(path, options) {
     const error = payload && payload.error ? payload.error : null;
     // In development the refusal carries its sentence; in production it carries a
     // code and nothing else, by policy. Show whatever is actually there.
-    const parts = error ? [error.code, error.message].filter(Boolean) : ["HTTP " + response.status];
+    const offline = response.status === 502 || response.status === 503 || response.status === 504
+        ? " \u2014 the server did not answer; a free-plan service sleeps when idle and the wake-up call can fail. Wait ~30 seconds, refresh the page (Ctrl+Shift+R), then try once"
+        : "";
+    const parts = error ? [error.code, error.message].filter(Boolean) : ["HTTP " + response.status + offline];
     const hint = explainCode(error ? error.code : "");
     if (hint) parts.push(hint);
     const detail = parts.join(" — ");

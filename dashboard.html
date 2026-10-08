@@ -478,7 +478,10 @@ async function api(path, options) {
   try { payload = await response.json(); } catch (_) { payload = null; }
   if (!response.ok) {
     const error = payload && payload.error ? payload.error : null;
-    const parts = error ? [error.message || error.code || JSON.stringify(error)] : ["HTTP " + response.status];
+    const offline = response.status === 502 || response.status === 503 || response.status === 504
+        ? " \u2014 the server did not answer; a free-plan service sleeps when idle and the wake-up call can fail. Wait ~30 seconds, refresh the page (Ctrl+Shift+R), then try once"
+        : "";
+    const parts = error ? [error.message || error.code || JSON.stringify(error)] : ["HTTP " + response.status + offline];
     const hint = explainCode(error ? error.code : "");
     if (hint) parts.push(hint);
     throw new Error(parts.join(" — "));
