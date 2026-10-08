@@ -77,7 +77,8 @@ Every command, one line each:
 | `zeno watchtower` | Who was refused, and what was done about it |
 | `python -m aegis owner init/issue/verify/revoke/rotate-epoch` | Your root of trust |
 | `python -m aegis selftest` / `report` | What this machine can actually do |
-| `python -m pytest tests/` | The whole suite (564 tests) |
+| `zeno pages --write` / `--check` | Re-render / verify the generated static pages |
+| `python -m pytest tests/` | The whole suite (590 tests) |
 
 ## 3. How it works, piece by piece
 
@@ -98,25 +99,31 @@ Every command, one line each:
 - **Memory** (`zeno/memory.py`): sealed with the AEGIS hybrid sealer, chained
   by digest, `forget` is destructive on purpose. No key → plaintext, and every
   record says so.
-- **Surfaces**: `dashboard.html` (Qevora UI kit, live figures or the committed
-  snapshot), `settings.html` (provider keys, one active), `admin.html`
-  (CRM-style console over the live posture), `voice.html` (the talking page),
-  `playground.html` — all at the repository root, cross-linked relatively so
-  the **same files** serve both the local `zeno voice` server and the Pages
-  site at
-  [qevorasoftware.github.io/zeno-lang](https://qevorasoftware.github.io/zeno-lang/).
-  On the static site every page opens, but it is a read-only copy: live
-  figures and the talking agent need your own server.
+- **Surfaces — rendered, not hand-written** (`zeno/pages/`): every page
+  (dashboard, settings, admin, voice, playground, the site doorway, the 404)
+  is *assembled by the page engine* at request time — one generated layout
+  (sidebar, header, theme, kit) shared by all surfaces, plus a body fragment
+  and the page's own script. The live server bakes the request-time truth
+  into the HTML: the settings page ships with your provider table and the
+  store's sealed/plaintext state already in it, the voice page with its
+  status pills. The `*.html` files at the repository root are **generated
+  artefacts** for the static Pages site (`zeno pages --write` re-renders
+  them; a test fails if they drift), so
+  [qevorasoftware.github.io/zeno-lang](https://qevorasoftware.github.io/zeno-lang/)
+  and the local `zeno voice` server show the same pages from one source. On
+  the static site every page opens, but it is a read-only copy: live figures
+  and the talking agent need your own server.
 
 ## 4. Is it working? (verified 2026-10-08, commit `df33660`)
 
 | Check | Result |
 |---|---|
-| Full test suite | **564 passed, 1 skipped** |
+| Full test suite | **590 passed, 1 skipped** |
 | AEGIS selftest | **7/7** |
 | Language end to end (encode → run → decode) | **works** |
 | Owner CLI lifecycle (init → issue → verify → revoke → rotate) | **works** |
 | Voice turn (any language, sealed memory, chain verify) | **works** |
+| Pages rendered live by the engine (settings SSR = the real store) | **works** |
 | Dashboard / admin / voice pages + all API routes | **works** |
 | Honesty scan (`tools/no_overclaim`) | **clean** |
 | CI on every push (tests, security red-team, Pages) | **green** |

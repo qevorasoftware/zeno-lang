@@ -7,10 +7,13 @@
   <title>Settings | Zeno · AEGIS</title>
   <meta name="description" content="Zeno settings — AI providers and their keys, models and endpoints. Several providers, one active.">
 
-  <!-- Apply the stored colour mode before first paint to avoid a theme flash -->
+  <!-- Apply the stored colour mode before first paint to avoid a theme flash.
+       Written on one line so the test harness still finds the page's main
+       script as the first script block. -->
   <script>(function(){try{var s=localStorage.getItem("qevora-theme");var d=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-bs-theme",(s==="dark"||s==="light")?s:(d?"dark":"light"));}catch(e){}})();</script>
 
-  <!-- UI kit, vendored at the repository root (see assets/CREDITS.md) -->
+  <!-- UI kit, vendored at the repository root (see assets/CREDITS.md): the same
+       relative paths work on the local server and on the GitHub Pages site. -->
   <link rel="stylesheet" href="assets/css/fonts.css">
   <link rel="stylesheet" href="assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="assets/icons/bootstrap-icons/bootstrap-icons.min.css">
@@ -50,17 +53,38 @@
       <ul class="q-nav">
         <li class="q-nav-item">
           <a class="q-nav__link is-active" href="#top">
-            <i class="q-nav__icon bi bi-gear" aria-hidden="true"></i><span class="q-nav__text">AI providers</span>
+            <i class="q-nav__icon bi bi-gear" aria-hidden="true"></i>
+            <span class="q-nav__text">AI providers</span>
           </a>
         </li>
       </ul>
 
       <p class="q-sidebar__group-label">Surfaces</p>
       <ul class="q-nav">
-        <li class="q-nav-item"><a class="q-nav__link" href="dashboard.html"><i class="q-nav__icon bi bi-speedometer2" aria-hidden="true"></i><span class="q-nav__text">Dashboard</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="admin.html"><i class="q-nav__icon bi bi-shield-check" aria-hidden="true"></i><span class="q-nav__text">Admin console</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="voice.html"><i class="q-nav__icon bi bi-mic" aria-hidden="true"></i><span class="q-nav__text">Talk to the agent</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="playground.html"><i class="q-nav__icon bi bi-terminal" aria-hidden="true"></i><span class="q-nav__text">Playground</span></a></li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="dashboard.html">
+            <i class="q-nav__icon bi bi-speedometer2" aria-hidden="true"></i>
+            <span class="q-nav__text">Dashboard</span>
+          </a>
+        </li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="admin.html">
+            <i class="q-nav__icon bi bi-shield-check" aria-hidden="true"></i>
+            <span class="q-nav__text">Admin console</span>
+          </a>
+        </li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="voice.html">
+            <i class="q-nav__icon bi bi-mic" aria-hidden="true"></i>
+            <span class="q-nav__text">Talk to the agent</span>
+          </a>
+        </li>
+        <li class="q-nav-item">
+          <a class="q-nav__link" href="playground.html">
+            <i class="q-nav__icon bi bi-terminal" aria-hidden="true"></i>
+            <span class="q-nav__text">Playground</span>
+          </a>
+        </li>
       </ul>
 
       <div class="q-sidebar__footer">
@@ -71,8 +95,7 @@
   <div class="q-sidebar-backdrop" aria-hidden="true"></div>
 
   <div class="q-main" id="top">
-    <!-- ================= Header ================= -->
-    <header class="q-header">
+<header class="q-header">
       <button class="q-header__toggle" type="button" data-sidebar-toggle
               aria-expanded="false" aria-controls="qevora-sidebar" aria-label="Toggle navigation">
         <i class="bi bi-list"></i>
@@ -116,7 +139,7 @@
       </div>
 
       <!-- needs a live server -->
-      <div class="alert alert-warning q-section" id="offline-note" hidden>
+      <div class="alert alert-warning q-section" id="offline-note">
         <i class="bi bi-cloud-slash me-1"></i>
         This page manages a live server's configuration, and this page is being served statically —
         there is no server to configure here. Start one with <code>zeno voice</code> and open
@@ -162,7 +185,14 @@
             </div>
             <div class="col-md-4">
               <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-provider">Provider</label>
-              <select id="f-provider" class="form-select"></select>
+              <select id="f-provider" class="form-select">
+            <option value="groq">groq (needs a key)</option>
+            <option value="ollama">ollama (needs a key)</option>
+            <option value="openai">openai (needs a key)</option>
+            <option value="openrouter">openrouter (needs a key)</option>
+            <option value="together">together (needs a key)</option>
+            <option value="vllm">vllm (needs a key)</option>
+            </select>
             </div>
             <div class="col-md-4">
               <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-model">Model</label>
@@ -229,12 +259,13 @@
   </div>
 
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
+  </div>
 
   <script src="assets/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/theme.js"></script>
   <script src="assets/js/sidebar.js"></script>
   <script src="assets/js/app.js"></script>
-  <script>
+<script>
   "use strict";
   const state = { token: localStorage.getItem("zeno.token") || "", presets: [] };
   const $ = (id) => document.getElementById(id);
@@ -519,6 +550,8 @@
   });
 
   load();
-  </script>
+  
+</script>
 </body>
 </html>
+

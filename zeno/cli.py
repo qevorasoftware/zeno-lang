@@ -263,6 +263,36 @@ def cmd_serve(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_pages(args: argparse.Namespace) -> int:
+    """Write or check the generated static pages (what GitHub Pages serves).
+
+    The pages the live server renders are code; the copies in the repository
+    root are artefacts. This command keeps them honest: ``--write`` re-renders
+    them, ``--check`` fails if a copy has drifted from the generator.
+    """
+    from pathlib import Path
+
+    from .pages import check_static, write_static
+
+    root = Path(args.root).expanduser().resolve()
+    if args.check:
+        stale = check_static(root)
+        if not stale:
+            print(f"up to date: all generated pages under {root} match the renderer")
+            return 0
+        print(
+            "STALE: these files differ from what the page generator renders:\n  "
+            + "\n  ".join(stale)
+            + "\nRun: zeno pages --write",
+            file=sys.stderr,
+        )
+        return 1
+    written = write_static(root)
+    for path in written:
+        print(f"wrote {path} ({path.stat().st_size} bytes)")
+    return 0
+
+
 def cmd_dashboard(args: argparse.Namespace) -> int:
     """Export the snapshot the static (GitHub Pages) dashboard reads offline."""
     from .server import build_app, snapshot_bytes
@@ -612,6 +642,19 @@ def build_parser() -> argparse.ArgumentParser:
     dashboard.add_argument("--print-path", action="store_true", help="print the absolute path as well")
     dashboard.add_argument("--json", action="store_true")
     dashboard.set_defaults(func=cmd_dashboard)
+
+    pages = sub.add_parser(
+        "pages",
+        help="write or check the generated static pages (GitHub Pages copies)",
+    )
+    pages.add_argument("--write", action="store_true", help="re-render every static page")
+    pages.add_argument(
+        "--check", action="store_true", help="fail if a committed copy differs from the generator"
+    )
+    pages.add_argument(
+        "--root", default=".", help="directory that carries the static copies (default: .)"
+    )
+    pages.set_defaults(func=cmd_pages)
 
     voice = sub.add_parser(
         "voice", help="serve the agent you can talk to: audio in, audio out, any language"

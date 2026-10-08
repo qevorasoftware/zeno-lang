@@ -1,0 +1,513 @@
+<header class="q-header">
+      <button class="q-header__toggle" type="button" data-sidebar-toggle
+              aria-expanded="false" aria-controls="qevora-sidebar" aria-label="Toggle navigation">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <div class="q-header__search d-none d-md-block">
+        <i class="bi bi-search q-header__search-icon" aria-hidden="true"></i>
+        <label class="visually-hidden" for="q-header-search">Search what was said</label>
+        <input type="search" class="form-control" id="q-header-search"
+               placeholder="Search what was said…" autocomplete="off">
+        <span class="q-header__kbd" aria-hidden="true">↵</span>
+      </div>
+
+      <div class="q-header__actions">
+        <div class="d-flex align-items-center gap-2 d-none d-xl-flex" id="header-pills">
+          <span class="badge badge-soft-warning badge-pill" id="pill-enforcement" hidden></span>
+          <span class="badge badge-soft-secondary badge-pill" id="pill-memory" hidden></span>
+          <span class="badge badge-soft-secondary badge-pill" id="pill-provider" hidden></span>
+        </div>
+
+        <!-- Live auto-refresh -->
+        <button class="q-icon-btn" type="button" id="live" aria-pressed="true"
+                title="Pause auto-refresh" aria-label="Toggle live refresh">
+          <i class="bi bi-pause-fill" aria-hidden="true"></i>
+        </button>
+
+        <!-- Colour mode -->
+        <button class="q-icon-btn" type="button" data-theme-toggle aria-pressed="false"
+                title="Switch to dark mode" aria-label="Toggle colour mode">
+          <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
+        </button>
+
+        <!-- Quick apps -->
+        <div class="dropdown d-none d-sm-block">
+          <button class="q-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                  aria-label="Quick access" title="Quick access">
+            <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end p-3" style="width: 280px;">
+            <p class="fs-8 fw-600 text-uppercase text-faint mb-2">Quick access</p>
+            <div class="row g-2">
+              <div class="col-4"><a class="component-tile text-center p-2" href="#overview">
+                <i class="bi bi-grid-1x2 fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Overview</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="voice.html">
+                <i class="bi bi-mic fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Voice</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="#adversary">
+                <i class="bi bi-shield-exclamation fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Feed</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="#memory">
+                <i class="bi bi-database-lock fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Memory</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="#agents">
+                <i class="bi bi-diagram-3 fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Agents</span></a></div>
+              <div class="col-4"><a class="component-tile text-center p-2" href="dashboard.html">
+                <i class="bi bi-speedometer2 fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Language</span></a></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications: the watchtower's alerts, live -->
+        <div class="dropdown">
+          <button class="q-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                  aria-label="Notifications" title="Watchtower alerts">
+            <i class="bi bi-bell" aria-hidden="true"></i>
+            <span class="q-icon-btn__dot" id="notify-dot" hidden aria-hidden="true"></span>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end dropdown-notify">
+            <div class="dropdown-notify__head">
+              <span class="fw-600 text-heading">Watchtower alerts</span>
+              <span class="badge badge-soft-primary badge-pill" id="notify-count">0</span>
+            </div>
+            <div class="dropdown-notify__list q-scroll" id="notify-list">
+              <span class="d-block p-3 fs-8 text-muted-2">no alerts — nothing has crossed the strike threshold</span>
+            </div>
+            <div class="dropdown-notify__foot">
+              <a href="#adversary" class="fw-500" data-goto="adversary">Open the adversary feed</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Owner -->
+        <div class="dropdown">
+          <button class="q-header__user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="avatar avatar-sm bg-avatar-1" aria-hidden="true">OW</span>
+            <span class="q-header__user-meta">
+              <span class="d-block q-header__user-name">Owner</span>
+              <span class="d-block q-header__user-role" id="user-role">root of trust</span>
+            </span>
+            <i class="bi bi-chevron-down fs-8 text-muted-2 d-none d-md-block" aria-hidden="true"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li class="dropdown-header" id="user-grant-state">no grant stored in this browser</li>
+            <li><a class="dropdown-item" href="#posture" data-goto="posture"><i class="bi bi-layers"></i> Posture</a></li>
+            <li><a class="dropdown-item" href="voice.html"><i class="bi bi-mic"></i> Talk to the agent</a></li>
+            <li><a class="dropdown-item" href="dashboard.html"><i class="bi bi-speedometer2"></i> Language dashboard</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <button class="dropdown-item" type="button" id="user-grant">
+                <i class="bi bi-key"></i> Owner grant…
+              </button>
+            </li>
+            <li>
+              <button class="dropdown-item text-danger" type="button" id="user-clear-grant">
+                <i class="bi bi-box-arrow-right"></i> Clear stored grant
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= Content ================= -->
+    <main class="q-content" id="q-content">
+      <div class="q-page-head">
+        <div>
+          <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="#overview">Admin</a></li>
+              <li class="breadcrumb-item active" aria-current="page" id="crumb-view">Overview</li>
+            </ol>
+          </nav>
+          <h1 class="q-page-head__title mt-2" id="view-title">Overview</h1>
+          <p class="q-page-head__subtitle" id="view-subtitle">
+            Live figures from this server — not demo data. Nothing on this page can weaken a policy or issue a grant.
+          </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-white" id="refresh-now">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+          <a class="btn btn-primary" href="voice.html"><i class="bi bi-mic"></i> Talk to the agent</a>
+        </div>
+      </div>
+
+      <!-- ============ Overview: KPI cards ============ -->
+      <section data-panel="overview">
+        <div class="row g-3 q-section">
+          <div class="col-sm-6 col-xl-3">
+            <div class="card card-stat h-100"><div class="card-body">
+              <div class="d-flex align-items-start justify-content-between gap-3">
+                <div>
+                  <p class="card-stat__label">Boundary decisions</p>
+                  <p class="card-stat__value" id="st-decisions">–</p>
+                </div>
+                <span class="card-stat__icon bg-primary-soft text-primary-2"><i class="bi bi-list-check"></i></span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="trend" id="st-allowed-trend"><i class="bi bi-check2"></i> <span id="st-allowed">–</span> allowed</span>
+                <span class="trend trend-down" id="st-refused-trend"><i class="bi bi-x-lg"></i> <span id="st-refused">–</span> refused</span>
+              </div>
+              <div class="card-stat__spark"><canvas id="spark-decisions" height="36"></canvas></div>
+            </div></div>
+          </div>
+          <div class="col-sm-6 col-xl-3">
+            <div class="card card-stat h-100"><div class="card-body">
+              <div class="d-flex align-items-start justify-content-between gap-3">
+                <div>
+                  <p class="card-stat__label">Intrusion records</p>
+                  <p class="card-stat__value" id="st-intrusions">–</p>
+                </div>
+                <span class="card-stat__icon bg-danger-soft text-danger"><i class="bi bi-shield-exclamation"></i></span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="fs-8 text-muted-2"><span id="st-decoys">–</span> decoys served · <span id="st-tarpit">–</span> ms tarpit</span>
+              </div>
+              <div class="card-stat__spark"><canvas id="spark-intrusions" height="36"></canvas></div>
+            </div></div>
+          </div>
+          <div class="col-sm-6 col-xl-3">
+            <div class="card card-stat h-100"><div class="card-body">
+              <div class="d-flex align-items-start justify-content-between gap-3">
+                <div>
+                  <p class="card-stat__label">Memory sessions</p>
+                  <p class="card-stat__value" id="st-sessions">–</p>
+                </div>
+                <span class="card-stat__icon bg-info-soft text-info"><i class="bi bi-database-lock"></i></span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="trend" id="st-sealed-trend"><i class="bi bi-lock-fill"></i> <span id="st-sealed">sealing: …</span></span>
+              </div>
+              <div class="card-stat__spark"><canvas id="spark-sessions" height="36"></canvas></div>
+            </div></div>
+          </div>
+          <div class="col-sm-6 col-xl-3">
+            <div class="card card-stat h-100"><div class="card-body">
+              <div class="d-flex align-items-start justify-content-between gap-3">
+                <div>
+                  <p class="card-stat__label">Connected agents</p>
+                  <p class="card-stat__value" id="st-agents">–</p>
+                </div>
+                <span class="card-stat__icon bg-success-soft text-success"><i class="bi bi-diagram-3"></i></span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="fs-8 text-muted-2" id="st-bridge">no artificial cap</span>
+              </div>
+              <div class="card-stat__spark"><canvas id="spark-agents" height="36"></canvas></div>
+            </div></div>
+          </div>
+        </div>
+
+        <!-- ============ Overview: charts ============ -->
+        <div class="row g-3 q-section">
+          <div class="col-xl-8">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Boundary decisions</h2>
+                  <p class="card-subtitle">Allowed and refused, counted since this page opened</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart-holder chart-holder--lg"><canvas id="chart-live"></canvas></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-4">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Refusals by code</h2>
+                  <p class="card-subtitle">The opaque codes this boundary has answered with</p>
+                </div>
+              </div>
+              <div class="card-body" id="code-breakdown">
+                <p class="fs-8 text-muted-2 mb-0">no refusals recorded yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ Overview: recent decisions + timeline ============ -->
+        <div class="row g-3 q-section">
+          <div class="col-xl-7">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Latest decisions</h2>
+                  <p class="card-subtitle">The boundary's own view, newest first</p>
+                </div>
+                <a class="btn btn-sm btn-white" href="#audit" data-goto="audit">Open the audit trail <i class="bi bi-arrow-right"></i></a>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead><tr><th>Decision</th><th>Result</th><th>Code</th><th>Why (owner-only)</th></tr></thead>
+                  <tbody id="overview-rows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-5">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Watchtower timeline</h2>
+                  <p class="card-subtitle">Recent refusals, as they were seen</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <ul class="timeline" id="refusal-timeline">
+                  <li class="timeline__item">
+                    <span class="timeline__dot timeline__dot--muted"></span>
+                    <p class="timeline__title">no refusals recorded</p>
+                    <p class="timeline__meta">the feed stores digests, never bodies</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Audit trail ============ -->
+      <section data-panel="audit" hidden>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Boundary decisions</h2>
+              <p class="card-subtitle">Codes, sentences and layer verdicts a caller is never shown (S20/S21/S23). Reads are audited too, and marked read-only.</p>
+            </div>
+            <span class="fs-8 text-muted-2" id="audit-counters"></span>
+          </div>
+          <div class="table-toolbar">
+            <div class="search-field" style="max-width: 280px;">
+              <i class="bi bi-search search-field__icon" aria-hidden="true"></i>
+              <label class="visually-hidden" for="audit-filter">Filter decisions</label>
+              <input type="search" class="form-control" id="audit-filter" placeholder="Filter by code, actor, reason…">
+            </div>
+            <span class="ms-auto fs-8 text-muted-2" id="audit-shown"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="audit-table">
+              <thead><tr><th>Decision</th><th>Result</th><th>Code</th><th>Why (owner-only)</th><th>Layers</th><th class="text-end">Ledger</th></tr></thead>
+              <tbody id="audit-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Adversary feed ============ -->
+      <section data-panel="adversary" hidden>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Flagged sources</h2>
+              <p class="card-subtitle">Strikes, fingerprints and user agents — digests only, never request bodies</p>
+            </div>
+            <span class="fs-8 text-muted-2" id="tower-counters"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Source</th><th>Strikes</th><th>Client fingerprint</th><th>User agent</th><th>Last seen</th></tr></thead>
+              <tbody id="intruder-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="row g-3 q-section">
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Recent refusals</h2>
+                  <p class="card-subtitle">The feed, newest first</p>
+                </div>
+              </div>
+              <div class="card-body"><ul class="timeline" id="recent-refusals"></ul></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">What the watchtower is, honestly</h2>
+                  <p class="card-subtitle">Its own limits, verbatim</p>
+                </div>
+              </div>
+              <div class="card-body"><ul class="timeline" id="tower-limits"></ul></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Memory ============ -->
+      <section data-panel="memory" hidden>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Sessions</h2>
+              <p class="card-subtitle">Sealed to the owner's key when one is configured; forgetting is destructive on purpose</p>
+            </div>
+            <button class="btn btn-sm btn-white ms-auto" id="verify"><i class="bi bi-patch-check me-1"></i>Verify chain</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Session</th><th>Records</th><th>Languages</th><th>Last activity</th><th class="text-end">Forget</th></tr></thead>
+              <tbody id="memory-rows"></tbody>
+            </table>
+          </div>
+          <div class="card-body"><pre id="verify-out" class="code-chip mb-0" hidden style="max-height: 14rem; overflow: auto;"></pre></div>
+        </div>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Search what was said</h2>
+              <p class="card-subtitle">A substring scan over decrypted records, not a semantic index</p>
+            </div>
+          </div>
+          <div class="table-toolbar">
+            <div class="search-field" style="max-width: 360px;">
+              <i class="bi bi-search search-field__icon" aria-hidden="true"></i>
+              <label class="visually-hidden" for="search">Search memory</label>
+              <input type="search" class="form-control" id="search" placeholder='e.g. "varsad"'>
+            </div>
+            <button class="btn btn-sm btn-primary ms-auto" id="search-go">Search</button>
+          </div>
+          <div class="card-body"><div id="search-out" class="d-flex flex-column gap-2 fs-7" style="max-height: 14rem; overflow: auto;"></div></div>
+        </div>
+      </section>
+
+      <!-- ============ Agents ============ -->
+      <section data-panel="agents" hidden>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Connected agents</h2>
+              <p class="card-subtitle">Each holds its own grant, never the owner key; replies are recorded as that peer's claim</p>
+            </div>
+            <span class="fs-8 text-muted-2 ms-auto" id="bridge-limits"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Name</th><th>Endpoint</th><th>Grant</th><th>Calls</th><th>Failures</th><th>Last</th><th class="text-end">Actions</th></tr></thead>
+              <tbody id="agent-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="row g-3 q-section">
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Connect an agent</h2>
+                  <p class="card-subtitle">No artificial cap: concurrency and timeout are the declared bounds</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="row g-2">
+                  <div class="col-6 col-md-4"><input id="peer-name" class="form-control form-control-sm" placeholder="name"></div>
+                  <div class="col-6 col-md-8"><input id="peer-url" class="form-control form-control-sm" placeholder="https://…  (POSTs to <url>/ask)"></div>
+                  <div class="col-8 col-md-8"><input id="peer-grant" type="password" class="form-control form-control-sm" placeholder="its grant (optional)"></div>
+                  <div class="col-4 col-md-4"><button class="btn btn-sm btn-primary w-100" id="peer-add">Connect</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Broadcast</h2>
+                  <p class="card-subtitle">Ask every connected agent at once</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="d-flex gap-2">
+                  <input id="broadcast-text" class="form-control form-control-sm" placeholder="ask every connected agent at once">
+                  <button class="btn btn-sm btn-primary" id="broadcast-go">Send</button>
+                </div>
+                <pre id="broadcast-out" class="code-chip mt-3 mb-0" hidden style="max-height: 10rem; overflow: auto;"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Posture ============ -->
+      <section data-panel="posture" hidden>
+        <div class="row g-3 q-section">
+          <div class="col-lg-7">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">The eight layers</h2>
+                  <p class="card-subtitle">What this deployment actually requires of them</p>
+                </div>
+                <span class="badge badge-soft-primary badge-pill" id="layers-required-badge">–</span>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead><tr><th>#</th><th>Layer</th><th>Required here</th><th>Note</th></tr></thead>
+                  <tbody id="layer-rows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="card h-100">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Policy switches</h2>
+                  <p class="card-subtitle">In force on this server right now</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div id="policy-flags" class="d-flex flex-column gap-2 fs-7"></div>
+                <hr>
+                <h2 class="card-title">Memory store</h2>
+                <div id="memory-info" class="fs-7 text-muted-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card q-section">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">What this console is not</h2>
+              <p class="card-subtitle">The line it does not cross</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <ul class="timeline">
+              <li class="timeline__item">
+                <span class="timeline__dot timeline__dot--muted"></span>
+                <p class="timeline__title">A view, not a control surface</p>
+                <p class="timeline__meta">nothing here can weaken a policy or issue a grant — those stay with the owner's key and the CLI</p>
+              </li>
+              <li class="timeline__item">
+                <span class="timeline__dot timeline__dot--muted"></span>
+                <p class="timeline__title">A tarpit delays and a decoy misleads</p>
+                <p class="timeline__meta">nothing here traps anyone, and no inescapability is claimed</p>
+              </li>
+              <li class="timeline__item">
+                <span class="timeline__dot timeline__dot--muted"></span>
+                <p class="timeline__title">A refusal is a code, and this page does not guess at it</p>
+                <p class="timeline__meta">panels that need a grant say so in production</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer class="q-footer">
+        <div class="q-footer__inner">
+          <span>Zeno · AEGIS gateway · live figures from this server, not demo data · UI kit vendored locally (assets/CREDITS.md)</span>
+          <nav class="d-flex flex-wrap gap-3" aria-label="Footer">
+            <a href="voice.html">Talk to the agent</a>
+            <a href="dashboard.html">Language dashboard</a>
+            <a href="playground.html">Playground</a>
+          </nav>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>

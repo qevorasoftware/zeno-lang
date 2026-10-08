@@ -141,7 +141,8 @@ drift from that file (`zeno.spec.drift_report() == []`, checked in CI).
 | `zeno/encoder.py` `decoder.py` `pipeline.py` | the two model-backed stages and their composition |
 | `zeno/prompts.py` | grammar card + system prompts (encoder prompt: 551 tokens) |
 | `zeno/tools.py` | deterministic demo tools so everything runs offline |
-| `zeno/cli.py` `server.py` | CLI, the playground and every page route |
+| `zeno/cli.py` `server.py` `pages/` | CLI; every page is rendered live by the page engine |
+| `zeno/pages/` | The dynamic page layer: generated layout + fragments + `zeno pages --write` |
 | `agents/linguist.py` `agents/tester.py` | language agent and conformance agent |
 | `benchmarks/` | density, multi-turn A2A and latency benchmarks |
 

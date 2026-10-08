@@ -8,13 +8,15 @@ kernel, decoder and benchmarks to a single-page UI.
 Routes
 ------
 ``GET  /``                 the playground page (also ``/playground.html``)
-``GET  /dashboard``        the operator dashboard (root ``dashboard.html``)
+``GET  /dashboard``        the operator dashboard
 ``GET  /settings``         the provider & API-key settings page
 ``GET  /admin``            the admin console
 ``GET  /voice``            the Gujarati voice-agent page
-Every page also answers at its ``.html`` name (``/settings.html``, ...) because
-the pages cross-link relatively — the same links must work on the static GitHub
-Pages site, where only file names exist.
+Every page is *rendered* by :mod:`zeno.pages` at request time — none of them is
+a file the server reads. Each also answers at its ``.html`` name
+(``/settings.html``, ...) because the pages cross-link relatively, and the same
+links must work on the static GitHub Pages site, where only file names exist
+(those files are generated: ``zeno pages --write``).
 ``GET  /dashboard-data.json``  the committed snapshot the dashboard uses offline
 ``GET  /api/health``       liveness probe
 ``GET  /api/version``      library, protocol and runtime versions
@@ -62,6 +64,14 @@ from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Tuple
 from .decoder import Decoder
 from .encoder import Encoder, HeuristicEncoder
 from .errors import ZenoError
+from .pages import (
+    render_404,
+    render_admin,
+    render_dashboard,
+    render_playground,
+    render_settings,
+    render_voice,
+)
 from .pipeline import Pipeline, default_kernel
 from .prompts import grammar_card
 from .providers import MockProvider, Provider, resolve
@@ -78,20 +88,13 @@ CANONICAL_EXAMPLE = (
     "@LOC[TYO] -> ?WX : { $WX.state == RAIN => !GEN[INDOOR, 3] | !GEN[OUTDOOR, 3] }"
 )
 
-#: The repository root. The web pages live there — beside ``dashboard.html``,
-#: the assets and the committed snapshot — so the static GitHub Pages site and
-#: the live server read the very same files: one copy, every host, no drift.
-#: Only the names in :data:`ROOT_FILES` are servable, so this is not a
-#: path-traversal surface.
+#: The repository root: the assets and the committed snapshot live there, and
+#: ``zeno pages --write`` lays the generated static copies there for GitHub
+#: Pages. The live server does not read pages from disk — it renders them
+#: (``zeno.pages``) — so only :data:`ROOT_FILES` is servable from here.
 ROOT = Path(__file__).resolve().parent.parent
-ROOT_FILES = (
-    "dashboard.html",
-    "dashboard-data.json",
-    "settings.html",
-    "admin.html",
-    "voice.html",
-    "playground.html",
-)
+ROOT = Path(__file__).resolve().parent.parent
+ROOT_FILES = ("dashboard-data.json",)
 
 #: The UI kit (Bootstrap, icons, fonts, the Qevora theme) lives at the repository
 #: root so the GitHub Pages site serves it next to ``dashboard.html`` with the
@@ -829,15 +832,28 @@ class _Handler(BaseHTTPRequestHandler):
             return
         target = (ROOT / name).resolve()
         if not target.is_file():
-            hint = (
-                "not found: run `zeno dashboard --write` to create dashboard-data.json"
-                if name == "dashboard-data.json"
-                else "not found: the web pages ship in a zeno-lang checkout"
+            self._send(
+                404,
+                b"not found: run `zeno dashboard --write` to create dashboard-data.json",
+                "text/plain; charset=utf-8",
             )
-            self._send(404, hint.encode("utf-8"), "text/plain; charset=utf-8")
             return
-        content_type = "text/html; charset=utf-8" if name.endswith(".html") else "application/json"
-        self._send(200, target.read_bytes(), content_type)
+        self._send(200, target.read_bytes(), "application/json")
+
+    def _html(self, page: str, status: int = 200) -> None:
+        """Send a page rendered by :mod:`zeno.pages`."""
+        self._send(status, page.encode("utf-8"), "text/html; charset=utf-8")
+
+    def _voice_status(self) -> Dict[str, Any]:
+        """The voice page's status pills, at request time."""
+        info = self.playground.provider_info()
+        memory = self.playground.memory.describe()
+        return {
+            "enforcement": self.playground.enforcement,
+            "memory": "sealed" if memory.get("encrypted") else "NOT sealed",
+            "answerer": str(info.get("provider", "none"))
+            + ("" if info.get("online") else " (offline, rule-based)"),
+        }
 
     # -- verbs -----------------------------------------------------------
     def do_OPTIONS(self) -> None:  # noqa: N802 - stdlib signature
@@ -848,10 +864,10 @@ class _Handler(BaseHTTPRequestHandler):
         path = posixpath.normpath(self.path.split("?", 1)[0])
         try:
             if path in ("/", "/index.html", "/playground", "/playground.html"):
-                self._root_file("playground.html")
+                self._html(render_playground())
                 return
             if path in ("/dashboard", "/dashboard/", "/dashboard.html"):
-                self._root_file("dashboard.html")
+                self._html(render_dashboard())
                 return
             if path == "/dashboard-data.json":
                 self._root_file("dashboard-data.json")
@@ -889,7 +905,8 @@ class _Handler(BaseHTTPRequestHandler):
                 self._json(self.playground.tools())
                 return
             if path in ("/settings", "/settings/", "/settings.html"):
-                self._root_file("settings.html")
+                # rendered with the store's current truth, server-side
+                self._html(render_settings(self.playground.provider_store.describe()))
                 return
             if path == "/api/settings":
                 if self._permit(path, action="read:settings", read=True):
@@ -899,12 +916,12 @@ class _Handler(BaseHTTPRequestHandler):
             if path in ("/admin", "/admin/", "/admin.html"):
                 # The admin console is a page: downloading it needs no grant, and
                 # every panel it can fill is authorized route by route.
-                self._root_file("admin.html")
+                self._html(render_admin())
                 return
             if path in ("/voice", "/voice/", "/voice.html"):
                 # The page is a page: it needs no authorization to be downloaded,
                 # and everything it can *do* is authorized route by route.
-                self._root_file("voice.html")
+                self._html(render_voice(self._voice_status()))
                 return
             if path == "/api/memory/sessions":
                 if self._permit(path, action="read:memory", read=True):
@@ -1016,7 +1033,11 @@ class _Handler(BaseHTTPRequestHandler):
                 }.get(suffix, "application/octet-stream")
                 self._send(200, target.read_bytes(), content_type)
                 return
-            self._json({"error": {"code": "ZN0000", "message": f"no route {path}"}}, 404)
+            if path.startswith("/api/"):
+                self._json({"error": {"code": "ZN0000", "message": f"no route {path}"}}, 404)
+            else:
+                # a wrong page URL gets the same styled 404 the static site has
+                self._html(render_404(), 404)
         except Exception as exc:  # pragma: no cover - defensive
             self._error(exc)
 

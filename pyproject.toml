@@ -45,7 +45,10 @@ Issues = "https://github.com/qevorasoftware/zeno-lang/issues"
 zeno = "zeno.cli:main"
 
 [tool.setuptools]
-packages = ["zeno"]
+packages = ["zeno", "zeno.pages"]
+
+[tool.setuptools.package-data]
+zeno.pages = ["heads/*.html", "bodies/*.html", "scripts/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
