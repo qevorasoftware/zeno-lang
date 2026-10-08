@@ -79,6 +79,30 @@ def test_the_admin_console_is_served_and_names_its_contract():
         httpd.server_close()
 
 
+@pytest.mark.skipif(HAVE_CRYPTO, reason="with the crypto backend a boundary exists and is described by its own test")
+def test_the_decisions_endpoint_says_when_there_is_no_boundary(tmp_path):
+    """Without a crypto backend there is no boundary, so no owner view either.
+
+    The endpoint must say so (``enabled: false``) rather than pretend, and the
+    page renders an "off" marker instead of an empty table that looks like
+    "no decisions were ever made".
+    """
+    from zeno.memory import MemoryStore
+    from zeno.server import Playground
+
+    playground = Playground(memory=MemoryStore(str(tmp_path / "mem")))
+    httpd, base = _serve(playground)
+    try:
+        status, payload = _get(base, "/api/admin/decisions?limit=5")
+        assert status == 200
+        assert payload["enabled"] is False
+        assert payload["decisions"] == []
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+@requires_crypto
 def test_the_decisions_endpoint_answers_in_development_with_the_owner_view(tmp_path):
     from zeno.memory import MemoryStore
     from zeno.server import Playground
