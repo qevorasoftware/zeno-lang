@@ -71,10 +71,13 @@ def test_the_admin_console_is_served_and_names_its_contract():
         assert status == 200 and isinstance(page, str)
         assert "Zeno" in page and "AEGIS" in page
         # the house UI kit, vendored locally: no CDN, so the console renders even
-        # where third-party hosts are blocked (which is where owners console from)
-        for asset in ("/assets/css/bootstrap.min.css", "/assets/icons/bootstrap-icons/bootstrap-icons.min.css",
-                      "/assets/css/style.css", "/assets/js/chart.umd.js", "/assets/js/theme.js"):
+        # where third-party hosts are blocked (which is where owners console from).
+        # Relative paths, because the same file must also work on GitHub Pages.
+        for asset in ("assets/css/bootstrap.min.css", "assets/icons/bootstrap-icons/bootstrap-icons.min.css",
+                      "assets/css/style.css", "assets/js/chart.umd.js", "assets/js/theme.js"):
             assert asset in page, f"the console must load its kit locally: {asset}"
+        assert 'src="/assets' not in page and 'href="/assets' not in page, \
+            "absolute asset paths escape the GitHub Pages subpath and 404"
         assert "cdn.jsdelivr.net" not in page and "unpkg.com" not in page and "googleapis.com" not in page
         # light and dark both exist: the pre-paint switch, the toggle, the storage key
         assert "qevora-theme" in page and "data-theme-toggle" in page and "data-bs-theme" in page
@@ -235,6 +238,34 @@ def test_production_refuses_the_decisions_panel_without_a_grant(admin_world):
         status, body = _get(base, "/api/admin/decisions?limit=5")
         assert status == 403
         assert body["error"]["code"].startswith("ZN-SEC-")
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_every_page_answers_at_its_file_name_too():
+    """The pages cross-link relatively (``settings.html``, ``voice.html``, ...).
+
+    Relative links are what make the same pages work on the static GitHub Pages
+    site — but they resolve to the ``.html`` names, so the live server must
+    answer those too, or its own pages would 404 each other.
+    """
+    from zeno.server import Playground
+
+    httpd, base = _serve(Playground())
+    try:
+        for path, marker in (
+            ("/settings.html", "Zeno"),
+            ("/admin.html", "AEGIS"),
+            ("/voice.html", "Zeno"),
+            ("/dashboard.html", "Zeno"),
+            ("/playground.html", "playground"),
+            ("/playground", "playground"),
+            ("/", "playground"),
+        ):
+            status, page = _get(base, path)
+            assert status == 200 and isinstance(page, str), f"{path} answers {status}"
+            assert marker in page, f"{path} no longer names itself ({marker!r})"
     finally:
         httpd.shutdown()
         httpd.server_close()

@@ -47,9 +47,6 @@ zeno = "zeno.cli:main"
 [tool.setuptools]
 packages = ["zeno"]
 
-[tool.setuptools.package-data]
-zeno = ["web/*.html"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

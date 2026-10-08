@@ -21,12 +21,12 @@
 
   <!-- UI kit, vendored locally (see assets/CREDITS.md): no CDN, so the console
        renders even where third-party hosts are blocked. -->
-  <link rel="stylesheet" href="/assets/css/fonts.css">
-  <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
-  <link rel="stylesheet" href="/assets/icons/bootstrap-icons/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/assets/css/style.css">
-  <link rel="stylesheet" href="/assets/css/components.css">
-  <link rel="stylesheet" href="/assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/fonts.css">
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/icons/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
   <style>
     /* The one class of ours the kit does not have. */
     .code-chip { font-family: var(--q-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: .78rem; }
@@ -111,25 +111,25 @@
       <p class="q-sidebar__group-label">Surfaces</p>
       <ul class="q-nav">
         <li class="q-nav-item">
-          <a class="q-nav__link" href="/settings">
+          <a class="q-nav__link" href="settings.html">
             <i class="q-nav__icon bi bi-key" aria-hidden="true"></i>
             <span class="q-nav__text">Settings</span>
           </a>
         </li>
         <li class="q-nav-item">
-          <a class="q-nav__link" href="/voice">
+          <a class="q-nav__link" href="voice.html">
             <i class="q-nav__icon bi bi-mic" aria-hidden="true"></i>
             <span class="q-nav__text">Talk to the agent</span>
           </a>
         </li>
         <li class="q-nav-item">
-          <a class="q-nav__link" href="/">
+          <a class="q-nav__link" href="playground.html">
             <i class="q-nav__icon bi bi-terminal" aria-hidden="true"></i>
             <span class="q-nav__text">Playground</span>
           </a>
         </li>
         <li class="q-nav-item">
-          <a class="q-nav__link" href="/dashboard.html">
+          <a class="q-nav__link" href="dashboard.html">
             <i class="q-nav__icon bi bi-speedometer2" aria-hidden="true"></i>
             <span class="q-nav__text">Language dashboard</span>
           </a>
@@ -189,7 +189,7 @@
             <div class="row g-2">
               <div class="col-4"><a class="component-tile text-center p-2" href="#overview">
                 <i class="bi bi-grid-1x2 fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Overview</span></a></div>
-              <div class="col-4"><a class="component-tile text-center p-2" href="/voice">
+              <div class="col-4"><a class="component-tile text-center p-2" href="voice.html">
                 <i class="bi bi-mic fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Voice</span></a></div>
               <div class="col-4"><a class="component-tile text-center p-2" href="#adversary">
                 <i class="bi bi-shield-exclamation fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Feed</span></a></div>
@@ -197,7 +197,7 @@
                 <i class="bi bi-database-lock fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Memory</span></a></div>
               <div class="col-4"><a class="component-tile text-center p-2" href="#agents">
                 <i class="bi bi-diagram-3 fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Agents</span></a></div>
-              <div class="col-4"><a class="component-tile text-center p-2" href="/dashboard.html">
+              <div class="col-4"><a class="component-tile text-center p-2" href="dashboard.html">
                 <i class="bi bi-speedometer2 fs-5 text-primary-2 d-block mb-1"></i><span class="fs-9">Language</span></a></div>
             </div>
           </div>
@@ -237,8 +237,8 @@
           <ul class="dropdown-menu dropdown-menu-end">
             <li class="dropdown-header" id="user-grant-state">no grant stored in this browser</li>
             <li><a class="dropdown-item" href="#posture" data-goto="posture"><i class="bi bi-layers"></i> Posture</a></li>
-            <li><a class="dropdown-item" href="/voice"><i class="bi bi-mic"></i> Talk to the agent</a></li>
-            <li><a class="dropdown-item" href="/dashboard.html"><i class="bi bi-speedometer2"></i> Language dashboard</a></li>
+            <li><a class="dropdown-item" href="voice.html"><i class="bi bi-mic"></i> Talk to the agent</a></li>
+            <li><a class="dropdown-item" href="dashboard.html"><i class="bi bi-speedometer2"></i> Language dashboard</a></li>
             <li><hr class="dropdown-divider"></li>
             <li>
               <button class="dropdown-item" type="button" id="user-grant">
@@ -274,7 +274,7 @@
           <button type="button" class="btn btn-white" id="refresh-now">
             <i class="bi bi-arrow-clockwise"></i> Refresh
           </button>
-          <a class="btn btn-primary" href="/voice"><i class="bi bi-mic"></i> Talk to the agent</a>
+          <a class="btn btn-primary" href="voice.html"><i class="bi bi-mic"></i> Talk to the agent</a>
         </div>
       </div>
 
@@ -648,9 +648,9 @@
         <div class="q-footer__inner">
           <span>Zeno · AEGIS gateway · live figures from this server, not demo data · UI kit vendored locally (assets/CREDITS.md)</span>
           <nav class="d-flex flex-wrap gap-3" aria-label="Footer">
-            <a href="/voice">Talk to the agent</a>
-            <a href="/dashboard.html">Language dashboard</a>
-            <a href="/">Playground</a>
+            <a href="voice.html">Talk to the agent</a>
+            <a href="dashboard.html">Language dashboard</a>
+            <a href="playground.html">Playground</a>
           </nav>
         </div>
       </footer>
@@ -659,11 +659,11 @@
 
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
 
-  <script src="/assets/js/bootstrap.bundle.min.js"></script>
-  <script src="/assets/js/chart.umd.js"></script>
-  <script src="/assets/js/theme.js"></script>
-  <script src="/assets/js/sidebar.js"></script>
-  <script src="/assets/js/app.js"></script>
+  <script src="assets/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/chart.umd.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script src="assets/js/app.js"></script>
   <script>
   "use strict";
   const state = {

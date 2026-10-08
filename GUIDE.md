@@ -99,9 +99,14 @@ Every command, one line each:
   by digest, `forget` is destructive on purpose. No key → plaintext, and every
   record says so.
 - **Surfaces**: `dashboard.html` (Qevora UI kit, live figures or the committed
-  snapshot), `/admin` (CRM-style console over the live posture), `/voice` (the
-  talking page), the Pages site at
+  snapshot), `settings.html` (provider keys, one active), `admin.html`
+  (CRM-style console over the live posture), `voice.html` (the talking page),
+  `playground.html` — all at the repository root, cross-linked relatively so
+  the **same files** serve both the local `zeno voice` server and the Pages
+  site at
   [qevorasoftware.github.io/zeno-lang](https://qevorasoftware.github.io/zeno-lang/).
+  On the static site every page opens, but it is a read-only copy: live
+  figures and the talking agent need your own server.
 
 ## 4. Is it working? (verified 2026-10-08, commit `df33660`)
 

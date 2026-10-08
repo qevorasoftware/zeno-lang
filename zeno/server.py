@@ -7,8 +7,14 @@ kernel, decoder and benchmarks to a single-page UI.
 
 Routes
 ------
-``GET  /``                 the playground page
+``GET  /``                 the playground page (also ``/playground.html``)
 ``GET  /dashboard``        the operator dashboard (root ``dashboard.html``)
+``GET  /settings``         the provider & API-key settings page
+``GET  /admin``            the admin console
+``GET  /voice``            the Gujarati voice-agent page
+Every page also answers at its ``.html`` name (``/settings.html``, ...) because
+the pages cross-link relatively — the same links must work on the static GitHub
+Pages site, where only file names exist.
 ``GET  /dashboard-data.json``  the committed snapshot the dashboard uses offline
 ``GET  /api/health``       liveness probe
 ``GET  /api/version``      library, protocol and runtime versions
@@ -29,8 +35,9 @@ proxy; the page itself only ever calls relative URLs.
 
 Cross-origin access
 -------------------
-The dashboard also ships as a static page on GitHub Pages, which has no Python
-runtime. To let that page drive a locally running server, cross-origin requests
+The dashboard — and the settings, admin, voice and playground pages beside it —
+also ship as static pages on GitHub Pages, which has no Python runtime. To let
+those pages drive a locally running server, cross-origin requests
 are answered for an allowlist: the Pages origin, anything on ``localhost`` /
 ``127.0.0.1``, and whatever ``--allow-origin`` (or ``ZENO_ALLOWED_ORIGINS``)
 adds. It is deliberately not ``*``: the server has no authentication, and the
@@ -71,11 +78,20 @@ CANONICAL_EXAMPLE = (
     "@LOC[TYO] -> ?WX : { $WX.state == RAIN => !GEN[INDOOR, 3] | !GEN[OUTDOOR, 3] }"
 )
 
-WEB_ROOT = Path(__file__).resolve().parent / "web"
-#: The repository root, for the two files the dashboard needs. Only the names in
-#: :data:`ROOT_FILES` are servable, so this is not a path-traversal surface.
-ROOT = WEB_ROOT.parent.parent
-ROOT_FILES = ("dashboard.html", "dashboard-data.json")
+#: The repository root. The web pages live there — beside ``dashboard.html``,
+#: the assets and the committed snapshot — so the static GitHub Pages site and
+#: the live server read the very same files: one copy, every host, no drift.
+#: Only the names in :data:`ROOT_FILES` are servable, so this is not a
+#: path-traversal surface.
+ROOT = Path(__file__).resolve().parent.parent
+ROOT_FILES = (
+    "dashboard.html",
+    "dashboard-data.json",
+    "settings.html",
+    "admin.html",
+    "voice.html",
+    "playground.html",
+)
 
 #: The UI kit (Bootstrap, icons, fonts, the Qevora theme) lives at the repository
 #: root so the GitHub Pages site serves it next to ``dashboard.html`` with the
@@ -808,41 +824,19 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _root_file(self, name: str) -> None:
         """Serve one of :data:`ROOT_FILES` from the repository root."""
-        if name not in ROOT_FILES or name not in {"dashboard.html", "dashboard-data.json"}:
+        if name not in ROOT_FILES:
             self._send(404, b"not found", "text/plain; charset=utf-8")
             return
         target = (ROOT / name).resolve()
         if not target.is_file():
-            self._send(
-                404,
-                b"not found: run `zeno dashboard --write` to create dashboard-data.json",
-                "text/plain; charset=utf-8",
+            hint = (
+                "not found: run `zeno dashboard --write` to create dashboard-data.json"
+                if name == "dashboard-data.json"
+                else "not found: the web pages ship in a zeno-lang checkout"
             )
+            self._send(404, hint.encode("utf-8"), "text/plain; charset=utf-8")
             return
         content_type = "text/html; charset=utf-8" if name.endswith(".html") else "application/json"
-        self._send(200, target.read_bytes(), content_type)
-
-    def _file(self, relative: str) -> None:
-        target = (WEB_ROOT / relative.lstrip("/")).resolve()
-        if WEB_ROOT not in target.parents and target != WEB_ROOT:
-            self._send(403, b"forbidden", "text/plain; charset=utf-8")
-            return
-        if not target.is_file():
-            self._send(404, b"not found", "text/plain; charset=utf-8")
-            return
-        suffix = target.suffix.lower()
-        content_type = {
-            ".html": "text/html; charset=utf-8",
-            ".css": "text/css; charset=utf-8",
-            ".js": "text/javascript; charset=utf-8",
-            ".json": "application/json",
-            ".svg": "image/svg+xml",
-            # The admin console's UI kit ships its fonts and icons as woff2 so
-            # the page has no CDN dependency: it renders even where third-party
-            # hosts are blocked, which is exactly where an owner consoles from.
-            ".woff2": "font/woff2",
-            ".woff": "font/woff",
-        }.get(suffix, "application/octet-stream")
         self._send(200, target.read_bytes(), content_type)
 
     # -- verbs -----------------------------------------------------------
@@ -853,8 +847,8 @@ class _Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802 - stdlib signature
         path = posixpath.normpath(self.path.split("?", 1)[0])
         try:
-            if path in ("/", "/index.html"):
-                self._file("index.html")
+            if path in ("/", "/index.html", "/playground", "/playground.html"):
+                self._root_file("playground.html")
                 return
             if path in ("/dashboard", "/dashboard/", "/dashboard.html"):
                 self._root_file("dashboard.html")
@@ -894,23 +888,23 @@ class _Handler(BaseHTTPRequestHandler):
             if path == "/api/tools":
                 self._json(self.playground.tools())
                 return
-            if path in ("/settings", "/settings/"):
-                self._file("settings.html")
+            if path in ("/settings", "/settings/", "/settings.html"):
+                self._root_file("settings.html")
                 return
             if path == "/api/settings":
                 if self._permit(path, action="read:settings", read=True):
                     return
                 self._json(self.playground.provider_store.describe() | {"live": True})
                 return
-            if path in ("/admin", "/admin/"):
+            if path in ("/admin", "/admin/", "/admin.html"):
                 # The admin console is a page: downloading it needs no grant, and
                 # every panel it can fill is authorized route by route.
-                self._file("admin.html")
+                self._root_file("admin.html")
                 return
-            if path in ("/voice", "/voice/"):
+            if path in ("/voice", "/voice/", "/voice.html"):
                 # The page is a page: it needs no authorization to be downloaded,
                 # and everything it can *do* is authorized route by route.
-                self._file("voice.html")
+                self._root_file("voice.html")
                 return
             if path == "/api/memory/sessions":
                 if self._permit(path, action="read:memory", read=True):
@@ -1000,8 +994,6 @@ class _Handler(BaseHTTPRequestHandler):
             if path == "/api/benchmark":
                 self._json(self.playground.benchmark())
                 return
-            if path.startswith("/static/"):
-                self._file(path.removeprefix("/static/"))
             if path.startswith("/assets/"):
                 # The UI kit is vendored at the repository root and served from
                 # there: no CDN, so every page renders even where third-party
@@ -1367,8 +1359,8 @@ def serve(
     info = playground.provider_info()
     print(f"Zeno playground on http://{host}:{port}  (provider: {info['provider']}, "
           f"tokenizer: {info['tokenizer']})", flush=True)
-    print(f"  playground: http://{host}:{port}/    dashboard: http://{host}:{port}/dashboard",
-          flush=True)
+    print(f"  playground: http://{host}:{port}/    dashboard: http://{host}:{port}/dashboard"
+          f"    settings: http://{host}:{port}/settings", flush=True)
     granted = ", ".join((*DEFAULT_ALLOWED_ORIGINS, *origins)) or "none"
     print(f"  cross-origin readers allowed: {granted} (+ localhost)", flush=True)
     if playground.enforcement == "production":

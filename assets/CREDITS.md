@@ -12,4 +12,4 @@ third-party hosts are blocked in exactly the places an owner consoles from.
   `js/theme.js`, `js/app.js`, `js/sidebar.js` — the Qevora theme layer (MIT)
 - `js/chart.umd.js` — Chart.js 4 (MIT)
 
-Everything else in `zeno/web/` is this project's own.
+Everything else in this repository is this project's own.

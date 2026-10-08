@@ -11,12 +11,12 @@
   <script>(function(){try{var s=localStorage.getItem("qevora-theme");var d=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-bs-theme",(s==="dark"||s==="light")?s:(d?"dark":"light"));}catch(e){}})();</script>
 
   <!-- UI kit, vendored at the repository root (see assets/CREDITS.md) -->
-  <link rel="stylesheet" href="/assets/css/fonts.css">
-  <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
-  <link rel="stylesheet" href="/assets/icons/bootstrap-icons/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/assets/css/style.css">
-  <link rel="stylesheet" href="/assets/css/components.css">
-  <link rel="stylesheet" href="/assets/css/dark.css">
+  <link rel="stylesheet" href="assets/css/fonts.css">
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/icons/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
   <style>
     .code-chip { font-family: var(--q-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: .78rem; }
   </style>
@@ -57,10 +57,10 @@
 
       <p class="q-sidebar__group-label">Surfaces</p>
       <ul class="q-nav">
-        <li class="q-nav-item"><a class="q-nav__link" href="/dashboard"><i class="q-nav__icon bi bi-speedometer2" aria-hidden="true"></i><span class="q-nav__text">Dashboard</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="/admin"><i class="q-nav__icon bi bi-shield-check" aria-hidden="true"></i><span class="q-nav__text">Admin console</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="/voice"><i class="q-nav__icon bi bi-mic" aria-hidden="true"></i><span class="q-nav__text">Talk to the agent</span></a></li>
-        <li class="q-nav-item"><a class="q-nav__link" href="/"><i class="q-nav__icon bi bi-terminal" aria-hidden="true"></i><span class="q-nav__text">Playground</span></a></li>
+        <li class="q-nav-item"><a class="q-nav__link" href="dashboard.html"><i class="q-nav__icon bi bi-speedometer2" aria-hidden="true"></i><span class="q-nav__text">Dashboard</span></a></li>
+        <li class="q-nav-item"><a class="q-nav__link" href="admin.html"><i class="q-nav__icon bi bi-shield-check" aria-hidden="true"></i><span class="q-nav__text">Admin console</span></a></li>
+        <li class="q-nav-item"><a class="q-nav__link" href="voice.html"><i class="q-nav__icon bi bi-mic" aria-hidden="true"></i><span class="q-nav__text">Talk to the agent</span></a></li>
+        <li class="q-nav-item"><a class="q-nav__link" href="playground.html"><i class="q-nav__icon bi bi-terminal" aria-hidden="true"></i><span class="q-nav__text">Playground</span></a></li>
       </ul>
 
       <div class="q-sidebar__footer">
@@ -103,7 +103,7 @@
         <div>
           <nav aria-label="Breadcrumb">
             <ol class="breadcrumb">
-              <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+              <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
               <li class="breadcrumb-item active" aria-current="page">Settings</li>
             </ol>
           </nav>
@@ -219,9 +219,9 @@
         <div class="q-footer__inner">
           <span>Zeno · keys stay server-side, sealed when an owner key is configured · UI kit vendored locally (assets/CREDITS.md)</span>
           <nav class="d-flex flex-wrap gap-3" aria-label="Footer">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/admin">Admin console</a>
-            <a href="/voice">Talk to the agent</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="admin.html">Admin console</a>
+            <a href="voice.html">Talk to the agent</a>
           </nav>
         </div>
       </footer>
@@ -230,10 +230,10 @@
 
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
 
-  <script src="/assets/js/bootstrap.bundle.min.js"></script>
-  <script src="/assets/js/theme.js"></script>
-  <script src="/assets/js/sidebar.js"></script>
-  <script src="/assets/js/app.js"></script>
+  <script src="assets/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/theme.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script src="assets/js/app.js"></script>
   <script>
   "use strict";
   const state = { token: localStorage.getItem("zeno.token") || "", presets: [] };

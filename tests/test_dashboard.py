@@ -360,3 +360,116 @@ def test_the_site_root_is_a_doorway_to_the_dashboard():
     # a wrong URL lands on a styled page, not GitHub's default 404
     missing = ROOT / "404.html"
     assert missing.is_file() and "dashboard.html" in missing.read_text(encoding="utf-8")
+
+
+def test_every_surface_ships_as_a_static_page():
+    """The Pages site must carry every page the dashboard links to.
+
+    The sidebar promises settings, admin, voice and a playground. On GitHub
+    Pages only committed files resolve, so a page that is missing from the
+    repository root is a 404 the moment a visitor clicks the link.
+    """
+    from zeno.server import ROOT, ROOT_FILES
+
+    for name in (
+        "index.html",
+        "404.html",
+        "dashboard.html",
+        "settings.html",
+        "admin.html",
+        "voice.html",
+        "playground.html",
+    ):
+        assert (ROOT / name).is_file(), f"the static site is missing {name}"
+    # the server's allowlist and the committed set agree: every servable name
+    # exists, so the live server and the static site show the same pages
+    for name in ROOT_FILES:
+        assert (ROOT / name).is_file(), f"ROOT_FILES names a missing file: {name}"
+
+
+def test_page_links_resolve_on_a_static_host():
+    """No link on any page may point at a server-only route.
+
+    The Pages site lives under a subpath, so an absolute ``href="/settings"``
+    escapes to the github.io root and 404s — which is exactly how the settings,
+    admin and voice links broke. Every link must be relative, and every
+    relative target must be a committed file next to the page.
+    """
+    import re
+
+    from zeno.server import ROOT
+
+    pages = (
+        "index.html",
+        "404.html",
+        "dashboard.html",
+        "settings.html",
+        "admin.html",
+        "voice.html",
+        "playground.html",
+    )
+    targets = re.compile(r'(?:href|src)="([^"]+)"')
+    for name in pages:
+        page = (ROOT / name).read_text(encoding="utf-8")
+        for target in targets.findall(page):
+            if target.startswith(("http://", "https://", "#", "data:", "mailto:")):
+                continue
+            assert not target.startswith("/"), (
+                f"{name} links absolutely to {target!r}: that escapes the Pages "
+                "subpath and 404s on the static site"
+            )
+            file_part = target.split("#", 1)[0].split("?", 1)[0]
+            if not file_part:
+                continue
+            assert (ROOT / file_part).is_file(), (
+                f"{name} links to {target!r} but {file_part} is not committed"
+            )
+
+
+def test_the_static_site_serves_every_page_and_link():
+    """End to end on a files-only host: every page and every link answers 200.
+
+    This drives the same stand-in for GitHub Pages the offline tests use: no
+    API, no backend, just files. It is the visitor's click, replayed.
+    """
+    import re
+    import urllib.request
+
+    from zeno.server import ROOT
+
+    pages = (
+        "index.html",
+        "404.html",
+        "dashboard.html",
+        "settings.html",
+        "admin.html",
+        "voice.html",
+        "playground.html",
+    )
+    targets = re.compile(r'(?:href|src)="([^"]+)"')
+
+    def get(url: str) -> int:
+        try:
+            with urllib.request.urlopen(url, timeout=30) as response:
+                return response.status
+        except urllib.error.HTTPError as error:
+            return error.code
+
+    httpd, base = _static_site(ROOT)
+    try:
+        linked: set[str] = set()
+        for name in pages:
+            status = get(f"{base}/{name}")
+            assert status == 200, f"{name} answers {status} on the static site"
+            for target in targets.findall((ROOT / name).read_text(encoding="utf-8")):
+                if target.startswith(("http://", "https://", "#", "data:", "mailto:", "/")):
+                    continue
+                linked.add(target.split("#", 1)[0].split("?", 1)[0])
+        for target in sorted(linked):
+            if not target:
+                continue
+            status = get(f"{base}/{target}")
+            assert status == 200, f"the link {target!r} answers {status} on the static site"
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
