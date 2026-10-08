@@ -65,6 +65,12 @@
     .intruder { font-family: var(--q-font-mono, ui-monospace, Menlo, Consolas, monospace);
       font-size: .78rem; color: var(--q-danger); }
     .stat b, .stat strong { font-variant-numeric: tabular-nums; }
+    /* Phones: the pill can state its mode in three letters without wrapping,
+       and the console input keeps most of the row for itself. */
+    @media (max-width: 575.98px) {
+      #mode-pill { font-size: .66rem; padding: .25rem .55rem; }
+      #command { flex: 1 1 130px; }
+    }
   </style>
 </head>
 
@@ -131,12 +137,17 @@
       </div>
 
       <div class="q-header__actions">
-        <span id="mode-pill" class="pill">connecting…</span>
-        <span class="d-inline-flex align-items-center gap-2 fs-8 text-muted-2">
-          <span class="dot" id="dot"></span><span id="status-text">starting…</span>
+        <span id="mode-pill" class="pill text-nowrap">connecting…</span>
+        <span class="d-inline-flex align-items-center gap-2 fs-8 text-muted-2" title="backend status">
+          <span class="dot" id="dot"></span><span id="status-text" class="d-none d-sm-inline">starting…</span>
         </span>
-        <button class="btn btn-sm btn-primary" type="button" id="connect">Connect</button>
-        <button class="btn btn-sm btn-white d-none d-sm-inline-flex" type="button" id="use-local" title="Use the host this page was served from">Use this host</button>
+        <!-- The header is one fixed-height row with no wrap (the kit's design),
+             so on phones the button says it with an icon and keeps its label
+             from sm up, where there is room for it. -->
+        <button class="btn btn-sm btn-primary" type="button" id="connect" aria-label="Connect to the backend" title="Connect">
+          <i class="bi bi-plug-fill d-sm-none" aria-hidden="true"></i><span class="d-none d-sm-inline">Connect</span>
+        </button>
+        <button class="btn btn-sm btn-white d-none d-md-inline-flex" type="button" id="use-local" title="Use the host this page was served from">Use this host</button>
         <button class="q-icon-btn" type="button" data-theme-toggle aria-pressed="false"
                 title="Switch to dark mode" aria-label="Toggle colour mode">
           <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
