@@ -135,7 +135,11 @@
         activate.addEventListener("click", async () => {
           try {
             const out = await post("/api/settings/activate", { name: profile.name });
-            toast("Active provider", out.provider.provider + " · " + out.provider.model, "success");
+            const good = out && out.provider;
+            toast(good ? "Active provider" : "Not switched",
+                  good ? out.provider.provider + " · " + (out.provider.model || "")
+                       : savedLabel(out),
+                  good ? "success" : "warning");
             load();
           } catch (error) { toast("Refused", String(error.message || error), "danger"); }
         });
@@ -240,6 +244,19 @@
     render(info);
   }
 
+  // A 200 is not a promise about shape: describe whatever came back, so an
+  // unexpected answer is shown as what it is instead of crashing the toast.
+  function savedLabel(result) {
+    if (result && result.profile && result.profile.name) {
+      const info = result.provider || {};
+      return result.profile.name + " · " + (info.provider || "?") + (info.online ? " · online" : "");
+    }
+    if (result && result.error) {
+      return [result.error.code, result.error.message].filter(Boolean).join(" — ");
+    }
+    return "unexpected answer: " + JSON.stringify(result).slice(0, 180);
+  }
+
   async function runTest(name) {
     const out = $("t-out");
     out.hidden = false;
@@ -269,7 +286,8 @@
     try {
       const result = await post("/api/settings/providers", body);
       $("f-key").value = "";
-      toast("Saved", result.profile.name + " · " + result.provider.provider + (result.provider.online ? " · online" : ""), "success");
+      const good = result && result.profile;
+      toast(good ? "Saved" : "Not saved", savedLabel(result), good ? "success" : "warning");
       load();
     } catch (error) {
       toast("Refused", String(error.code || error.message || error), "danger");
