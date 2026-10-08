@@ -84,6 +84,21 @@ function authBody(body) {
   return Object.assign({}, body, { aegis: aegis });
 }
 
+function decoyError() {
+  // The guardian has flagged this browser's source: repeated refused attempts
+  // are answered with fabricated successes, and the body honestly labels
+  // itself ("decoy": true). Nothing actually happened. Fix the refusal
+  // underneath — usually a missing or expired owner grant — then try once:
+  // a permitted request is never answered with a decoy.
+  const failure = new Error(
+    "the guardian is tarpitting this browser: repeated refused attempts are answered " +
+    "with fabricated decoys, so nothing actually happened. Fix the refusal underneath " +
+    "(usually the owner grant) and try once."
+  );
+  failure.decoy = true;
+  return failure;
+}
+
 async function api(path, options) {
   const request = Object.assign({}, options);
   if (state.token) {
@@ -97,6 +112,9 @@ async function api(path, options) {
   if (!response.ok) {
     const error = payload && payload.error ? payload.error : null;
     throw new Error(error ? (error.message || error.code || JSON.stringify(error)) : ("HTTP " + response.status));
+  }
+    if (payload && payload.decoy === true) {
+    throw decoyError();
   }
   return payload;
 }

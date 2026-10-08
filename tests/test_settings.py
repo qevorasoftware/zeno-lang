@@ -293,3 +293,84 @@ def test_production_refuses_settings_without_a_grant(settings_world, tmp_path, m
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+@requires_crypto
+def test_repeated_refused_saves_turn_into_decoys_then_a_grant_still_works(
+    tmp_path, monkeypatch
+):
+    """The exact trap a misconfigured deployment sets for its owner.
+
+    Every save is refused (no grant on the request); past the watchtower's
+    alert threshold the refusals are answered with 200 + a fabricated decoy —
+    which is what the settings page then shows as an unexpected answer. The
+    decoy body labels itself, the page surfaces it, and a permitted request
+    on the very same flagged watchtower is never decoyed.
+    """
+    from aegis.capability import OwnerRoot
+    from zeno.server import Playground
+
+    owner = OwnerRoot.create(name="owner_root", audience="zeno-local", epoch=1)
+    public = tmp_path / "owner-public.json"
+    public.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "public": owner.public.to_dict(),
+                "audience": "zeno-local",
+                "epoch": 1,
+                "revocations": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ZENO_OWNER_PUBLIC", str(public))
+    monkeypatch.setenv("ZENO_PRODUCTION_PROFILE", "browser")
+    monkeypatch.setenv("ZENO_SENTINEL_RATE_WEIGHT", "0")
+    monkeypatch.setenv("ZENO_PROVIDERS_FILE", str(tmp_path / "providers.json"))
+    monkeypatch.delenv("ZENO_MEMORY_KEY", raising=False)
+    monkeypatch.delenv("ZENO_MEMORY_KEY_DATA", raising=False)
+
+    playground = Playground(mode="production")
+    if playground.watchtower is not None:
+        playground.watchtower.tarpit_base_ms = 1
+        playground.watchtower.tarpit_max_ms = 2
+    httpd, base = _serve(playground)
+    try:
+        grant = owner.issue("owner", ["read:*", "settings:*", "execute:*"], ttl=300).encode()
+
+        def save(token: str, nonce: str):
+            request = urllib.request.Request(
+                base + "/api/settings/providers",
+                method="POST",
+                data=json.dumps(
+                    {"name": "openai", "provider": "openai", "api_key": "sk-x", "nonce": nonce}
+                ).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+            )
+            if token:
+                request.add_header("X-Zeno-Capability", token)
+            try:
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    return response.status, json.loads(response.read().decode("utf-8"))
+            except urllib.error.HTTPError as error:
+                return error.code, json.loads(error.read().decode("utf-8"))
+
+        # two honest refusals, then the threshold: the third refusal is a
+        # fabricated success — the body says so itself
+        for attempt in (1, 2):
+            status, body = save("", f"n{attempt}")
+            assert status == 403 and body["error"]["code"].startswith("ZN-SEC-"), attempt
+        status, decoy = save("", "n3")
+        assert status == 200, "the third refusal should be a decoy 200, not a plain refusal"
+        assert decoy["decoy"] is True and decoy["frame"].startswith("!RET[ok=true")
+        assert playground.provider_store.profiles == {}, "a decoy must never store anything"
+
+        # the fix underneath: a granted save on the same flagged watchtower
+        status, saved = save(grant, "n4")
+        assert status == 200 and saved["profile"]["name"] == "openai"
+        assert "decoy" not in saved
+        assert "openai" in playground.provider_store.profiles
+    finally:
+        httpd.shutdown()
+        httpd.server_close()

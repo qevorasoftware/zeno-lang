@@ -205,5 +205,10 @@ run/ask — બધું ચાલે છે (`tests/test_deploy.py` + live 24/2
 - Memory/providers ને seal કરવી હોય તો `zeno memory init-key` નું JSON
   `ZENO_MEMORY_KEY_DATA` env માં (private env છે — Render secrets).
 - Public URL એ ખરેખર public છે: pages કોઈ પણ ખોલી શકે; કામ કરવા માટ્ર grant જોઈએ.
+- **જો દરેક જવાબ ખોટો જણાય** (`frame: !RET[ok=true, nonce=…]` જેવું, `decoy: true`
+  સાથે): તમારા browser ના source ને guardian એ flag કર્યો છે — 3 refused પ્રયત્નો પછી
+  દરેક refusal ની જગ્યાએ 200 + બનાવટી જવાબ મળે છે (anti-attacker design). એ ભૂલ નથી;
+  નીચેનું કારણ સુધારો (મોટે ભાગે grant નથી કે expire થયો), પછી **એક જ** પ્રયત્ન કરો —
+  સફળ request ને ક્યારેય decoy નથી મળતી. વધુ રેપિડ ક્લિક કરવાથી flag વધુ ઊંડો જાય છે.
 
  આ પ્રોજેક્ટ ક્યારેય કહેતો નથી કે એ "unbreakable" છે — એની તમામ ગેરેન્ટી ગણિતની છે, ટેસ્ટેડ છે, અને એની મર્યાદા દરેક ફાઇલમાં લખેલી છે. એ જ એની સૌથી મોટી મજબૂતી છે.*

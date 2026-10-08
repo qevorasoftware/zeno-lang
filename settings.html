@@ -279,6 +279,21 @@
     } catch (_) { return String(Date.now()) + Math.random().toString(16).slice(2); }
   }
 
+  function decoyError() {
+    // The guardian has flagged this browser's source: repeated refused attempts
+    // are answered with fabricated successes, and the body honestly labels
+    // itself ("decoy": true). Nothing actually happened. Fix the refusal
+    // underneath — usually a missing or expired owner grant — then try once:
+    // a permitted request is never answered with a decoy.
+    const failure = new Error(
+      "the guardian is tarpitting this browser: repeated refused attempts are answered " +
+      "with fabricated decoys, so nothing actually happened. Fix the refusal underneath " +
+      "(usually the owner grant) and try once."
+    );
+    failure.decoy = true;
+    return failure;
+  }
+
   async function api(path, options) {
     const request = Object.assign({}, options);
     request.headers = Object.assign({ "Content-Type": "application/json" }, request.headers || {});
@@ -295,6 +310,9 @@
       failure.status = response.status;
       failure.code = error ? error.code : "";
       throw failure;
+    }
+    if (payload && payload.decoy === true) {
+      throw decoyError();
     }
     return payload;
   }
@@ -504,6 +522,7 @@
       info = await api("/api/settings");
     } catch (error) {
       $("offline-note").hidden = false;
+      if (error && error.decoy) toast("Tarpitted", String(error.message || error), "danger");
       return;
     }
     if (info.locked) {
