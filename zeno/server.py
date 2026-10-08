@@ -139,6 +139,70 @@ def _development_policy(policy: Any = None) -> Any:
     return Policy(mode="development", require_device_lock=False)
 
 
+def _owner_grant_verifier() -> Any:
+    """The owner's public half, when the deployment has configured one.
+
+    ``ZENO_OWNER_PUBLIC`` is what ``aegis owner export-public`` writes: the
+    public identity, the audience and epoch to pin, and the revocations to
+    honour. It accepts a file path or the JSON itself — a platform such as
+    Render only offers env vars, and a secret-free descriptor is exactly what
+    an env var is for. Without it, production can honour no grant at all,
+    which the startup banner and every refusal say out loud.
+    """
+    configured = os.environ.get("ZENO_OWNER_PUBLIC", "").strip()
+    if not configured:
+        return None
+    try:
+        from aegis.capability import CapabilityVerifier
+        from aegis.pqc_engine import PublicIdentity
+
+        raw = configured
+        expanded = os.path.expanduser(configured)
+        if os.path.isfile(expanded):
+            raw = Path(expanded).read_text(encoding="utf-8")
+        payload = json.loads(raw)
+        return CapabilityVerifier(
+            PublicIdentity.from_dict(payload["public"]),
+            audience=str(payload.get("audience", "zeno-local")),
+            epoch=int(payload.get("epoch", 1)),
+            revocations=payload.get("revocations") or (),
+        )
+    except Exception as error:  # noqa: BLE001 - a broken key is a loud absence
+        print(
+            f"ZENO_OWNER_PUBLIC is set but could not be used "
+            f"({type(error).__name__}: {error}); production will refuse every grant. "
+            "Re-export it: python -m aegis owner export-public --out …",
+            file=sys.stderr,
+            flush=True,
+        )
+        return None
+
+
+def _production_policy() -> Any:
+    """Which production shape to run: strict (the default) or browser.
+
+    ``ZENO_PRODUCTION_PROFILE=browser`` runs :meth:`aegis.gate.Policy.browser_policy`
+    — production for a surface driven by web pages, where four layers are
+    physically unsatisfiable by a page and are named as not required on every
+    health report. Anything else (and the default) is the strict policy for
+    machine callers. An unknown value is a loud fall-back to strict, never a
+    silent loosening.
+    """
+    from aegis.gate import Policy
+
+    profile = os.environ.get("ZENO_PRODUCTION_PROFILE", "").strip().lower()
+    if profile == "browser":
+        return Policy.browser_policy()
+    if profile and profile != "strict":
+        print(
+            f"ZENO_PRODUCTION_PROFILE={profile!r} is not a profile (strict or browser); "
+            "using strict — the fail-closed direction",
+            file=sys.stderr,
+            flush=True,
+        )
+    return Policy.strict_policy()
+
+
 def _build_boundary(mode: str, policy: Any = None) -> Any:
     """Build the authorization boundary, or return ``None`` if it cannot exist.
 
@@ -146,10 +210,14 @@ def _build_boundary(mode: str, policy: Any = None) -> Any:
     """
     try:
         from aegis.boundary import AuthorizationBoundary
-        from aegis.gate import Gateway, Policy
+        from aegis.gate import Gateway
 
-        chosen = (policy or Policy.strict_policy()) if mode == "production" else _development_policy(policy)
-        return AuthorizationBoundary(gateway=Gateway(chosen, sentinel=_build_sentinel()), policy=chosen)
+        chosen = (policy or _production_policy()) if mode == "production" else _development_policy(policy)
+        return AuthorizationBoundary(
+            gateway=Gateway(chosen, sentinel=_build_sentinel()),
+            policy=chosen,
+            capability_verifier=_owner_grant_verifier(),
+        )
     except Exception:  # noqa: BLE001 - no crypto backend, no boundary
         return None
 
@@ -168,10 +236,12 @@ def _build_sentinel() -> Any:
     from aegis.guardian_ai import Sentinel
 
     configured = os.environ.get("ZENO_SENTINEL_MAX_EVENTS_PER_MINUTE", "").strip()
-    if not configured:
-        return Sentinel()
     try:
-        return Sentinel(max_events_per_minute=float(configured))
+        sentinel = (
+            Sentinel(max_events_per_minute=float(configured))
+            if configured
+            else Sentinel()
+        )
     except ValueError:
         print(
             f"ZENO_SENTINEL_MAX_EVENTS_PER_MINUTE={configured!r} is not a number; "
@@ -179,7 +249,23 @@ def _build_sentinel() -> Any:
             file=sys.stderr,
             flush=True,
         )
-        return Sentinel()
+        sentinel = Sentinel()
+    # A conversation is a burst of requests against a baseline that starts
+    # empty, so the guardian's rate-vs-own-norm feature can freeze a talking
+    # human on a public deployment. ZENO_SENTINEL_RATE_WEIGHT scales just that
+    # one feature (0 disables it); every other feature stays at its default.
+    rate = os.environ.get("ZENO_SENTINEL_RATE_WEIGHT", "").strip()
+    if rate:
+        try:
+            sentinel.weights["rate"] = float(rate)
+        except ValueError:
+            print(
+                f"ZENO_SENTINEL_RATE_WEIGHT={rate!r} is not a number; "
+                "the guardian's own rate weight stays",
+                file=sys.stderr,
+                flush=True,
+            )
+    return sentinel
 
 
 def _build_memory() -> Any:
@@ -191,18 +277,53 @@ def _build_memory() -> Any:
     """
     from zeno.memory import MemoryStore
 
-    path = os.environ.get("ZENO_MEMORY_KEY", "").strip()
-    if path:
+    owner = _sealing_owner_from_env()
+    if owner is not None:
+        return MemoryStore(owner=owner)
+    return MemoryStore(seal=False)
+
+
+def _sealing_owner_from_env() -> Any:
+    """The identity that seals memory and provider keys, or ``None``.
+
+    ``ZENO_MEMORY_KEY_DATA`` is the key file's JSON inline — for platforms
+    (Render, Fly, containers) where the only private channel is an env var.
+    ``ZENO_MEMORY_KEY`` stays the file-path form. The key here *seals*; it is
+    a ``zeno memory init-key`` identity, not the owner root that mints
+    authority, and pasting an owner root into it would work but would put the
+    minting key on the server — generate a sealing key instead.
+    """
+    from aegis.pqc_engine import Identity
+    from zeno.memory import MemoryStore
+
+    inline = os.environ.get("ZENO_MEMORY_KEY_DATA", "").strip()
+    if inline:
         try:
-            return MemoryStore(owner=MemoryStore.load_owner(path))
+            payload = json.loads(inline)
+            if "identity" in payload:  # an owner-root file (not recommended here)
+                return Identity.from_dict(payload["identity"])
+            return Identity.from_dict(payload)  # a `zeno memory init-key` file
         except Exception as error:  # noqa: BLE001 - report, never silently continue unsealed
             print(
-                f"memory key {path!r} could not be used ({type(error).__name__}: {error}); "
-                "conversation memory will be stored UNSEALED",
+                f"ZENO_MEMORY_KEY_DATA could not be used ({type(error).__name__}: {error}); "
+                "memory and provider keys will be stored UNSEALED",
                 file=sys.stderr,
                 flush=True,
             )
-    return MemoryStore(seal=False)
+            return None
+    path = os.environ.get("ZENO_MEMORY_KEY", "").strip()
+    if not path:
+        return None
+    try:
+        return MemoryStore.load_owner(path)
+    except Exception as error:  # noqa: BLE001 - report, never silently continue unsealed
+        print(
+            f"memory key {path!r} could not be used ({type(error).__name__}: {error}); "
+            "conversation memory will be stored UNSEALED",
+            file=sys.stderr,
+            flush=True,
+        )
+        return None
 
 
 def _build_provider_store() -> Any:
@@ -215,20 +336,8 @@ def _build_provider_store() -> Any:
     """
     from zeno.settings import ProviderStore, SettingsError
 
-    path = os.environ.get("ZENO_MEMORY_KEY", "").strip()
-    owner = None
-    if path:
-        try:
-            owner = ProviderStore.load_owner(path)
-        except Exception as error:  # noqa: BLE001 - the owner is told, not guessed at
-            print(
-                f"memory key {path!r} could not be used ({type(error).__name__}: {error}); "
-                "provider profiles will be stored UNSEALED",
-                file=sys.stderr,
-                flush=True,
-            )
     try:
-        return ProviderStore(owner=owner)
+        return ProviderStore(owner=_sealing_owner_from_env())
     except SettingsError as error:
         print(f"provider profiles are locked: {error}", file=sys.stderr, flush=True)
         return ProviderStore.locked_store(str(error))
@@ -768,9 +877,16 @@ class _Handler(BaseHTTPRequestHandler):
         header = self._capability_block()
         if header.get("token") and not (block.get("token") or "").strip():
             block["token"] = header["token"]
-        query_nonce = self._query().get("nonce", "")
-        if query_nonce and not (block.get("nonce") or "").strip():
-            block["nonce"] = query_nonce
+        # Nonces arrive three ways: in the query (the pages' GETs), at the top
+        # of a POST body (the pages' post() helpers), or inside the aegis block
+        # itself. All three are the caller's fresh nonce; lift whichever is here
+        # so the boundary's single-use guard sees it.
+        for source in (
+            self._query().get("nonce", ""),
+            str(merged.get("nonce") or ""),
+        ):
+            if source and not (block.get("nonce") or "").strip():
+                block["nonce"] = source
         if block:
             merged["aegis"] = block
         caller = self._caller(merged)
@@ -895,6 +1011,11 @@ class _Handler(BaseHTTPRequestHandler):
                 else:
                     health["policy"] = {"mode": self.playground.mode, "aegis_available": False}
                 health["memory"] = self.playground.memory.describe()
+                verifier = getattr(self.playground.boundary, "capability_verifier", None)
+                health["owner_grants"] = {
+                    "honored": verifier is not None,
+                    "fingerprint": getattr(getattr(verifier, "owner_public", None), "fingerprint", ""),
+                }
                 health["agents"] = self.playground.peers.describe()
                 self._json(health)
                 return
@@ -1063,8 +1184,11 @@ class _Handler(BaseHTTPRequestHandler):
                     return
                 # Audit finding C1: this route used to call the kernel directly.
                 # Nothing effectful runs until the boundary permits it.
-                permit = self.playground.authorize(
-                    self._caller(body), payload.encode("utf-8"), body, action="execute:zeno"
+                # _authorize_once (not a bare authorize call) so the grant in the
+                # X-Zeno-Capability header and the body's nonce reach the boundary
+                # exactly as they do on every other route.
+                permit = self._authorize_once(
+                    action="execute:zeno", body=body, payload=payload.encode("utf-8")
                 )
                 if not permit.allowed:
                     self._refusal(permit, path=path, body=body)
@@ -1082,8 +1206,8 @@ class _Handler(BaseHTTPRequestHandler):
                 if not text.strip():
                     self._json({"error": {"code": "ZN0003", "message": "text is required"}}, 400)
                     return
-                permit = self.playground.authorize(
-                    self._caller(body), text.encode("utf-8"), body, action="execute:ask"
+                permit = self._authorize_once(
+                    action="execute:ask", body=body, payload=text.encode("utf-8")
                 )
                 if not permit.allowed:
                     self._refusal(permit, path=path, body=body)
@@ -1385,9 +1509,28 @@ def serve(
     granted = ", ".join((*DEFAULT_ALLOWED_ORIGINS, *origins)) or "none"
     print(f"  cross-origin readers allowed: {granted} (+ localhost)", flush=True)
     if playground.enforcement == "production":
-        mandatory = ", ".join(playground.boundary.policy.mandatory_layers)
-        print(f"  enforcement: PRODUCTION — all layers mandatory: {mandatory}", flush=True)
+        profile = os.environ.get("ZENO_PRODUCTION_PROFILE", "").strip().lower()
+        if profile == "browser":
+            print("  enforcement: PRODUCTION (browser profile) — grants, nonces, ledger, sentinel,", flush=True)
+            print("  PQC backend and opaque refusals are mandatory; the four layers a web page", flush=True)
+            print("  cannot physically satisfy (biometric, zkp, polymorphic, device lock) are not required", flush=True)
+        else:
+            mandatory = ", ".join(playground.boundary.policy.mandatory_layers)
+            print(f"  enforcement: PRODUCTION (strict) — all layers mandatory: {mandatory}", flush=True)
         print("  refusals return machine codes only; the ledger holds the reasons", flush=True)
+        verifier = getattr(playground.boundary, "capability_verifier", None)
+        if verifier is not None:
+            print(
+                f"  owner grants: honoured ({verifier.owner_public.fingerprint}, "
+                f"audience {verifier.audience}, epoch {verifier.epoch})",
+                flush=True,
+            )
+        else:
+            print(
+                "  owner grants: REFUSED — no owner public key configured; nothing effectful "
+                "can pass. Set ZENO_OWNER_PUBLIC (python -m aegis owner export-public)",
+                flush=True,
+            )
     else:
         why = (
             "no crypto backend: AEGIS cannot be constructed, so /api/run and /api/ask "

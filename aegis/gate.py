@@ -202,6 +202,48 @@ class Policy:
             apply_vajra_wrap=True,
         )
 
+    @classmethod
+    def browser_policy(cls) -> "Policy":
+        """Production for a surface driven by a web page.
+
+        The strict policy is for machine callers that can enroll a biometric
+        vault, compute a Schnorr proof, rotate payloads through the
+        polymorphic engine and state this host's own device fingerprint. A
+        browser page can do none of those four things — not "should not",
+        *cannot*: there is no prover, no vault and no fingerprint in a page,
+        and pretending otherwise would trade real security for the appearance
+        of it (the same reasoning the development policy uses for the device
+        lock).
+
+        So this policy keeps production's teeth — the owner's grant, the
+        nonce, the audited ledger with verified signatures, the sentinel, the
+        PQC backend, opaque refusals, the VAJRA wrap — and names the four
+        layers it does not require. :meth:`to_dict` reports every one of them
+        as ``false``, so a deployment running this profile is saying what it
+        is not, in public, on every ``/api/health``.
+
+        A caller that *can* satisfy all eight layers should be given the
+        strict policy, not this one.
+        """
+        return cls(
+            mode="production",
+            require_pqc=True,
+            require_biometric=False,
+            require_zkp=False,
+            require_ledger=True,
+            require_sentinel=True,
+            require_polymorphic=False,
+            require_device_lock=False,
+            require_geofence=False,
+            require_vajra=True,
+            verify_ledger_signatures=True,
+            require_identity_binding=False,
+            require_nonce=True,
+            require_capability=True,
+            opaque_reasons=True,
+            apply_vajra_wrap=True,
+        )
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "mode": self.mode,

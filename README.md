@@ -36,6 +36,8 @@ reference the whole toolchain is tested against.
 
 ---
 
+**Deploying:** `render.yaml` is a Render blueprint — `zeno serve --production` with owner grants; GUIDE.md §6 walks the whole thing (owner key export, grants, honest limits).
+
 ## The project guide
 
 New here? **[`GUIDE.md`](GUIDE.md)** is the one-file tour: what the project is,

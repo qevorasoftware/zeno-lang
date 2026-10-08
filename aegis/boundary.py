@@ -243,10 +243,15 @@ class AuthorizationBoundary:
                 f"no nonce supplied: a fixed proof context admits exactly one accepted request "
                 f"on {caller.actor!r} (send a fresh nonce per attempt)",
                 started=started,
+                code=refusal_code("gate", missing=True),
             )
         if material.get("nonce") and f"{caller.actor}:{material['nonce']}" in self._spent_set:
             return self._reject(
-                caller, payload, "this nonce has already authorized a request", started=started
+                caller,
+                payload,
+                "this nonce has already authorized a request",
+                started=started,
+                code=refusal_code("gate", missing=False),
             )
 
         proof = statement = None
@@ -374,6 +379,7 @@ class AuthorizationBoundary:
                 f"no nonce supplied: an owner read must be fresh on {caller.actor!r}",
                 started=started,
                 action=action,
+                code=refusal_code("gate", missing=True),
             )
         if nonce and f"{caller.actor}:{nonce}" in self._spent_set:
             return self._reject(
@@ -382,6 +388,7 @@ class AuthorizationBoundary:
                 "this nonce has already authorized a request",
                 started=started,
                 action=action,
+                code=refusal_code("gate", missing=False),
             )
 
         authorization = Authorization(

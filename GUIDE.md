@@ -160,7 +160,47 @@ broken promises.
    more useful; the grammar and validator already pin the contract.
 5. **A phone app / PWA** around `/voice` — the page already degrades honestly
    without a backend.
-6. **Production deployment** — a small VPS, `zeno voice --production`, your
-   key offline, grants issued per device, the watchtower feed shipped to you.
+6. **Production deployment** — Render works today (see §6); the next step
+   beyond it is a small VPS with a persistent disk, `zeno voice --production`,
+   your key offline, grants issued per device, the watchtower feed shipped to
+   you.
 
-*એક વાત યાદ રાખો: આ પ્રોજેક્ટ ક્યારેય કહેતો નથી કે એ "unbreakable" છે — એની તમામ ગેરેન્ટી ગણિતની છે, ટેસ્ટેડ છે, અને એની મર્યાદા દરેક ફાઇલમાં લખેલી છે. એ જ એની સૌથી મોટી મજબૂતી છે.*
+## 6. Render પર live કરો (deployment)
+
+**ઝડપી રીત (Gujarati):**
+
+1. **Render માં:** New → Blueprint → આ repo પસંદ કરો → `render.yaml` બધું જ રાખી લેશે
+   (build: `pip install -e .[aegis]`, start: `zeno serve --production`, health: `/api/health`).
+2. **તમારા કમ્પ્યુટર પર** (એક જ વાર):
+   `python -m aegis owner init` → `python -m aegis owner export-public --out owner-public.json`
+3. **Render ના env માં** `ZENO_OWNER_PUBLIC` = એ file નું JSON પેસ્ટ કરો.
+   (આ public key છે — એમાં કોઈ secret નથી.)
+4. **Token બનાવો:**
+   `python -m aegis owner issue --subject me --capability "read:*" --capability "settings:*" --capability "execute:*" --capability "agent:*" --ttl 86400`
+5. તમારા browser માં Render ની site ખોલો → કોઈ પણ page પર 🔑 (grant) બટન → token પેસ્ટ કરો.
+   હવે settings, voice agent, admin — બધું ચાલશે.
+
+**શું ચાલે છે (verified):** બધા pages live render થાય (SSR સાથે), grant વગર દરેક
+gated કામ machine-code refusal મળે, grant સાથે settings save/switch/test, voice turn,
+run/ask — બધું ચાલે છે (`tests/test_deploy.py` + live 24/24).
+
+**Production ના બે પ્રોફાઇલ — ઇમાનદારીથી:**
+- `ZENO_PRODUCTION_PROFILE=browser` (render.yaml નું default): grant + nonce +
+  audited ledger + sentinel + PQC backend + opaque refusals — **ફરજિયાત**. પણ
+  browser ભૌતિકરીતે જે 4 સ્તર ક્યારેય પૂરા કરી શકે નહીં (biometric, ZKP proof,
+  polymorphic, device-lock) એ **જરૂરી નથી** — અને `/api/health` દરેક request પર એમ જ કહે છે.
+- `strict` (default નહીં આપો તો): આઠેય સ્તર ફરજિયાત — એ machine clients માટે છે
+  (biometric vault + ZKP prover + device fingerprint ધરાવતા). Web page સાથે
+  strict રાખશો તો દરેક કામ refuse થશે — એ bug નથી, design છે.
+
+**મર્યાદા (છુપાવવાની નહીં):**
+- **Free plan નું filesystem deploy પર ભૂંસાઈ જાય છે** — API keys અને memory નવા deploy
+  પછી રહેશે નહીં. કાયમ માટે જોઈએ તો persistent disk (paid) જોડો.
+- Token ની TTL હોય છે (ઉપરના ઉદાહરણમાં 24 કલાક) — પછી નવો બનાવવો પડે.
+- `revoke`/`rotate-epoch` પછી `export-public` **ફરી ચલાવીને** Render ના env માં
+  અપડેટ કરવું પડે (revocation list export માં હોય છે).
+- Memory/providers ને seal કરવી હોય તો `zeno memory init-key` નું JSON
+  `ZENO_MEMORY_KEY_DATA` env માં (private env છે — Render secrets).
+- Public URL એ ખરેખર public છે: pages કોઈ પણ ખોલી શકે; કામ કરવા માટ્ર grant જોઈએ.
+
+ આ પ્રોજેક્ટ ક્યારેય કહેતો નથી કે એ "unbreakable" છે — એની તમામ ગેરેન્ટી ગણિતની છે, ટેસ્ટેડ છે, અને એની મર્યાદા દરેક ફાઇલમાં લખેલી છે. એ જ એની સૌથી મોટી મજબૂતી છે.*

@@ -102,10 +102,12 @@ async function api(path, options) {
 }
 
 function post(path, body) {
+  // A fresh nonce per POST: production refuses a request without one, and a
+  // captured one is refused on replay — the same contract every page uses.
   return api(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(authBody(body)),
+    body: JSON.stringify(authBody(Object.assign({ nonce: freshNonce() }, body))),
   });
 }
 

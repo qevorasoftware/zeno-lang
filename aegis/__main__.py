@@ -355,6 +355,39 @@ def cmd_owner(args: argparse.Namespace) -> int:
                 print(f"{key:16}: {value}")
         return 0
 
+    if action == "export-public":
+        # The serving side needs exactly this and nothing else: the public
+        # half, the audience and epoch to pin, and the revocations to honour.
+        # Nothing in it can mint authority — that is the point of the export.
+        payload = {
+            "version": 1,
+            "public": root.public.to_dict(),
+            "audience": root.audience,
+            "epoch": root.epoch,
+            "revocations": list(root.revocations),
+        }
+        blob = json.dumps(payload, indent=2, sort_keys=True)
+        if "secrets" in blob or "secret" in blob:  # paranoid by design
+            print("refusing to export: the descriptor unexpectedly names a secret", file=sys.stderr)
+            return 1
+        if args.out:
+            target = pathlib.Path(args.out).expanduser()
+            target.write_text(blob + "\n", encoding="utf-8")
+            os.chmod(target, 0o644)  # public data; world-readable is correct
+        if args.json:
+            _print_json(payload)
+        else:
+            print(f"public owner descriptor for {root.fingerprint}")
+            print(f"  audience    : {root.audience}   epoch {root.epoch}")
+            print(f"  revocations : {len(root.revocations)} honoured")
+            print("  use         : set it as ZENO_OWNER_PUBLIC on the deployment")
+            print("                (a file path, or the JSON itself in an env var)")
+            if args.out:
+                print(f"  written to  : {os.path.expanduser(args.out)}")
+            else:
+                print(blob)
+        return 0
+
     if action == "issue":
         try:
             token = root.issue(
@@ -474,7 +507,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     owner.add_argument(
         "owner_action",
-        choices=["init", "show", "issue", "revoke", "rotate-epoch", "verify"],
+        choices=["init", "show", "export-public", "issue", "revoke", "rotate-epoch", "verify"],
         help="what to do with the root of trust",
     )
     owner.add_argument(
