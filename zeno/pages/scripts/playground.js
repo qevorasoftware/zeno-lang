@@ -19,14 +19,50 @@ EXAMPLES.forEach((text) => {
   $("examples").appendChild(chip);
 });
 
+function freshNonce() {
+  try {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  } catch (_) { return String(Date.now()) + Math.random().toString(16).slice(2); }
+}
+
+function explainCode(code) {
+  // Public refusal codes, translated for the person driving this page. The
+  // codes hide nothing from an attacker, but they stop the owner guessing.
+  const hints = {
+    "ZN-SEC-0x9A01": "no readable grant reached the server — paste the grant with the grant button (top right) as ONE unbroken line, then try once",
+    "ZN-SEC-0x9A05": "the grant was issued for a different audience (check the owner export and issue commands)",
+    "ZN-SEC-0x9A06": "the owner epoch moved (rotate-epoch): re-export ZENO_OWNER_PUBLIC",
+    "ZN-SEC-0x9A07": "the grant expired — issue a fresh one",
+    "ZN-SEC-0x9A08": "the grant was revoked",
+    "ZN-SEC-0x9A02": "the grant was not signed by this deployment's owner key — re-export ZENO_OWNER_PUBLIC from the same root that issued the grant",
+    "ZN-SEC-0x9A09": "the grant does not cover this action — re-issue it with the right --capability (execute:* to run, settings:* to save, read:* to read)",
+    "ZN-SEC-0x9A0A": "the grant was bound to one semantic scope (a particular payload shape) and this request is not it",
+    "ZN-SEC-0x9A0D": "this deployment has no owner public key (ZENO_OWNER_PUBLIC), so no grant can be honoured",
+    "ZN-SEC-0x0A01": "the request carried no nonce — a stale cached page does that; hard-refresh (Ctrl+Shift+R)"
+  };
+  return hints[code] || "";
+}
+
 async function api(path, body) {
-  const response = await fetch(path, {
-    method: body === undefined ? "GET" : "POST",
-    headers: { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  // The settings page's grant button and the dashboard's `token` command
+  // store the grant under the same key: pasted once, it drives every page.
+  const token = localStorage.getItem("zeno.token") || "";
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["X-Zeno-Capability"] = token;
+  const init = { method: body === undefined ? "GET" : "POST", headers };
+  if (body === undefined) {
+    path = path + (path.includes("?") ? "&" : "?") + "nonce=" + freshNonce();
+  } else {
+    init.body = JSON.stringify(Object.assign({ nonce: freshNonce() }, body));
+  }
+  const response = await fetch(path, init);
   const data = await response.json();
   if (!response.ok) throw data;
+  if (data && data.decoy === true) {
+    throw { error: { code: "TARPIT", message: "the guardian is tarpitting this browser: repeated refused attempts are answered with fabricated decoys, so nothing actually happened — fix the refusal underneath (usually the grant) and try once" } };
+  }
   return data;
 }
 
@@ -43,7 +79,12 @@ function setStats(items) {
 
 function errorText(payload) {
   const error = payload.error || payload;
-  return (error.rendered || error.message || JSON.stringify(error));
+  const parts = error && (error.code || error.message)
+    ? [error.code, error.message].filter(Boolean)
+    : [error.rendered || JSON.stringify(error)];
+  const hint = explainCode(error && error.code ? error.code : "");
+  if (hint) parts.push(hint);
+  return parts.join(" — ");
 }
 
 async function doEncode() {
@@ -151,6 +192,26 @@ document.querySelectorAll(".tab").forEach((tab) => {
     return show(JSON.stringify(last, null, 2));
   };
 });
+
+const grantBtn = $("grant-btn");
+function paintGrant() {
+  if (grantBtn) grantBtn.textContent = localStorage.getItem("zeno.token") ? "🔑 grant ✓" : "🔑 grant";
+}
+if (grantBtn) grantBtn.onclick = () => {
+  const value = window.prompt(
+    "Owner grant\n\nPaste an owner-issued grant (python -m aegis owner issue …).\nDevelopment needs none; production refuses every run without one.",
+    localStorage.getItem("zeno.token") || ""
+  );
+  if (value === null) return;
+  // A terminal wraps a long grant when it prints it, and a wrapped paste is
+  // not a token. Base64 carries no whitespace, so every run of it is damage.
+  const token = value.replace(/\s+/g, "");
+  if (token) localStorage.setItem("zeno.token", token);
+  else localStorage.removeItem("zeno.token");
+  paintGrant();
+  show(token ? "grant stored in this browser — try once" : "grant cleared");
+};
+paintGrant();
 
 $("encode").onclick = doEncode;
 $("run").onclick = doRun;

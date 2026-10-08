@@ -214,5 +214,16 @@ run/ask — બધું ચાલે છે (`tests/test_deploy.py` + live 24/2
   એ token ને wrap કરીને દેખાડ્યો અને copy માં line-breaks ભળ્યા, કે અધૂરો copy થયો. Server
   હવે wrapped grant પણ વાંચે છે અને pages paste કરતાં જ whitespace સાફ કરે છે; તો પણ
   ન ચાલે તો `--out file` થી પૂરો token ફાઇલમાં લખાવીને એની આખી content એક સાથે copy કરો.
+- **`ZN-SEC-0x9A09` (grant માં એ કામનો અધિકાર નથી)**: grant સાચો છે પણ એ scope નથી
+  ધરાવતો. દરેક કામ માટે પોતાનો scope જોઈએ — Run/Ask માટે `execute:*`, settings બદલવા
+  માટે `settings:*`, panels વાંચવા માટે `read:*`, voice માટે `agent:*`. Grant આમ બનાવો:
+  `python -m aegis owner issue --capability "execute:*" --capability "settings:*"
+  --capability "read:*" --capability "agent:*" --ttl 3600` (ડિફોલ્ટ TTL ફક્ત 15 મિનિટ છે —
+  લાંબુ જોઈએ તો `--ttl` વધારો). Playground પેજ પર પણ હવે 🔑 grant બટન છે; settings માં
+  paste કરેલો grant એ જ browser ના બધા pages માં ચાલે છે.
+- **`ZN-SEC-0x9A02` (grant ની signature ન મળી)**: grant બીજા owner key થી બન્યો છે અને
+  deployment પાસે બીજી public key છે. જે root થી grant બનાવો છો એ જ root ની public key
+  deployment ના `ZENO_OWNER_PUBLIC` માં હોવી જોઈએ (`python -m aegis owner
+  export-public --out …` થી ફરી export કરો).
 
  આ પ્રોજેક્ટ ક્યારેય કહેતો નથી કે એ "unbreakable" છે — એની તમામ ગેરેન્ટી ગણિતની છે, ટેસ્ટેડ છે, અને એની મર્યાદા દરેક ફાઇલમાં લખેલી છે. એ જ એની સૌથી મોટી મજબૂતી છે.*

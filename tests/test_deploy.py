@@ -347,3 +347,46 @@ def test_a_terminal_wrapped_grant_still_authorizes(owner, monkeypatch, tmp_path)
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+@requires_pqc
+def test_the_playground_runs_with_a_header_grant_and_names_a_scope_gap(owner, monkeypatch, tmp_path):
+    """The playground page sends its grant as a header, not a body block.
+
+    A production run must honour that header (the page could not run at all
+    otherwise), and a grant without the execute scope must refuse with the
+    scope code the page glossary explains — never as a silent no-token 0x9A01.
+    """
+    from aegis.capability import OwnerRoot
+    from zeno.server import Playground
+
+    root_path, public_path = owner
+    monkeypatch.setenv("ZENO_OWNER_PUBLIC", str(public_path))
+    monkeypatch.setenv("ZENO_PRODUCTION_PROFILE", "browser")
+    monkeypatch.setenv("ZENO_SENTINEL_RATE_WEIGHT", "0")
+    monkeypatch.setenv("ZENO_PROVIDERS_FILE", str(tmp_path / "providers.json"))
+    monkeypatch.delenv("ZENO_MEMORY_KEY", raising=False)
+    monkeypatch.delenv("ZENO_MEMORY_KEY_DATA", raising=False)
+    playground = Playground(mode="production")
+
+    root = OwnerRoot.load(str(root_path))
+    runner = root.issue("owner", ["execute:*"], ttl=300).encode()
+    reader = root.issue("owner", ["read:*"], ttl=300).encode()
+
+    httpd, base = _serve(playground)
+    try:
+        status, ran = _call(
+            base, "POST", "/api/run", body={"payload": "@LOC[TYO] -> ?WX"}, token=runner
+        )
+        assert status == 200, ran
+        assert ran.get("decoy") is not True, "a permitted request is never a decoy"
+        assert "frame" in ran
+
+        status, refused = _call(
+            base, "POST", "/api/run", body={"payload": "@LOC[TYO] -> ?WX"}, token=reader
+        )
+        assert status == 403, refused
+        assert refused["error"]["code"] == "ZN-SEC-0x9A09", refused
+    finally:
+        httpd.shutdown()
+        httpd.server_close()

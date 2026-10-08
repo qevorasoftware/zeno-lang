@@ -109,6 +109,9 @@ function explainCode(code) {
     "ZN-SEC-0x9A06": "the owner epoch moved (rotate-epoch): re-export ZENO_OWNER_PUBLIC",
     "ZN-SEC-0x9A07": "the grant expired — issue a fresh one",
     "ZN-SEC-0x9A08": "the grant was revoked",
+    "ZN-SEC-0x9A02": "the grant was not signed by this deployment's owner key — re-export ZENO_OWNER_PUBLIC from the same root that issued the grant",
+    "ZN-SEC-0x9A09": "the grant does not cover this action — re-issue it with the right --capability (execute:* to run, settings:* to save, read:* to read)",
+    "ZN-SEC-0x9A0A": "the grant was bound to one semantic scope (a particular payload shape) and this request is not it",
     "ZN-SEC-0x9A0D": "this deployment has no owner public key (ZENO_OWNER_PUBLIC), so no grant can be honoured",
     "ZN-SEC-0x0A01": "the request carried no nonce — a stale cached page does that; hard-refresh (Ctrl+Shift+R)"
   };
