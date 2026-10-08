@@ -294,6 +294,22 @@
     return failure;
   }
 
+  function explainCode(code) {
+    // Public refusal codes, translated for the owner driving this page. The
+    // codes live in the repository's docs; saying what they mean hides nothing
+    // from an attacker, but it stops the owner from guessing.
+    const hints = {
+      "ZN-SEC-0x9A01": "no readable grant reached the server — paste the grant with the grant button as ONE unbroken line, then try once",
+      "ZN-SEC-0x9A05": "the grant was issued for a different audience (check the owner export and issue commands)",
+      "ZN-SEC-0x9A06": "the owner epoch moved (rotate-epoch): re-export ZENO_OWNER_PUBLIC",
+      "ZN-SEC-0x9A07": "the grant expired — issue a fresh one",
+      "ZN-SEC-0x9A08": "the grant was revoked",
+      "ZN-SEC-0x9A0D": "this deployment has no owner public key (ZENO_OWNER_PUBLIC), so no grant can be honoured",
+      "ZN-SEC-0x0A01": "the request carried no nonce — a stale cached page does that; hard-refresh (Ctrl+Shift+R)"
+    };
+    return hints[code] || "";
+  }
+
   async function api(path, options) {
     const request = Object.assign({}, options);
     request.headers = Object.assign({ "Content-Type": "application/json" }, request.headers || {});
@@ -306,7 +322,10 @@
     try { payload = await response.json(); } catch (_) { payload = null; }
     if (!response.ok) {
       const error = payload && payload.error ? payload.error : null;
-      const failure = new Error(error ? [error.code, error.message].filter(Boolean).join(" — ") : ("HTTP " + response.status));
+      const parts = error ? [error.code, error.message].filter(Boolean) : ["HTTP " + response.status];
+      const hint = explainCode(error ? error.code : "");
+      if (hint) parts.push(hint);
+      const failure = new Error(parts.join(" — "));
       failure.status = response.status;
       failure.code = error ? error.code : "";
       throw failure;
@@ -588,7 +607,9 @@
       state.token
     );
     if (value === null) return;
-    state.token = value.trim();
+    // A terminal wraps a long grant when it prints it, and a wrapped paste is
+    // not a token. Base64 carries no whitespace, so every run of it is damage.
+    state.token = value.replace(/\s+/g, "");
     if (state.token) localStorage.setItem("zeno.token", state.token);
     else localStorage.removeItem("zeno.token");
     toast("Grant", state.token ? "stored in this browser" : "cleared", "secondary");

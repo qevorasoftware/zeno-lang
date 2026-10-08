@@ -426,7 +426,10 @@ class AuthorizationBoundary:
             return CapabilityCheck(
                 ok=False,
                 code=CAPABILITY_CODES["malformed"],
-                reason="no capability token supplied",
+                reason=(
+                    "no capability token supplied — or the pasted grant was truncated/unreadable "
+                    "(copy it as one unbroken line)"
+                ),
             )
         return self.capability_verifier.verify(token, action=action)
 

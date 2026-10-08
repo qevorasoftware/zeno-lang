@@ -210,5 +210,9 @@ run/ask — બધું ચાલે છે (`tests/test_deploy.py` + live 24/2
   દરેક refusal ની જગ્યાએ 200 + બનાવટી જવાબ મળે છે (anti-attacker design). એ ભૂલ નથી;
   નીચેનું કારણ સુધારો (મોટે ભાગે grant નથી કે expire થયો), પછી **એક જ** પ્રયત્ન કરો —
   સફળ request ને ક્યારેય decoy નથી મળતી. વધુ રેપિડ ક્લિક કરવાથી flag વધુ ઊંડો જાય છે.
+- **`ZN-SEC-0x9A01` (grant નથી પહોંચ્યો)**: કારણો — grant paste જ નહીં કર્યો, કે terminal
+  એ token ને wrap કરીને દેખાડ્યો અને copy માં line-breaks ભળ્યા, કે અધૂરો copy થયો. Server
+  હવે wrapped grant પણ વાંચે છે અને pages paste કરતાં જ whitespace સાફ કરે છે; તો પણ
+  ન ચાલે તો `--out file` થી પૂરો token ફાઇલમાં લખાવીને એની આખી content એક સાથે copy કરો.
 
  આ પ્રોજેક્ટ ક્યારેય કહેતો નથી કે એ "unbreakable" છે — એની તમામ ગેરેન્ટી ગણિતની છે, ટેસ્ટેડ છે, અને એની મર્યાદા દરેક ફાઇલમાં લખેલી છે. એ જ એની સૌથી મોટી મજબૂતી છે.*

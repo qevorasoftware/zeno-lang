@@ -229,7 +229,12 @@ class Capability:
         import binascii
 
         try:
-            raw = base64.b64decode((blob or "").strip(), validate=True)
+            # Base64 carries no legitimate whitespace, so every run of it is
+            # transport damage — a terminal-wrapped copy-paste being the common
+            # kind. Stripping it here is strictly more tolerant: an unbroken
+            # token decodes exactly as before, a wrapped one now decodes too.
+            compact = "".join((blob or "").split())
+            raw = base64.b64decode(compact, validate=True)
             payload = json.loads(raw.decode("utf-8"))
         except (binascii.Error, ValueError, UnicodeDecodeError) as error:
             raise CapabilityError(f"not a capability token: {type(error).__name__}") from error
@@ -490,7 +495,11 @@ class CapabilityVerifier:
     ) -> CapabilityCheck:
         """Run every check, in the order an attacker would attack them."""
         if token is None:
-            return self._fail("malformed", "no capability token supplied")
+            return self._fail(
+                "malformed",
+                "no capability token supplied — or the pasted grant was truncated/unreadable "
+                "(copy it as one unbroken line)",
+            )
         if not token.capabilities or not token.issuer:
             return self._fail("malformed", "token is missing its issuer or capability set", token)
 

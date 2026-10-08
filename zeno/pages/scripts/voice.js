@@ -61,6 +61,22 @@ function decoyError() {
   return failure;
 }
 
+function explainCode(code) {
+  // Public refusal codes, translated for the owner driving this page. The
+  // codes live in the repository's docs; saying what they mean hides nothing
+  // from an attacker, but it stops the owner from guessing.
+  const hints = {
+    "ZN-SEC-0x9A01": "no readable grant reached the server — paste the grant with the grant button as ONE unbroken line, then try once",
+    "ZN-SEC-0x9A05": "the grant was issued for a different audience (check the owner export and issue commands)",
+    "ZN-SEC-0x9A06": "the owner epoch moved (rotate-epoch): re-export ZENO_OWNER_PUBLIC",
+    "ZN-SEC-0x9A07": "the grant expired — issue a fresh one",
+    "ZN-SEC-0x9A08": "the grant was revoked",
+    "ZN-SEC-0x9A0D": "this deployment has no owner public key (ZENO_OWNER_PUBLIC), so no grant can be honoured",
+    "ZN-SEC-0x0A01": "the request carried no nonce — a stale cached page does that; hard-refresh (Ctrl+Shift+R)"
+  };
+  return hints[code] || "";
+}
+
 async function api(path, options) {
   const request = Object.assign({}, options);
   request.headers = Object.assign({"Content-Type": "application/json"}, request.headers || {});
@@ -72,7 +88,10 @@ async function api(path, options) {
     const error = payload && payload.error ? payload.error : null;
     // In development the refusal carries its sentence; in production it carries a
     // code and nothing else, by policy. Show whatever is actually there.
-    const detail = error ? [error.code, error.message].filter(Boolean).join(" — ") : ("HTTP " + response.status);
+    const parts = error ? [error.code, error.message].filter(Boolean) : ["HTTP " + response.status];
+    const hint = explainCode(error ? error.code : "");
+    if (hint) parts.push(hint);
+    const detail = parts.join(" — ");
     const failure = new Error(detail);
     failure.status = response.status;
     throw failure;
@@ -266,7 +285,8 @@ async function loadPeers() {
   const box = $("peers");
   box.textContent = "";
   try {
-    const {agents} = await api("/api/agents?nonce=" + freshNonce());
+    const data = await api("/api/agents?nonce=" + freshNonce()) || {};
+    const agents = Array.isArray(data.agents) ? data.agents : [];
     if (!agents.length) {
       const empty = document.createElement("p");
       empty.className = "muted";
@@ -276,11 +296,12 @@ async function loadPeers() {
       return;
     }
     agents.forEach((peer) => {
+      const peerName = String((peer && peer.name) || "?");
       const card = document.createElement("div");
       card.className = "peer";
       const name = document.createElement("div");
       name.className = "name";
-      name.textContent = peer.name;
+      name.textContent = peerName;
       const detail = document.createElement("div");
       detail.className = "muted";
       detail.textContent = peer.endpoint + " · " + (peer.capability ? "grant set" : "no grant")
@@ -290,11 +311,11 @@ async function loadPeers() {
       actions.className = "row";
       const askButton = document.createElement("button");
       askButton.textContent = "ask";
-      askButton.addEventListener("click", () => askPeer(peer.name));
+      askButton.addEventListener("click", () => askPeer(peerName));
       const removeButton = document.createElement("button");
       removeButton.textContent = "disconnect";
       removeButton.addEventListener("click", async () => {
-        await post("/api/agents/remove", {name: peer.name});
+        await post("/api/agents/remove", {name: peerName});
         await loadPeers();
       });
       actions.appendChild(askButton);

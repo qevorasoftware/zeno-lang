@@ -705,6 +705,22 @@
     return failure;
   }
 
+  function explainCode(code) {
+    // Public refusal codes, translated for the owner driving this page. The
+    // codes live in the repository's docs; saying what they mean hides nothing
+    // from an attacker, but it stops the owner from guessing.
+    const hints = {
+      "ZN-SEC-0x9A01": "no readable grant reached the server — paste the grant with the grant button as ONE unbroken line, then try once",
+      "ZN-SEC-0x9A05": "the grant was issued for a different audience (check the owner export and issue commands)",
+      "ZN-SEC-0x9A06": "the owner epoch moved (rotate-epoch): re-export ZENO_OWNER_PUBLIC",
+      "ZN-SEC-0x9A07": "the grant expired — issue a fresh one",
+      "ZN-SEC-0x9A08": "the grant was revoked",
+      "ZN-SEC-0x9A0D": "this deployment has no owner public key (ZENO_OWNER_PUBLIC), so no grant can be honoured",
+      "ZN-SEC-0x0A01": "the request carried no nonce — a stale cached page does that; hard-refresh (Ctrl+Shift+R)"
+    };
+    return hints[code] || "";
+  }
+
   async function api(path, options) {
     const request = Object.assign({}, options);
     request.headers = Object.assign({ "Content-Type": "application/json" }, request.headers || {});
@@ -717,7 +733,10 @@
     try { payload = await response.json(); } catch (_) { payload = null; }
     if (!response.ok) {
       const error = payload && payload.error ? payload.error : null;
-      const failure = new Error(error ? [error.code, error.message].filter(Boolean).join(" — ") : ("HTTP " + response.status));
+      const parts = error ? [error.code, error.message].filter(Boolean) : ["HTTP " + response.status];
+      const hint = explainCode(error ? error.code : "");
+      if (hint) parts.push(hint);
+      const failure = new Error(parts.join(" — "));
       failure.status = response.status;
       failure.code = error ? error.code : "";
       throw failure;
@@ -1133,13 +1152,15 @@
   }
 
   async function loadAgents() {
-    const { agents, bridge } = await api("/api/agents");
+    const data = await api("/api/agents") || {};
+    const agents = Array.isArray(data.agents) ? data.agents : [];
+    const bridge = data.bridge || {};
     $("st-agents").textContent = agents.length;
     state.last.agents = agents.length;
     const navCount = $("nav-agent-count");
     navCount.hidden = !agents.length;
     navCount.textContent = String(agents.length);
-    $("st-bridge").textContent = "concurrency " + bridge.concurrency + " · timeout " + bridge.timeout_seconds + "s";
+    $("st-bridge").textContent = "concurrency " + (bridge.concurrency || "?") + " · timeout " + (bridge.timeout_seconds || "?") + "s";
     $("bridge-limits").textContent = (bridge.limits || []).join("  ·  ");
     const rows = $("agent-rows");
     rows.textContent = "";
@@ -1149,9 +1170,10 @@
       rows.appendChild(tr);
     }
     agents.forEach((peer) => {
+      const peerName = String((peer && peer.name) || "?");
       const tr = document.createElement("tr");
-      avatarCell(tr, peer.name.slice(0, 2).toUpperCase(), 7, "");
-      cell(tr, peer.name, "fw-600 text-heading");
+      avatarCell(tr, peerName.slice(0, 2).toUpperCase(), 7, "");
+      cell(tr, peerName, "fw-600 text-heading");
       cell(tr, peer.endpoint, "code-chip fs-7");
       badgeCell(tr, peer.capability ? "set" : "none", peer.capability ? "success" : "secondary");
       cell(tr, String(peer.calls));
@@ -1163,11 +1185,11 @@
       ask.className = "btn btn-sm btn-white me-1";
       ask.textContent = "ask";
       ask.addEventListener("click", async () => {
-        const text = window.prompt("ask " + peer.name + ":");
+        const text = window.prompt("ask " + peerName + ":");
         if (!text) return;
         try {
-          const outcome = await post("/api/agents/ask", { name: peer.name, text, lang: "en" });
-          toast(peer.name, outcome.ok ? String(outcome.reply || "").slice(0, 80) : String(outcome.error || "refused"), outcome.ok ? "success" : "danger");
+          const outcome = await post("/api/agents/ask", { name: peerName, text, lang: "en" });
+          toast(peerName, outcome.ok ? String(outcome.reply || "").slice(0, 80) : String(outcome.error || "refused"), outcome.ok ? "success" : "danger");
           loadAgents();
         } catch (error) { toast("Refused", String(error.message || error), "danger"); }
       });
@@ -1175,7 +1197,7 @@
       remove.className = "btn btn-sm btn-soft-danger";
       remove.textContent = "disconnect";
       remove.addEventListener("click", async () => {
-        try { await post("/api/agents/remove", { name: peer.name }); loadAgents(); }
+        try { await post("/api/agents/remove", { name: peerName }); loadAgents(); }
         catch (error) { toast("Refused", String(error.message || error), "danger"); }
       });
       actions.appendChild(ask); actions.appendChild(remove);
@@ -1309,7 +1331,8 @@
       state.token
     );
     if (value === null) return;
-    state.token = value.trim();
+    // Base64 carries no whitespace: strip a terminal-wrapped paste whole.
+    state.token = value.replace(/\s+/g, "");
     if (state.token) localStorage.setItem("zeno.token", state.token);
     else localStorage.removeItem("zeno.token");
     $("user-grant-state").textContent = state.token ? "grant stored in this browser" : "no grant stored in this browser";

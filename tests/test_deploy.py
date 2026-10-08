@@ -299,3 +299,51 @@ def test_the_render_blueprint_matches_the_real_commands():
     # and the blueprint stays key-material-free itself
     for banned in ("BEGIN ", "sk-", "gsk_"):
         assert banned not in yaml_text, f"render.yaml must never carry {banned!r}"
+
+
+@requires_pqc
+def test_a_terminal_wrapped_grant_still_authorizes(owner, monkeypatch, tmp_path):
+    """`aegis owner issue` prints one very long line; terminals wrap it.
+
+    An owner who copies the wrapped display used to paste a token the server
+    could not read — reported, misleadingly, as 'no capability token
+    supplied'. Decode now strips transport whitespace, and this proves it on a
+    live production server: the same grant, newline-wrapped, still authorizes.
+    """
+    from aegis.capability import OwnerRoot
+    from zeno.server import Playground
+
+    root_path, public_path = owner
+    monkeypatch.setenv("ZENO_OWNER_PUBLIC", str(public_path))
+    monkeypatch.setenv("ZENO_PRODUCTION_PROFILE", "browser")
+    monkeypatch.setenv("ZENO_SENTINEL_RATE_WEIGHT", "0")
+    monkeypatch.setenv("ZENO_PROVIDERS_FILE", str(tmp_path / "providers.json"))
+    monkeypatch.delenv("ZENO_MEMORY_KEY", raising=False)
+    monkeypatch.delenv("ZENO_MEMORY_KEY_DATA", raising=False)
+    playground = Playground(mode="production")
+
+    root = OwnerRoot.load(str(root_path))
+    encoded = root.issue("owner", ["read:*", "settings:*"], ttl=300).encode()
+    wrapped = "\n".join(encoded[i : i + 48] for i in range(0, len(encoded), 48))
+    assert "\n" in wrapped, "the test needs a wrapped token"
+
+    httpd, base = _serve(playground)
+    try:
+        # the grant travels in the aegis block, wrapped exactly as pasted
+        status, saved = _call(
+            base,
+            "POST",
+            "/api/settings/providers",
+            body={
+                "name": "wrapped-grant-check",
+                "provider": "openai",
+                "nonce": "w1",
+                "aegis": {"token": wrapped, "nonce": "w1"},
+            },
+        )
+        assert status == 200, saved
+        assert saved["profile"]["name"] == "wrapped-grant-check"
+        assert "wrapped-grant-check" in playground.provider_store.profiles
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
