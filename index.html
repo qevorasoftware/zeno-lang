@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#4f46e5">
+  <title>Zeno · dashboard</title>
+  <meta name="description" content="Zeno — the dense A2A language and the AEGIS gateway. Opening the dashboard.">
+  <meta http-equiv="refresh" content="0; url=dashboard.html">
+  <link rel="canonical" href="dashboard.html">
+  <!-- Apply the stored colour mode before first paint to avoid a theme flash -->
+  <script>(function(){try{var s=localStorage.getItem("qevora-theme");var d=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-bs-theme",(s==="dark"||s==="light")?s:(d?"dark":"light"));}catch(e){}})();</script>
+
+  <!-- UI kit, vendored at the repository root (see assets/CREDITS.md): the same
+       relative paths work on the local server and on the GitHub Pages site. -->
+  <link rel="stylesheet" href="assets/css/fonts.css">
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/icons/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+</head>
+
+<body class="q-app">
+  <main class="q-content d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="card" style="max-width: 420px; width: 100%;">
+      <div class="card-body text-center p-4">
+        <span class="q-brand__mark mx-auto mb-3" aria-hidden="true" style="width: 46px; height: 46px; font-size: 1.35rem; display: grid; place-items: center;">Z</span>
+        <h1 class="q-page-head__title" style="font-size: 1.35rem;">Zeno</h1>
+        <p class="q-page-head__subtitle mb-4">dense A2A language · grammar v0.1 · the AEGIS gateway</p>
+
+        <div class="d-flex align-items-center justify-content-center gap-2 text-muted-2 mb-4">
+          <div class="spinner-border spinner-border-sm text-primary-2" role="status" aria-hidden="true"></div>
+          <span class="fs-7">opening the dashboard…</span>
+        </div>
+
+        <a class="btn btn-primary w-100" href="dashboard.html">
+          <i class="bi bi-speedometer2"></i> Open the dashboard
+        </a>
+        <div class="d-flex flex-wrap justify-content-center gap-3 mt-3 fs-7">
+          <a class="text-decoration-none" href="settings.html"><i class="bi bi-key"></i> Settings</a>
+          <a class="text-decoration-none" href="admin.html"><i class="bi bi-shield-check"></i> Admin</a>
+          <a class="text-decoration-none" href="voice.html"><i class="bi bi-mic"></i> Voice</a>
+          <a class="text-decoration-none" href="playground.html"><i class="bi bi-terminal"></i> Playground</a>
+        </div>
+        <p class="fs-8 text-muted-2 mt-3 mb-0">
+          The dashboard runs on live figures from a backend you connect — never demo data.
+          These pages open here as static copies; the live agent and live figures
+          come from your own <code>zeno voice</code> server.
+        </p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+

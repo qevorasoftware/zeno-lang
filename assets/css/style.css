@@ -1,0 +1,1081 @@
+/* ==========================================================================
+   Qevora AI SaaS — Bootstrap 5 Admin & UI Kit
+   style.css — Design tokens, base typography, master layout
+   --------------------------------------------------------------------------
+   1.  Design tokens (light theme)
+   2.  Design tokens (dark theme)
+   3.  Base / typography
+   4.  Scrollbars
+   5.  App shell
+   6.  Sidebar
+   7.  Header
+   8.  Content area, page heading, breadcrumb
+   9.  Footer
+   10. Utilities & helpers
+   ========================================================================== */
+
+/* ==========================================================================
+   1. DESIGN TOKENS — LIGHT
+   ========================================================================== */
+
+:root {
+  /* Brand */
+  --q-primary: #4f46e5;
+  --q-primary-rgb: 79, 70, 229;
+  --q-primary-hover: #4338ca;
+  --q-primary-active: #3730a3;
+  --q-primary-soft: #eef0ff;
+  --q-primary-soft-rgb: 238, 240, 255;
+
+  /* Filled states that carry white text (active pills, tabs, chips). The dark
+     palette raises the brand colour for legibility, which drops white text to
+     3.6:1, so the dark block below picks a deeper fill instead. */
+  --q-fill-bg: var(--q-primary);
+  --q-fill-hover-bg: var(--q-primary-hover);
+
+  --q-accent: #06b6d4;
+  --q-accent-rgb: 6, 182, 212;
+  --q-accent-soft: #e0f7fb;
+
+  --q-success: #10b981;
+  --q-success-rgb: 16, 185, 129;
+  --q-success-hover: #059669;
+  --q-success-soft: #e6f8f2;
+
+  --q-warning: #f59e0b;
+  --q-warning-rgb: 245, 158, 11;
+  --q-warning-hover: #d97706;
+  --q-warning-soft: #fef4e3;
+
+  --q-danger: #ef4444;
+  --q-danger-rgb: 239, 68, 68;
+  --q-danger-hover: #dc2626;
+  --q-danger-soft: #fdecec;
+
+  --q-info: #0ea5e9;
+  --q-info-rgb: 14, 165, 233;
+  --q-info-hover: #0284c7;
+  --q-info-soft: #e5f4fe;
+
+  /* Surfaces */
+  --q-body-bg: #f6f7fb;
+  --q-surface: #ffffff;
+  --q-surface-alt: #fbfbfe;
+  --q-surface-hover: #f3f4f9;
+  --q-sidebar-bg: #ffffff;
+  --q-header-bg: rgba(255, 255, 255, 0.85);
+  /* The phone header uses the solid variant: a frosted strip over content that
+     scrolls under it left the page title and a card's gradient cover showing
+     through between the header icons (there is no room for the blur to read as
+     glass on a 40px-tall row of controls). */
+  --q-header-bg-solid: #ffffff;
+  --q-code-bg: #0f1424;
+  --q-code-color: #e2e8f0;
+
+  /* Tooltips invert against the page, so both colours are tokens */
+  --q-tooltip-bg: #101426;
+  --q-tooltip-color: #ffffff;
+  --q-tooltip-shadow: 0 8px 24px rgba(16, 20, 38, 0.18);
+
+  /* Text */
+  --q-heading-color: #101426;
+  --q-body-color: #3b4257;
+  --q-muted-color: #737b93;
+  --q-faint-color: #9aa1b5;
+
+  /* Lines */
+  --q-border-color: #e7e9f2;
+  --q-border-strong: #d5d9e6;
+
+  /* Radius */
+  --q-radius-xs: 6px;
+  --q-radius-sm: 8px;
+  --q-radius: 12px;
+  --q-radius-lg: 16px;
+  --q-radius-xl: 22px;
+  --q-radius-pill: 999px;
+
+  /* Shadows */
+  --q-shadow-xs: 0 1px 2px rgba(16, 20, 38, 0.05);
+  --q-shadow-sm: 0 2px 8px rgba(16, 20, 38, 0.06);
+  --q-shadow: 0 6px 22px rgba(16, 20, 38, 0.07);
+  --q-shadow-lg: 0 18px 48px rgba(16, 20, 38, 0.12);
+
+  /* Spacing scale (documented in documentation/design-system.html) */
+  --q-space-xs: 4px;
+  --q-space-sm: 8px;
+  --q-space-md: 16px;
+  --q-space-lg: 24px;
+  --q-space-xl: 32px;
+  --q-space-xxl: 48px;
+
+  /* Layout */
+  --q-sidebar-width: 268px;
+  --q-sidebar-width-compact: 78px;
+  --q-header-height: 66px;
+  --q-content-max: 1560px;
+  --q-z-sidebar: 1040;
+  --q-z-header: 1030;
+  --q-z-overlay: 1035;
+
+  /* Motion */
+  --q-transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Bootstrap bridge — keeps Bootstrap utilities in sync with Qevora tokens */
+  --bs-primary: var(--q-primary);
+  --bs-primary-rgb: var(--q-primary-rgb);
+  --bs-link-color: var(--q-primary);
+  --bs-link-color-rgb: var(--q-primary-rgb);
+  --bs-link-hover-color: var(--q-primary-hover);
+  --bs-link-hover-color-rgb: 67, 56, 202;
+  --bs-body-font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bs-body-font-size: 0.9375rem;
+  --bs-body-font-weight: 400;
+  --bs-body-line-height: 1.6;
+  --bs-body-color: var(--q-body-color);
+  --bs-body-color-rgb: 59, 66, 87;
+  --bs-body-bg: var(--q-body-bg);
+  --bs-border-color: var(--q-border-color);
+  --bs-border-radius: var(--q-radius);
+  --bs-border-radius-sm: var(--q-radius-sm);
+  --bs-border-radius-lg: var(--q-radius-lg);
+  --bs-border-radius-xl: var(--q-radius-xl);
+  --bs-heading-color: var(--q-heading-color);
+  --bs-emphasis-color: var(--q-heading-color);
+  --bs-secondary-color: var(--q-muted-color);
+  --bs-secondary-rgb: 115, 123, 147;
+  --bs-focus-ring-color: rgba(var(--q-primary-rgb), 0.25);
+  --bs-focus-ring-width: 3px;
+}
+
+/* ==========================================================================
+   2. DESIGN TOKENS — DARK
+   Bootstrap 5.3 colour mode attribute: <html data-bs-theme="dark">
+   ========================================================================== */
+
+[data-bs-theme="dark"] {
+  --q-primary: #7c74ff;
+  --q-primary-rgb: 124, 116, 255;
+  --q-primary-hover: #8f88ff;
+  --q-primary-active: #6a61f0;
+  --q-primary-soft: rgba(124, 116, 255, 0.16);
+  --q-primary-soft-rgb: 124, 116, 255;
+
+  /* White on #7c74ff is 3.6:1 — too low for a label, so a filled control uses
+     the deeper shade (4.6:1) and a deeper one again on hover (5.0:1). */
+  --q-fill-bg: #6a61f0;
+  --q-fill-hover-bg: #6559ea;
+
+  --q-accent: #22d3ee;
+  --q-accent-rgb: 34, 211, 238;
+  --q-accent-soft: rgba(34, 211, 238, 0.16);
+
+  --q-success: #34d399;
+  --q-success-rgb: 52, 211, 153;
+  --q-success-hover: #10b981;
+  --q-success-soft: rgba(52, 211, 153, 0.16);
+
+  --q-warning: #fbbf24;
+  --q-warning-rgb: 251, 191, 36;
+  --q-warning-hover: #f59e0b;
+  --q-warning-soft: rgba(251, 191, 36, 0.16);
+
+  --q-danger: #f87171;
+  --q-danger-rgb: 248, 113, 113;
+  --q-danger-hover: #ef4444;
+  --q-danger-soft: rgba(248, 113, 113, 0.16);
+
+  --q-info: #38bdf8;
+  --q-info-rgb: 56, 189, 248;
+  --q-info-hover: #0ea5e9;
+  --q-info-soft: rgba(56, 189, 248, 0.16);
+
+  --q-body-bg: #0b0f1c;
+  --q-surface: #141a2e;
+  --q-surface-alt: #111729;
+  --q-surface-hover: #1c2340;
+  --q-sidebar-bg: #0f1527;
+  --q-header-bg: rgba(15, 21, 39, 0.85);
+  --q-header-bg-solid: #0f1527;
+  --q-code-bg: #090d18;
+  --q-code-color: #dbe3f4;
+
+  /* Inverted against the dark page: a light bubble keeps the label readable,
+     where a dark bubble on a dark surface disappeared. */
+  --q-tooltip-bg: #e9edf8;
+  --q-tooltip-color: #0b0f1c;
+  --q-tooltip-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+
+  --q-heading-color: #f2f4fa;
+  --q-body-color: #c2c9dc;
+  --q-muted-color: #8d96b0;
+  --q-faint-color: #6d7691;
+
+  --q-border-color: #232b47;
+  --q-border-strong: #2f3960;
+
+  --q-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --q-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --q-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  --q-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+
+  --bs-body-color-rgb: 194, 201, 220;
+  --bs-secondary-rgb: 141, 150, 176;
+  --bs-link-hover-color-rgb: 143, 136, 255;
+}
+
+/* ==========================================================================
+   3. BASE / TYPOGRAPHY
+   ========================================================================== */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--bs-body-font-family);
+  font-size: var(--bs-body-font-size);
+  color: var(--q-body-color);
+  background-color: var(--q-body-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  color: var(--q-heading-color);
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+h1, .h1 { font-size: 1.75rem; }
+h2, .h2 { font-size: 1.5rem; }
+h3, .h3 { font-size: 1.25rem; }
+h4, .h4 { font-size: 1.0625rem; }
+h5, .h5 { font-size: 0.9375rem; }
+h6, .h6 { font-size: 0.875rem; }
+
+a {
+  text-decoration: none;
+  transition: color var(--q-transition);
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: "SFMono-Regular", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+hr {
+  border-color: var(--q-border-color);
+  opacity: 1;
+}
+
+::selection {
+  background: rgba(var(--q-primary-rgb), 0.22);
+}
+
+:focus-visible {
+  outline: 2px solid var(--q-primary);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   4. SCROLLBARS
+   ========================================================================== */
+
+.q-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--q-border-strong) transparent;
+}
+
+.q-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.q-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.q-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--q-border-strong);
+  border-radius: var(--q-radius-pill);
+}
+
+.q-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--q-faint-color);
+}
+
+/* ==========================================================================
+   5. APP SHELL
+   ========================================================================== */
+
+.q-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.q-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: padding-inline-start var(--q-transition);
+}
+
+@media (min-width: 992px) {
+  .q-main {
+    padding-inline-start: var(--q-sidebar-width);
+  }
+
+  body.q-sidebar-compact .q-main {
+    padding-inline-start: var(--q-sidebar-width-compact);
+  }
+}
+
+/* Full-width layout (auth + utility pages) */
+.q-app-fluid .q-main {
+  padding-inline-start: 0;
+}
+
+/* ==========================================================================
+   6. SIDEBAR
+   ========================================================================== */
+
+.q-sidebar {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: var(--q-sidebar-width);
+  background: var(--q-sidebar-bg);
+  border-inline-end: 1px solid var(--q-border-color);
+  z-index: var(--q-z-sidebar);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--q-transition), transform var(--q-transition);
+}
+
+.q-sidebar__brand {
+  height: var(--q-header-height);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-inline: 1.25rem;
+  border-bottom: 1px solid var(--q-border-color);
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.q-brand__mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: linear-gradient(135deg, var(--q-primary) 0%, var(--q-accent) 130%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  letter-spacing: -0.02em;
+  box-shadow: 0 6px 16px rgba(var(--q-primary-rgb), 0.35);
+}
+
+.q-brand__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.q-brand__name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--q-heading-color);
+  letter-spacing: -0.02em;
+}
+
+.q-brand__sub {
+  font-size: 0.6875rem;
+  color: var(--q-muted-color);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.q-sidebar__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem 0.875rem 1.5rem;
+}
+
+.q-sidebar__group-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--q-faint-color);
+  padding: 1.1rem 0.75rem 0.45rem;
+  white-space: nowrap;
+}
+
+.q-sidebar__group-label:first-child {
+  padding-top: 0.35rem;
+}
+
+/* Nav links */
+.q-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* One top-level entry; keeps its own stacking context for the submenu caret
+   and gives buyers a stable hook for their own customisations. */
+.q-nav-item {
+  position: relative;
+}
+
+.q-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5625rem 0.75rem;
+  border-radius: var(--q-radius-sm);
+  color: var(--q-body-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  position: relative;
+  transition: background-color var(--q-transition), color var(--q-transition);
+  white-space: nowrap;
+}
+
+.q-nav__link:hover,
+.q-nav__link:focus-visible {
+  background: var(--q-surface-hover);
+  color: var(--q-heading-color);
+}
+
+.q-nav__link.is-active {
+  background: rgba(var(--q-primary-rgb), 0.11);
+  color: var(--q-primary);
+  font-weight: 600;
+}
+
+.q-nav__link.is-active .q-nav__icon {
+  color: var(--q-primary);
+}
+
+.q-nav__icon {
+  font-size: 1.0625rem;
+  width: 20px;
+  text-align: center;
+  flex: 0 0 auto;
+  color: var(--q-muted-color);
+  transition: color var(--q-transition);
+}
+
+.q-nav__link:hover .q-nav__icon {
+  color: var(--q-heading-color);
+}
+
+.q-nav__text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.q-nav__badge {
+  flex: 0 0 auto;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--q-radius-xs);
+}
+
+.q-nav__caret {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: var(--q-faint-color);
+  transition: transform var(--q-transition);
+}
+
+.q-nav__link[aria-expanded="true"] .q-nav__caret {
+  transform: rotate(90deg);
+}
+
+[dir="rtl"] .q-nav__link[aria-expanded="true"] .q-nav__caret {
+  transform: rotate(-90deg);
+}
+
+/* Submenu */
+.q-nav__sub {
+  list-style: none;
+  margin: 2px 0 2px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.q-nav__sub .q-nav__link {
+  padding-inline-start: 2.5rem;
+  font-size: 0.8438rem;
+  font-weight: 400;
+  color: var(--q-muted-color);
+}
+
+.q-nav__sub .q-nav__link.is-active {
+  font-weight: 600;
+}
+
+.q-nav__sub .q-nav__link::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 1.25rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+.q-nav__sub .q-nav__link.is-active::before {
+  opacity: 1;
+}
+
+/* Compact sidebar (tablet behaviour, also a manual desktop toggle) */
+@media (min-width: 992px) {
+  body.q-sidebar-compact .q-sidebar {
+    width: var(--q-sidebar-width-compact);
+  }
+
+  /* Labels are clipped rather than removed, so every icon-only link keeps its
+     accessible name for screen readers and keyboard users. The popover
+     submenus further down restore the visible text. */
+  body.q-sidebar-compact .q-brand__text,
+  body.q-sidebar-compact .q-nav__text,
+  body.q-sidebar-compact .q-nav__badge,
+  body.q-sidebar-compact .q-sidebar__group-label,
+  body.q-sidebar-compact .q-sidebar__footer-detail {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Decorative only — the chevron carries no information on its own. */
+  body.q-sidebar-compact .q-nav__caret {
+    display: none;
+  }
+
+  /* The settings shortcut duplicates the header account menu: remove it instead
+     of clipping it, so the rail never hides an invisible focus stop. */
+  body.q-sidebar-compact a.q-sidebar__footer-detail {
+    display: none;
+  }
+
+  /* Only the avatar is left in the footer, so centre it on the rail. */
+  body.q-sidebar-compact .q-sidebar__footer > div {
+    justify-content: center;
+  }
+
+  body.q-sidebar-compact .q-sidebar__brand {
+    justify-content: center;
+    padding-inline: 0.5rem;
+  }
+
+  /* The 78px rail only has room for the 38px brand mark, so the inline
+     collapse button steps aside instead of being clipped by the brand's
+     overflow. Desktop users expand the sidebar again from the header button
+     (it toggles compact mode) or via QevoraSidebar.toggleCompact(). */
+  body.q-sidebar-compact .q-sidebar__brand > [data-sidebar-compact] {
+    display: none !important;
+  }
+
+  body.q-sidebar-compact .q-nav__link {
+    justify-content: center;
+    padding-inline: 0.5rem;
+  }
+
+  body.q-sidebar-compact .q-nav__icon {
+    font-size: 1.2rem;
+  }
+
+  /* Submenus stay closed inside the rail. A fly-out panel cannot work here: the
+     nav lives in a scroll container (overflow-x: hidden), which clips anything
+     that tries to escape the 78px column and leaves an empty white sliver —
+     worse than no panel at all. Clicking a section icon expands the sidebar and
+     opens that section instead (sidebar.js), and hovering shows its name as a
+     tooltip. */
+  body.q-sidebar-compact .q-nav__sub {
+    display: none !important;
+  }
+}
+
+/* Sidebar footer */
+.q-sidebar__footer {
+  flex: 0 0 auto;
+  padding: 0.875rem;
+  border-top: 1px solid var(--q-border-color);
+}
+
+/* Backdrop for mobile drawer */
+.q-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 12, 24, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: var(--q-z-overlay);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--q-transition), visibility var(--q-transition);
+}
+
+body.q-sidebar-open .q-sidebar-backdrop {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Mobile / tablet drawer */
+@media (max-width: 991.98px) {
+  .q-sidebar {
+    transform: translateX(-100%);
+    box-shadow: var(--q-shadow-lg);
+  }
+
+  [dir="rtl"] .q-sidebar {
+    transform: translateX(100%);
+  }
+
+  body.q-sidebar-open .q-sidebar {
+    transform: translateX(0);
+  }
+
+  body.q-sidebar-open {
+    overflow: hidden;
+  }
+}
+
+/* ==========================================================================
+   7. HEADER
+   ========================================================================== */
+
+.q-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--q-z-header);
+  height: var(--q-header-height);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-inline: 1.25rem;
+  background: var(--q-header-bg);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--q-border-color);
+  flex: 0 0 auto;
+}
+
+.q-header__toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--q-radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--q-body-color);
+  display: inline-grid;
+  place-items: center;
+  font-size: 1.15rem;
+  flex: 0 0 auto;
+  transition: background-color var(--q-transition), color var(--q-transition);
+}
+
+/* Icons are centred by line-height rather than by baseline luck: an icon font
+   glyph sits on the text baseline inside its own line box, so a button whose
+   font-size differs from its neighbour's shows the glyph a pixel or two off
+   centre. */
+.q-header__toggle i,
+.q-icon-btn i {
+  display: block;
+  line-height: 1;
+}
+
+.q-header__toggle:hover {
+  background: var(--q-surface-hover);
+  color: var(--q-heading-color);
+}
+
+.q-header__search {
+  position: relative;
+  max-width: 340px;
+  flex: 1 1 auto;
+}
+
+.q-header__search .form-control {
+  padding-inline-start: 2.4rem;
+  background: var(--q-surface-hover);
+  border-color: transparent;
+}
+
+.q-header__search .form-control:focus {
+  background: var(--q-surface);
+}
+
+.q-header__search-icon {
+  position: absolute;
+  inset-inline-start: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--q-faint-color);
+  pointer-events: none;
+  font-size: 0.95rem;
+}
+
+.q-header__kbd {
+  position: absolute;
+  inset-inline-end: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.6875rem;
+  color: var(--q-faint-color);
+  border: 1px solid var(--q-border-color);
+  border-radius: var(--q-radius-xs);
+  padding: 0 0.3rem;
+  pointer-events: none;
+  background: var(--q-surface);
+}
+
+.q-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: auto;
+}
+
+.q-icon-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--q-radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--q-body-color);
+  display: inline-grid;
+  place-items: center;
+  font-size: 1.05rem;
+  transition: background-color var(--q-transition), color var(--q-transition);
+}
+
+.q-icon-btn:hover,
+.q-icon-btn[aria-expanded="true"] {
+  background: var(--q-surface-hover);
+  color: var(--q-heading-color);
+}
+
+.q-icon-btn__dot {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--q-danger);
+  border: 2px solid var(--q-surface);
+}
+
+.q-header__user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.6rem 0.3rem 0.35rem;
+  border-radius: var(--q-radius-pill);
+  border: 1px solid var(--q-border-color);
+  background: transparent;
+  transition: background-color var(--q-transition);
+}
+
+.q-header__user:hover {
+  background: var(--q-surface-hover);
+}
+
+.q-header__user-meta {
+  display: none;
+  text-align: start;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .q-header__user-meta {
+    display: block;
+  }
+}
+
+/* Below 768px the name and role are hidden, so the button holds nothing but
+   the avatar — and a pill around a circle reads as an oval. It becomes a
+   circle itself, with the avatar centred in it. */
+/* On a phone the header is four 40px controls in one row: the drawer button,
+   the colour mode, the notifications and the profile. They are the same square,
+   the same corner radius and the same optical icon size, and the row is
+   centred, so the icons read as one line instead of a ragged one. */
+@media (max-width: 767.98px) {
+  .q-header {
+    padding-inline: 0.75rem;
+    gap: 0.5rem;
+    background: var(--q-header-bg-solid);
+    backdrop-filter: none;
+  }
+
+  .q-header__toggle,
+  .q-header__actions .q-icon-btn,
+  .q-header__user {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    place-items: center;
+  }
+
+  .q-header__user {
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    border-color: transparent;
+  }
+
+  .q-header__user:hover,
+  .q-header__user[aria-expanded="true"] {
+    border-color: var(--q-border-color);
+  }
+
+  /* One icon size for the whole row: the drawer glyph used to be 1.15rem
+     against the 1.05rem of the buttons beside it, which made the left of the
+     header look heavier than the right. */
+  .q-header__toggle,
+  .q-header__toggle i,
+  .q-icon-btn,
+  .q-icon-btn i {
+    font-size: 1.0625rem;
+  }
+
+  .q-header__actions {
+    gap: 0.25rem;
+  }
+}
+
+.q-header__user-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--q-heading-color);
+}
+
+.q-header__user-role {
+  font-size: 0.6875rem;
+  color: var(--q-muted-color);
+}
+
+/* ==========================================================================
+   8. CONTENT AREA / PAGE HEADING / BREADCRUMB
+   ========================================================================== */
+
+.q-content {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: var(--q-content-max);
+  margin-inline: auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+}
+
+@media (min-width: 1400px) {
+  .q-content {
+    padding-inline: 2rem;
+  }
+}
+
+.q-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.q-page-head__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.25rem;
+}
+
+.q-page-head__subtitle {
+  color: var(--q-muted-color);
+  font-size: 0.875rem;
+  margin: 0;
+  max-width: 68ch;
+}
+
+.breadcrumb {
+  --bs-breadcrumb-divider-color: var(--q-faint-color);
+  --bs-breadcrumb-item-padding-x: 0.5rem;
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.breadcrumb-item > a {
+  color: var(--q-muted-color);
+}
+
+.breadcrumb-item > a:hover {
+  color: var(--q-primary);
+}
+
+.breadcrumb-item.active {
+  color: var(--q-heading-color);
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   9. FOOTER
+   ========================================================================== */
+
+.q-footer {
+  border-top: 1px solid var(--q-border-color);
+  padding: 1.25rem 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--q-muted-color);
+}
+
+.q-footer__inner {
+  max-width: var(--q-content-max);
+  margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.q-footer a {
+  color: var(--q-muted-color);
+}
+
+.q-footer a:hover {
+  color: var(--q-primary);
+}
+
+/* ==========================================================================
+   10. UTILITIES & HELPERS
+   ========================================================================== */
+
+.text-muted-2 { color: var(--q-muted-color) !important; }
+.text-faint { color: var(--q-faint-color) !important; }
+.text-heading { color: var(--q-heading-color) !important; }
+
+.fs-7 { font-size: 0.8125rem !important; }
+.fs-8 { font-size: 0.75rem !important; }
+.fs-9 { font-size: 0.6875rem !important; }
+
+.fw-400 { font-weight: 400 !important; }
+.fw-500 { font-weight: 500 !important; }
+.fw-600 { font-weight: 600 !important; }
+.fw-700 { font-weight: 700 !important; }
+
+/* Flex children need this to allow ellipsis truncation */
+.min-w-0 { min-width: 0 !important; }
+
+.bg-surface { background-color: var(--q-surface) !important; }
+.bg-surface-alt { background-color: var(--q-surface-alt) !important; }
+.bg-primary-soft { background-color: var(--q-primary-soft) !important; }
+.bg-success-soft { background-color: var(--q-success-soft) !important; }
+.bg-warning-soft { background-color: var(--q-warning-soft) !important; }
+.bg-danger-soft { background-color: var(--q-danger-soft) !important; }
+.bg-info-soft { background-color: var(--q-info-soft) !important; }
+.bg-accent { background-color: var(--q-accent) !important; }
+.bg-accent-soft { background-color: var(--q-accent-soft) !important; }
+
+.text-primary-2 { color: var(--q-primary) !important; }
+.text-accent { color: var(--q-accent) !important; }
+
+.border-q { border-color: var(--q-border-color) !important; }
+
+.rounded-q { border-radius: var(--q-radius) !important; }
+.rounded-q-lg { border-radius: var(--q-radius-lg) !important; }
+
+.shadow-q { box-shadow: var(--q-shadow) !important; }
+.shadow-q-sm { box-shadow: var(--q-shadow-sm) !important; }
+
+.divider-y {
+  height: 1px;
+  background: var(--q-border-color);
+  border: 0;
+  margin: 1rem 0;
+}
+
+.q-hero-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.q-hero-glow::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -60px;
+  top: -80px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--q-primary-rgb), 0.28), transparent 70%);
+  pointer-events: none;
+}
+
+/* Section spacing helper */
+.q-section {
+  margin-bottom: 1.5rem;
+}
+
+.q-section:last-child {
+  margin-bottom: 0;
+}
+
+.q-section__title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--q-heading-color);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

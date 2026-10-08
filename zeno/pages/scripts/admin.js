@@ -1,0 +1,774 @@
+  "use strict";
+  const state = {
+    view: "overview",
+    token: localStorage.getItem("zeno.token") || "",
+    live: true,
+    timer: null,
+    history: [],
+    lastDecisionId: "",
+    charts: { live: null, sparks: {} },
+    last: { permitted: 0, refused: 0, intrusions: 0, sessions: 0, agents: 0 },
+    decisions: [],
+  };
+
+  const SUBTITLES = {
+    overview: "Live figures from this server — not demo data. Nothing on this page can weaken a policy or issue a grant.",
+    audit: "Every boundary decision, with the owner's view: the code, the sentence and the layer verdicts a caller is never shown. Reads are audited too, and marked read-only.",
+    adversary: "Who has been refused, how often, and what was done about it — digests only, never request bodies.",
+    memory: "What the agent heard, sealed to the owner's key. Verification checks the chain; forgetting is destructive on purpose.",
+    agents: "Out-sourced, multi-agent, no artificial cap: each peer holds its own grant and its replies are recorded as that peer's claim.",
+    posture: "The eight layers, what this deployment actually requires of them, and the policy switches in force right now.",
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function freshNonce() {
+    try {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    } catch (_) { return String(Date.now()) + Math.random().toString(16).slice(2); }
+  }
+
+  function decoyError() {
+    // The guardian has flagged this browser's source: repeated refused attempts
+    // are answered with fabricated successes, and the body honestly labels
+    // itself ("decoy": true). Nothing actually happened. Fix the refusal
+    // underneath — usually a missing or expired owner grant — then try once:
+    // a permitted request is never answered with a decoy.
+    const failure = new Error(
+      "the guardian is tarpitting this browser: repeated refused attempts are answered " +
+      "with fabricated decoys, so nothing actually happened. Fix the refusal underneath " +
+      "(usually the owner grant) and try once."
+    );
+    failure.decoy = true;
+    return failure;
+  }
+
+  function explainCode(code) {
+    // Public refusal codes, translated for the owner driving this page. The
+    // codes live in the repository's docs; saying what they mean hides nothing
+    // from an attacker, but it stops the owner from guessing.
+    const hints = {
+      "ZN-SEC-0x9A01": "no readable grant reached the server — paste the grant with the grant button as ONE unbroken line, then try once",
+      "ZN-SEC-0x9A05": "the grant was issued for a different audience (check the owner export and issue commands)",
+      "ZN-SEC-0x9A06": "the owner epoch moved (rotate-epoch): re-export ZENO_OWNER_PUBLIC",
+      "ZN-SEC-0x9A07": "the grant expired — issue a fresh one",
+      "ZN-SEC-0x9A08": "the grant was revoked",
+    "ZN-SEC-0x9A02": "the grant was not signed by this deployment's owner key — re-export ZENO_OWNER_PUBLIC from the same root that issued the grant",
+    "ZN-SEC-0x9A09": "the grant does not cover this action — re-issue it with the right --capability (execute:* to run, settings:* to save, read:* to read)",
+    "ZN-SEC-0x9A0A": "the grant was bound to one semantic scope (a particular payload shape) and this request is not it",
+      "ZN-SEC-0x9A0D": "this deployment has no owner public key (ZENO_OWNER_PUBLIC), so no grant can be honoured",
+      "ZN-SEC-0x0A01": "the request carried no nonce — a stale cached page does that; hard-refresh (Ctrl+Shift+R)"
+    };
+    return hints[code] || "";
+  }
+
+  async function api(path, options) {
+    const request = Object.assign({}, options);
+    request.headers = Object.assign({ "Content-Type": "application/json" }, request.headers || {});
+    if (state.token) request.headers["X-Zeno-Capability"] = state.token;
+    const url = (request.method === "GET" || !request.method)
+      ? path + (path.includes("?") ? "&" : "?") + "nonce=" + freshNonce()
+      : path;
+    const response = await fetch(url, request);
+    let payload = null;
+    try { payload = await response.json(); } catch (_) { payload = null; }
+    if (!response.ok) {
+      const error = payload && payload.error ? payload.error : null;
+      const offline = response.status === 502 || response.status === 503 || response.status === 504
+        ? " \u2014 the server did not answer; a free-plan service sleeps when idle and the wake-up call can fail. Wait ~30 seconds, refresh the page (Ctrl+Shift+R), then try once"
+        : "";
+      const parts = error ? [error.code, error.message].filter(Boolean) : ["HTTP " + response.status + offline];
+      const hint = explainCode(error ? error.code : "");
+      if (hint) parts.push(hint);
+      const failure = new Error(parts.join(" — "));
+      failure.status = response.status;
+      failure.code = error ? error.code : "";
+      throw failure;
+    }
+    if (payload && payload.decoy === true) {
+      throw decoyError();
+    }
+    return payload;
+  }
+  const post = (path, body) => api(path, { method: "POST", body: JSON.stringify(Object.assign({ nonce: freshNonce() }, body)) });
+
+  function toast(title, body, variant) {
+    if (typeof bootstrap === "undefined") return;
+    const element = document.createElement("div");
+    element.className = "toast align-items-center border-0 text-bg-" + (variant || "dark");
+    element.setAttribute("role", "alert");
+    const flex = document.createElement("div");
+    flex.className = "d-flex";
+    const content = document.createElement("div");
+    content.className = "toast-body";
+    const head = document.createElement("strong");
+    head.className = "d-block";
+    head.textContent = title;
+    content.appendChild(head);
+    const text = document.createElement("span");
+    text.className = "code-chip";
+    text.textContent = body;
+    content.appendChild(text);
+    flex.appendChild(content);
+    const close = document.createElement("button");
+    close.className = "btn-close me-2 m-auto";
+    close.setAttribute("data-bs-dismiss", "toast");
+    flex.appendChild(close);
+    element.appendChild(flex);
+    $("toasts").appendChild(element);
+    new bootstrap.Toast(element, { delay: 6000 }).show();
+    element.addEventListener("hidden.bs.toast", () => element.remove());
+  }
+
+  function cell(row, text, extra) {
+    const td = document.createElement("td");
+    if (extra) td.className = extra;
+    td.textContent = text;
+    row.appendChild(td);
+    return td;
+  }
+  function badgeCell(row, text, tone) {
+    const td = document.createElement("td");
+    const chip = document.createElement("span");
+    chip.className = "badge badge-soft-" + tone + " badge-pill";
+    chip.textContent = text;
+    td.appendChild(chip);
+    row.appendChild(td);
+    return td;
+  }
+  function avatarCell(row, initials, tone, icon) {
+    const td = document.createElement("td");
+    const wrap = document.createElement("div");
+    wrap.className = "d-flex align-items-center gap-2";
+    const avatar = document.createElement("span");
+    avatar.className = "avatar avatar-xs bg-avatar-" + tone;
+    if (icon) {
+      const glyph = document.createElement("i");
+      glyph.className = "bi " + icon;
+      avatar.appendChild(glyph);
+    } else {
+      avatar.textContent = initials;
+    }
+    wrap.appendChild(avatar);
+    td.appendChild(wrap);
+    row.appendChild(td);
+    return td;
+  }
+  function timelineItem(list, dot, title, meta) {
+    const li = document.createElement("li");
+    li.className = "timeline__item";
+    const dotEl = document.createElement("span");
+    dotEl.className = "timeline__dot " + dot;
+    const titleEl = document.createElement("p");
+    titleEl.className = "timeline__title";
+    titleEl.textContent = title;
+    const metaEl = document.createElement("p");
+    metaEl.className = "timeline__meta";
+    metaEl.textContent = meta;
+    li.appendChild(dotEl); li.appendChild(titleEl); li.appendChild(metaEl);
+    list.appendChild(li);
+  }
+
+  // -- theme-aware chart colours (kit palette; rebuilt on mode change) --------
+  function chartColors() {
+    const dark = document.documentElement.getAttribute("data-bs-theme") === "dark";
+    return {
+      primary: "#4f46e5", primary2: "#6366f1",
+      success: dark ? "#34d399" : "#16a34a",
+      danger: dark ? "#f87171" : "#dc2626",
+      info: dark ? "#38bdf8" : "#0891b2",
+      tick: dark ? "#94a3b8" : "#64748b",
+      grid: dark ? "rgba(148,163,184,.14)" : "rgba(100,116,139,.14)",
+      area: dark ? "rgba(99,102,241,.20)" : "rgba(79,70,229,.14)",
+      areaDanger: dark ? "rgba(248,113,113,.16)" : "rgba(220,38,38,.10)",
+    };
+  }
+
+  function spark(canvasId, values, color) {
+    if (typeof Chart === "undefined") return;
+    const canvas = $(canvasId);
+    if (!canvas || values.length < 2) return;
+    const colors = chartColors();
+    if (state.charts.sparks[canvasId]) state.charts.sparks[canvasId].destroy();
+    state.charts.sparks[canvasId] = new Chart(canvas, {
+      type: "line",
+      data: { labels: values.map((_, i) => i), datasets: [{ data: values, borderColor: colors[color] || colors.primary2,
+        backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, tension: .35 }] },
+      options: { animation: false, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } } },
+    });
+  }
+
+  function drawCharts() {
+    if (typeof Chart === "undefined") return;
+    const colors = chartColors();
+    const data = state.last;
+    if (state.charts.live) state.charts.live.destroy();
+    const first = state.history[0] || { permitted: 0, refused: 0 };
+    state.charts.live = new Chart($("chart-live"), {
+      type: "line",
+      data: { labels: state.history.map((s) => new Date(s.at).toLocaleTimeString()), datasets: [
+        { label: "allowed", data: state.history.map((s) => s.permitted - first.permitted), borderColor: colors.success,
+          backgroundColor: colors.area, fill: true, tension: .35, pointRadius: 0, borderWidth: 2 },
+        { label: "refused", data: state.history.map((s) => s.refused - first.refused), borderColor: colors.danger,
+          backgroundColor: colors.areaDanger, fill: true, tension: .35, pointRadius: 0, borderWidth: 2 },
+      ] },
+      options: { animation: false, maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom", labels: { color: colors.tick } } },
+        scales: { x: { ticks: { display: false }, grid: { color: colors.grid } }, y: { grid: { color: colors.grid }, ticks: { color: colors.tick, precision: 0 }, beginAtZero: true } } },
+    });
+    spark("spark-decisions", state.history.map((s) => s.permitted + s.refused), "primary2");
+    spark("spark-intrusions", state.history.map((s) => s.intrusions), "danger");
+    spark("spark-sessions", state.history.map((s) => s.sessions), "info");
+    spark("spark-agents", state.history.map((s) => s.agents), "success");
+  }
+
+  function renderCodeBreakdown() {
+    const box = $("code-breakdown");
+    box.textContent = "";
+    const counts = {};
+    state.decisions.forEach((item) => {
+      if (item.code) counts[item.code] = (counts[item.code] || 0) + 1;
+    });
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    if (!entries.length) {
+      const none = document.createElement("p");
+      none.className = "fs-8 text-muted-2 mb-0";
+      none.textContent = "no refusals recorded yet";
+      box.appendChild(none);
+      return;
+    }
+    const worst = entries[0][1];
+    entries.forEach(([code, count]) => {
+      const row = document.createElement("div");
+      row.className = "d-flex justify-content-between align-items-center fs-7 mb-1";
+      const name = document.createElement("span");
+      name.className = "code-chip";
+      name.textContent = code;
+      const value = document.createElement("span");
+      value.className = "text-muted-2";
+      value.textContent = String(count);
+      row.appendChild(name); row.appendChild(value);
+      box.appendChild(row);
+      const progress = document.createElement("div");
+      progress.className = "progress mb-2";
+      progress.style.height = "6px";
+      const bar = document.createElement("div");
+      bar.className = "progress-bar bg-danger";
+      bar.style.width = Math.max(6, Math.round((count / worst) * 100)) + "%";
+      progress.appendChild(bar);
+      box.appendChild(progress);
+    });
+  }
+
+  function renderOverviewRows() {
+    const rows = $("overview-rows");
+    rows.textContent = "";
+    state.decisions.slice(0, 6).forEach((item) => {
+      const tr = document.createElement("tr");
+      avatarCell(tr, "", item.allowed ? (item.read_only ? 8 : 3) : 5, item.allowed ? (item.read_only ? "bi-eye" : "bi-check2") : "bi-x-lg");
+      badgeCell(tr, item.allowed ? (item.read_only ? "read" : "allow") : "refuse", item.allowed ? "success" : "danger");
+      badgeCell(tr, item.code || "—", item.code ? "danger" : "secondary");
+      const why = cell(tr, item.human_reason || item.reason || "", "fs-7 text-muted-2");
+      why.style.maxWidth = "20rem";
+      rows.appendChild(tr);
+    });
+  }
+
+  // -- data ------------------------------------------------------------------
+  async function loadHealth() {
+    const health = await api("/api/health");
+    const pill = (id, text, tone) => {
+      const element = $(id);
+      element.hidden = false;
+      element.textContent = text;
+      element.className = "badge badge-soft-" + tone + " badge-pill";
+    };
+    const development = health.enforcement === "development";
+    pill("pill-enforcement", "enforcement: " + health.enforcement, development ? "warning" : "success");
+    const sealed = health.memory && health.memory.encrypted;
+    pill("pill-memory", sealed ? "memory: sealed" : "memory: NOT sealed", sealed ? "success" : "warning");
+    pill("pill-provider", "answerer: " + health.provider + (health.online ? "" : " (rule-based)"), "secondary");
+    $("user-role").textContent = sealed ? "root of trust · memory sealed" : "root of trust";
+    return health;
+  }
+
+  async function loadDecisions() {
+    const data = await api("/api/admin/decisions?limit=50");
+    const auditCount = $("nav-audit-count");
+    if (!data.enabled) {
+      $("st-decisions").textContent = "off";
+      auditCount.hidden = true;
+      return data;
+    }
+    state.decisions = data.decisions;
+    $("st-decisions").textContent = data.attempts;
+    $("st-allowed").textContent = data.permitted;
+    $("st-refused").textContent = data.refused;
+    auditCount.hidden = false;
+    auditCount.textContent = String(data.attempts);
+    state.last.permitted = data.permitted;
+    state.last.refused = data.refused;
+    state.history.push({ at: Date.now(), permitted: data.permitted, refused: data.refused,
+      intrusions: state.last.intrusions, sessions: state.last.sessions, agents: state.last.agents });
+    if (state.history.length > 120) state.history.shift();
+
+    const newest = data.decisions[0];
+    if (newest && newest.decision_id !== state.lastDecisionId) {
+      if (state.lastDecisionId && newest.code) {
+        const hint = explainCode(newest.code);
+        toast("Refused", hint ? newest.code + " — " + hint : newest.code, "danger");
+      }
+      state.lastDecisionId = newest.decision_id;
+    }
+
+    const rows = $("audit-rows");
+    rows.textContent = "";
+    data.decisions.forEach((item) => {
+      const tr = document.createElement("tr");
+      avatarCell(tr, "", item.allowed ? (item.read_only ? 8 : 3) : 5, item.allowed ? (item.read_only ? "bi-eye" : "bi-check2") : "bi-x-lg");
+      const decision = cell(tr, item.decision_id.slice(0, 10) + "…", "fw-500 text-heading code-chip");
+      decision.title = item.decision_id;
+      badgeCell(tr, item.allowed ? (item.read_only ? "read" : "allow") : "refuse", item.allowed ? "success" : "danger");
+      badgeCell(tr, item.code || "—", item.code ? "danger" : "secondary");
+      const why = cell(tr, item.human_reason || item.reason || "", "fs-7 text-muted-2");
+      why.style.maxWidth = "22rem";
+      const layers = cell(tr, item.layers ? item.layers.filter((l) => l.required).length + "/8" : "—", "code-chip");
+      layers.title = (item.layers || []).map((l) => l.layer + ": " + (l.ok ? "ok" : "refused")).join("\n");
+      cell(tr, item.ledger_seq ? "#" + item.ledger_seq : "—", "text-end code-chip");
+      rows.appendChild(tr);
+    });
+    $("audit-counters").textContent = data.attempts + " attempts · " + data.permitted + " allowed · " + data.refused + " refused";
+    renderCodeBreakdown();
+    renderOverviewRows();
+    filterAudit();
+    drawCharts();
+    return data;
+  }
+
+  function filterAudit() {
+    const needle = ($("audit-filter").value || "").toLowerCase();
+    let shown = 0;
+    document.querySelectorAll("#audit-rows tr").forEach((row) => {
+      const match = !needle || row.textContent.toLowerCase().includes(needle);
+      row.style.display = match ? "" : "none";
+      if (match) shown += 1;
+    });
+    $("audit-shown").textContent = shown + " shown";
+  }
+
+  async function loadWatchtower() {
+    const tower = await api("/api/watchtower?limit=20");
+    if (!tower.enabled) { $("st-intrusions").textContent = "off"; return tower; }
+    $("st-intrusions").textContent = tower.records;
+    state.last.intrusions = tower.records;
+    $("st-decoys").textContent = tower.decoys_served;
+    $("st-tarpit").textContent = tower.tarpit_ms_total;
+    $("feed-path").textContent = tower.feed || "";
+
+    // the bell: alerts, live
+    const alerts = tower.alerts || [];
+    $("notify-count").textContent = String(alerts.length);
+    $("notify-dot").hidden = !alerts.length;
+    const list = $("notify-list");
+    list.textContent = "";
+    if (!alerts.length) {
+      const none = document.createElement("span");
+      none.className = "d-block p-3 fs-8 text-muted-2";
+      none.textContent = "no alerts — nothing has crossed the strike threshold";
+      list.appendChild(none);
+    }
+    alerts.slice(0, 6).forEach((alert) => {
+      const item = document.createElement("a");
+      item.className = "dropdown-notify__item";
+      item.href = "#adversary";
+      item.dataset.goto = "adversary";
+      const avatar = document.createElement("span");
+      avatar.className = "avatar avatar-sm bg-avatar-5";
+      const glyph = document.createElement("i");
+      glyph.className = "bi bi-shield-exclamation";
+      avatar.appendChild(glyph);
+      const body = document.createElement("span");
+      body.className = "min-w-0";
+      const title = document.createElement("span");
+      title.className = "d-block dropdown-notify__title";
+      title.textContent = (alert.source || "a source") + " crossed the strike threshold";
+      const meta = document.createElement("span");
+      meta.className = "d-block dropdown-notify__meta";
+      meta.textContent = (alert.strikes || "?") + " strikes · " + (alert.at_iso ? String(alert.at_iso).slice(11, 19) : "");
+      body.appendChild(title); body.appendChild(meta);
+      item.appendChild(avatar); item.appendChild(body);
+      list.appendChild(item);
+    });
+    const alertBadge = $("nav-alert-count");
+    alertBadge.hidden = !alerts.length;
+    alertBadge.textContent = String(alerts.length);
+
+    const intruders = Object.entries(tower.intruders || {});
+    const rows = $("intruder-rows");
+    rows.textContent = "";
+    if (!intruders.length) {
+      const tr = document.createElement("tr");
+      cell(tr, "no sources flagged — nothing has been refused yet", "fs-7 text-muted-2");
+      rows.appendChild(tr);
+    }
+    intruders.forEach(([source, info]) => {
+      const tr = document.createElement("tr");
+      cell(tr, source, "code-chip fw-500 text-heading");
+      badgeCell(tr, String(info.strikes ?? "–"), (info.strikes || 0) >= 3 ? "danger" : "warning");
+      cell(tr, String(info.client_fingerprint || "—").slice(0, 16), "code-chip");
+      const agent = cell(tr, info.user_agent || "—", "fs-7 text-muted-2");
+      agent.style.maxWidth = "18rem";
+      cell(tr, info.last_seen ? new Date(info.last_seen * 1000).toLocaleTimeString() : "—", "code-chip");
+      rows.appendChild(tr);
+    });
+    $("tower-counters").textContent = tower.records + " records · " + tower.sources_seen + " sources · webhook " + tower.webhook;
+
+    const recent = $("recent-refusals");
+    recent.textContent = "";
+    const timeline = $("refusal-timeline");
+    timeline.textContent = "";
+    let first = true;
+    (tower.recent || []).forEach((item) => {
+      if (first) {
+        timelineItem(timeline, "timeline__dot--danger", item.code || "refused",
+          (item.path || item.action || "") + " · " + (item.at_iso ? String(item.at_iso).slice(11, 19) : ""));
+        first = false;
+      }
+      timelineItem(recent, (item.verdict === "decoy") ? "timeline__dot--warning" : "timeline__dot--danger",
+        item.code || "refused",
+        (item.path || item.action || "") + " · " + (item.verdict ? item.verdict + " · " : "") + (item.at_iso ? String(item.at_iso).slice(11, 19) : ""));
+    });
+    if (!(tower.recent || []).length) {
+      timelineItem(recent, "timeline__dot--muted", "no refusals recorded", "the feed stores digests, never bodies");
+    }
+    const limits = $("tower-limits");
+    limits.textContent = "";
+    (tower.limits || []).forEach((line) => timelineItem(limits, "timeline__dot--muted", line.split(":")[0], line.split(":").slice(1).join(":").trim() || "—"));
+    return tower;
+  }
+
+  async function loadMemory() {
+    const { sessions } = await api("/api/memory/sessions");
+    $("st-sessions").textContent = sessions.length;
+    state.last.sessions = sessions.length;
+    const rows = $("memory-rows");
+    rows.textContent = "";
+    if (!sessions.length) {
+      const tr = document.createElement("tr");
+      cell(tr, "nothing stored yet", "fs-7 text-muted-2");
+      rows.appendChild(tr);
+    }
+    sessions.forEach((item) => {
+      const tr = document.createElement("tr");
+      avatarCell(tr, (item.languages || [])[0] ? String(item.languages[0]).slice(0, 2).toUpperCase() : "—", 2, "");
+      cell(tr, item.id, "code-chip fw-500 text-heading");
+      cell(tr, String(item.turns));
+      cell(tr, (item.languages || []).join(", ") || "—");
+      cell(tr, new Date(item.last_at * 1000).toLocaleString(), "fs-7 text-muted-2");
+      const actions = document.createElement("td");
+      actions.className = "text-end";
+      const forget = document.createElement("button");
+      forget.className = "btn btn-sm btn-soft-danger";
+      forget.textContent = "forget";
+      forget.title = "delete this session irrecoverably";
+      forget.addEventListener("click", async () => {
+        if (!window.confirm("Forget " + item.id + "? This deletes its records permanently.")) return;
+        try {
+          await post("/api/memory/forget", { session: item.id });
+          toast("Forgotten", item.id, "secondary");
+          refresh();
+        } catch (error) { toast("Refused", String(error.message || error), "danger"); }
+      });
+      actions.appendChild(forget);
+      tr.appendChild(actions);
+      rows.appendChild(tr);
+    });
+    const health = await api("/api/health");
+    const sealed = health.memory && health.memory.encrypted;
+    $("st-sealed").textContent = sealed ? "sealed" : "NOT sealed — set ZENO_MEMORY_KEY";
+    const info = $("memory-info");
+    info.textContent = "";
+    ((health.memory && health.memory.limits) || []).forEach((line) => {
+      const li = document.createElement("div");
+      li.className = "mb-1";
+      li.textContent = "• " + line;
+      info.appendChild(li);
+    });
+  }
+
+  async function loadAgents() {
+    const data = await api("/api/agents") || {};
+    const agents = Array.isArray(data.agents) ? data.agents : [];
+    const bridge = data.bridge || {};
+    $("st-agents").textContent = agents.length;
+    state.last.agents = agents.length;
+    const navCount = $("nav-agent-count");
+    navCount.hidden = !agents.length;
+    navCount.textContent = String(agents.length);
+    $("st-bridge").textContent = "concurrency " + (bridge.concurrency || "?") + " · timeout " + (bridge.timeout_seconds || "?") + "s";
+    $("bridge-limits").textContent = (bridge.limits || []).join("  ·  ");
+    const rows = $("agent-rows");
+    rows.textContent = "";
+    if (!agents.length) {
+      const tr = document.createElement("tr");
+      cell(tr, "no agents connected — connect one below", "fs-7 text-muted-2");
+      rows.appendChild(tr);
+    }
+    agents.forEach((peer) => {
+      const peerName = String((peer && peer.name) || "?");
+      const tr = document.createElement("tr");
+      avatarCell(tr, peerName.slice(0, 2).toUpperCase(), 7, "");
+      cell(tr, peerName, "fw-600 text-heading");
+      cell(tr, peer.endpoint, "code-chip fs-7");
+      badgeCell(tr, peer.capability ? "set" : "none", peer.capability ? "success" : "secondary");
+      cell(tr, String(peer.calls));
+      cell(tr, String(peer.failures), peer.failures ? "text-danger" : "");
+      cell(tr, peer.last_error || "—", "fs-7 text-muted-2");
+      const actions = document.createElement("td");
+      actions.className = "text-end";
+      const ask = document.createElement("button");
+      ask.className = "btn btn-sm btn-white me-1";
+      ask.textContent = "ask";
+      ask.addEventListener("click", async () => {
+        const text = window.prompt("ask " + peerName + ":");
+        if (!text) return;
+        try {
+          const outcome = await post("/api/agents/ask", { name: peerName, text, lang: "en" });
+          toast(peerName, outcome.ok ? String(outcome.reply || "").slice(0, 80) : String(outcome.error || "refused"), outcome.ok ? "success" : "danger");
+          loadAgents();
+        } catch (error) { toast("Refused", String(error.message || error), "danger"); }
+      });
+      const remove = document.createElement("button");
+      remove.className = "btn btn-sm btn-soft-danger";
+      remove.textContent = "disconnect";
+      remove.addEventListener("click", async () => {
+        try { await post("/api/agents/remove", { name: peerName }); loadAgents(); }
+        catch (error) { toast("Refused", String(error.message || error), "danger"); }
+      });
+      actions.appendChild(ask); actions.appendChild(remove);
+      tr.appendChild(actions);
+      rows.appendChild(tr);
+    });
+  }
+
+  const LAYER_NOTES = {
+    "1-pqc": "hybrid X25519 + ML-KEM-768, dual signatures; refuses rather than substituting a fallback",
+    "2-biometric": "fuzzy extractor, no stored templates; a voiceprint is a signal, never a proof",
+    "3-zkp": "Schnorr proofs bound to identity and context; single-use nullifiers",
+    "4-ledger": "hash-chained, signed audit log; a failed write is a refusal, not a shrug",
+    "5-sentinel": "deterministic behavioural guardian; advisory, it can never unlock",
+    "6-polymorphic": "six-hour vocabulary rotation; the payload must match an epoch",
+    "7-geo-hardware": "device binding via a 0600 keystore; geolocation is a reported claim",
+    "8-vajra": "Devanagari encoding — an encoding, not a cipher",
+  };
+
+  async function loadPosture() {
+    const health = await api("/api/health");
+    const policy = health.policy || {};
+    const required = policy.required || {};
+    const mandatory = new Set(policy.mandatory_layers || []);
+    const rows = $("layer-rows");
+    rows.textContent = "";
+    let requiredCount = 0;
+    Object.keys(LAYER_NOTES).forEach((key, index) => {
+      const tr = document.createElement("tr");
+      cell(tr, String(index + 1), "text-muted-2");
+      cell(tr, key, "code-chip");
+      const isRequired = mandatory.has(key) || required[key.replace(/^\d+-/, "").replace(/-/g, "_")] === true;
+      if (isRequired) requiredCount += 1;
+      badgeCell(tr, isRequired ? "required" : "optional", isRequired ? "success" : "secondary");
+      cell(tr, LAYER_NOTES[key], "fs-7 text-muted-2");
+      rows.appendChild(tr);
+    });
+    $("layers-required-badge").textContent = requiredCount + " of 8 required";
+    const flags = $("policy-flags");
+    flags.textContent = "";
+    [
+      ["fail closed", policy.fail_closed],
+      ["capability required", policy.require_capability],
+      ["nonce required", policy.require_nonce],
+      ["identity binding", policy.require_identity_binding],
+      ["opaque refusal reasons", policy.opaque_reasons],
+      ["ledger signatures verified", policy.verify_ledger_signatures],
+    ].forEach(([label, on]) => {
+      const row = document.createElement("div");
+      row.className = "d-flex justify-content-between border-bottom pb-1";
+      const name = document.createElement("span");
+      name.textContent = label;
+      const value = document.createElement("span");
+      value.className = "badge badge-soft-" + (on ? "success" : "secondary") + " badge-pill";
+      value.textContent = on ? "on" : "off";
+      row.appendChild(name); row.appendChild(value);
+      flags.appendChild(row);
+    });
+  }
+
+  // -- refresh ----------------------------------------------------------------
+  let refreshRunning = false;
+  async function refresh() {
+    if (refreshRunning) return;
+    refreshRunning = true;
+    try {
+      await loadHealth();
+      await loadDecisions();
+      await loadWatchtower();
+      await loadMemory();
+      await loadAgents();
+      if (state.view === "posture") await loadPosture();
+    } catch (error) {
+      if (error.status === 403) toast("Panel refused", String(error.code || error.message), "danger");
+      else toast("Connection", String(error.message || error), "warning");
+    } finally {
+      refreshRunning = false;
+    }
+  }
+
+  function setLive(on) {
+    state.live = on;
+    $("live").setAttribute("aria-pressed", String(on));
+    $("live").title = on ? "Pause auto-refresh" : "Resume auto-refresh";
+    $("live").querySelector("i").className = on ? "bi bi-pause-fill" : "bi bi-play-fill";
+    if (state.timer) clearInterval(state.timer);
+    if (on) state.timer = setInterval(refresh, 5000);
+  }
+
+  function setView(view) {
+    state.view = view;
+    document.querySelectorAll("#qevora-sidebar .q-nav__link[data-view]").forEach((link) => {
+      link.classList.toggle("is-active", link.dataset.view === view);
+    });
+    document.querySelectorAll("[data-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.panel !== view;
+    });
+    $("view-title").textContent = document.querySelector("[data-view='" + view + "']").textContent.trim();
+    $("crumb-view").textContent = $("view-title").textContent;
+    $("view-subtitle").textContent = SUBTITLES[view] || "";
+    if (view === "posture") loadPosture().catch(() => {});
+  }
+
+  // -- wiring -----------------------------------------------------------------
+  document.querySelectorAll("#qevora-sidebar .q-nav__link[data-view]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      setView(link.dataset.view);
+    });
+  });
+  // dropdown links that switch views too (notifications, user menu, overview cards)
+  document.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-goto]");
+    if (!target) return;
+    event.preventDefault();
+    setView(target.dataset.goto);
+  });
+
+  $("q-header-search").addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    const query = event.target.value.trim();
+    if (!query) return;
+    setView("memory");
+    $("search").value = query;
+    runSearch();
+  });
+
+  function askForGrant() {
+    const value = window.prompt(
+      "Owner grant\n\nPaste an owner-issued grant (python -m aegis owner issue …).\nDevelopment needs none; production refuses every panel without one.",
+      state.token
+    );
+    if (value === null) return;
+    // Base64 carries no whitespace: strip a terminal-wrapped paste whole.
+    state.token = value.replace(/\s+/g, "");
+    if (state.token) localStorage.setItem("zeno.token", state.token);
+    else localStorage.removeItem("zeno.token");
+    $("user-grant-state").textContent = state.token ? "grant stored in this browser" : "no grant stored in this browser";
+    toast("Grant", state.token ? "stored in this browser" : "cleared", "secondary");
+    refresh();
+  }
+  $("user-grant").addEventListener("click", askForGrant);
+  $("user-clear-grant").addEventListener("click", () => {
+    state.token = "";
+    localStorage.removeItem("zeno.token");
+    $("user-grant-state").textContent = "no grant stored in this browser";
+    toast("Grant", "cleared", "secondary");
+    refresh();
+  });
+  $("user-grant-state").textContent = state.token ? "grant stored in this browser" : "no grant stored in this browser";
+
+  $("live").addEventListener("click", () => setLive(!state.live));
+  $("refresh-now").addEventListener("click", () => { refresh(); });
+  if (window.QevoraTheme) {
+    window.QevoraTheme.onChange(() => drawCharts());
+  }
+
+  $("audit-filter").addEventListener("input", filterAudit);
+
+  $("verify").addEventListener("click", async () => {
+    const out = $("verify-out");
+    try {
+      const report = await api("/api/memory/verify");
+      out.hidden = false;
+      out.textContent = JSON.stringify(report, null, 2);
+      toast("Memory chain", report.ok ? "verified" : "PROBLEMS FOUND", report.ok ? "success" : "danger");
+    } catch (error) { out.hidden = false; out.textContent = String(error.message || error); }
+  });
+  $("search-go").addEventListener("click", runSearch);
+  $("search").addEventListener("keydown", (event) => { if (event.key === "Enter") runSearch(); });
+  async function runSearch() {
+    const query = $("search").value.trim();
+    const out = $("search-out");
+    out.textContent = "";
+    if (!query) return;
+    try {
+      const { hits } = await post("/api/memory/search", { query });
+      if (!hits.length) {
+        const line = document.createElement("div");
+        line.className = "text-muted-2";
+        line.textContent = "no matches (substring scan, not a semantic index)";
+        out.appendChild(line);
+      }
+      hits.forEach((hit) => {
+        const line = document.createElement("div");
+        line.className = "border rounded p-2 d-flex gap-2";
+        const who = document.createElement("span");
+        who.className = "badge badge-soft-secondary badge-pill";
+        who.textContent = hit.role + " · " + (hit.lang || "—");
+        const text = document.createElement("span");
+        text.textContent = hit.text;
+        line.appendChild(who); line.appendChild(text);
+        out.appendChild(line);
+      });
+    } catch (error) {
+      const line = document.createElement("div");
+      line.className = "text-danger";
+      line.textContent = String(error.message || error);
+      out.appendChild(line);
+    }
+  }
+
+  $("peer-add").addEventListener("click", async () => {
+    try {
+      await post("/api/agents", { name: $("peer-name").value.trim(), endpoint: $("peer-url").value.trim(), capability: $("peer-grant").value });
+      $("peer-name").value = ""; $("peer-url").value = ""; $("peer-grant").value = "";
+      loadAgents();
+    } catch (error) { toast("Refused", String(error.message || error), "danger"); }
+  });
+  $("broadcast-go").addEventListener("click", async () => {
+    const text = $("broadcast-text").value.trim();
+    if (!text) return;
+    try {
+      const result = await post("/api/agents/broadcast", { text, lang: "en" });
+      const out = $("broadcast-out");
+      out.hidden = false;
+      out.textContent = JSON.stringify({ asked: result.asked, answered: result.answered, failed: result.failed, elapsed_ms: result.elapsed_ms, replies: (result.results || []).map((item) => ({ peer: item.peer, ok: item.ok, reply: (item.reply || item.error || "").slice(0, 120) })) }, null, 2);
+      loadAgents();
+    } catch (error) { toast("Refused", String(error.message || error), "danger"); }
+  });
+
+  setLive(true);
+  setView("overview");
+  refresh();
+  

@@ -1,0 +1,52 @@
+  <style>
+    /* Compatibility layer: the page's own script builds these classes, so they
+       are styled here in the kit's own tokens rather than rewriting the script. */
+    .chip {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .38rem .8rem; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--q-border-color); background: var(--bs-body-bg);
+      color: var(--q-heading-color); font-family: var(--q-font-mono, ui-monospace, Menlo, Consolas, monospace);
+      font-size: .78rem; transition: border-color .15s ease, color .15s ease;
+    }
+    .chip:hover { border-color: var(--q-primary); color: var(--q-primary); }
+    .prompt { font-family: var(--q-font-mono, ui-monospace, Menlo, Consolas, monospace);
+      color: var(--q-muted-color); font-size: .85rem; }
+    #console {
+      background: var(--bs-body-bg); border: 1px solid var(--q-border-color); border-radius: .65rem;
+      padding: .8rem .9rem; max-height: 22rem; overflow: auto;
+      font-family: var(--q-font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: .78rem;
+      line-height: 1.55;
+    }
+    #console:empty::before { content: "type a command below, or press a chip above — help lists everything"; color: var(--q-faint-color); }
+    .line-ok { color: var(--q-heading-color); }
+    .line-out { color: var(--q-primary); }
+    .line-warn { color: var(--q-warning); }
+    .line-bad { color: var(--q-danger); }
+    .line-dim { color: var(--q-muted-color); }
+    .pill {
+      display: inline-flex; align-items: center; padding: .3rem .7rem; border-radius: 999px;
+      font-size: .72rem; font-weight: 600; border: 1px solid var(--q-border-color);
+      color: var(--q-muted-color); background: var(--bs-body-bg);
+    }
+    .pill.live { color: var(--q-success); border-color: var(--q-success); }
+    .pill.down { color: var(--q-danger); border-color: var(--q-danger); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--q-faint-color); }
+    .dot.live { background: var(--q-success); box-shadow: 0 0 0 3px var(--q-success-soft); }
+    .dot.down { background: var(--q-danger); box-shadow: 0 0 0 3px var(--q-danger-soft); }
+    .dot.snap { background: var(--q-muted-color); }
+    #palette { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .inputrow { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+    .stat { display: flex; justify-content: space-between; gap: .75rem; padding: .3rem 0;
+      border-bottom: 1px dashed var(--q-border-color); font-size: .8rem; }
+    .row { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+    .muted { color: var(--q-muted-color); }
+    .intruder { font-family: var(--q-font-mono, ui-monospace, Menlo, Consolas, monospace);
+      font-size: .78rem; color: var(--q-danger); }
+    .stat b, .stat strong { font-variant-numeric: tabular-nums; }
+    /* Phones: the pill can state its mode in three letters without wrapping,
+       and the console input keeps most of the row for itself. */
+    @media (max-width: 575.98px) {
+      #mode-pill { font-size: .66rem; padding: .25rem .55rem; }
+      #command { flex: 1 1 130px; }
+    }
+  </style>

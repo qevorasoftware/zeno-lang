@@ -1,0 +1,57 @@
+<header>
+  <div>
+    <h1>ZENO <span>PROTOCOL</span> · playground</h1>
+    <div class="tag">dense A2A language · grammar v0.1 · <code>@LOC[TYO] -&gt; ?WX : { $WX.state == RAIN =&gt; !GEN[INDOOR, 3] | !GEN[OUTDOOR, 3] }</code></div>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+    <a class="tag" href="#" id="grant-btn" style="text-decoration:none; cursor:pointer" title="store an owner grant in this browser (production needs one)">🔑 grant</a>
+    <a class="tag" href="admin.html" style="text-decoration:none; border-color:#4f46e5; color:#6366f1; font-weight:600">⚙ admin console →</a>
+    <a class="tag" href="dashboard.html" style="text-decoration:none">📊 dashboard →</a>
+    <div class="tag" id="status">connecting…</div>
+  </div>
+</header>
+
+<main>
+  <div class="panel">
+    <h2>Natural language request</h2>
+    <div class="examples" id="examples"></div>
+    <textarea id="nl" rows="3">Hi! Could you please check the current weather conditions in Tokyo for me? I would like to know whether it is raining right now, and if it is raining, please suggest three indoor activities that would work well on a rainy day. Otherwise, if it is not raining, suggest three outdoor activities instead. Thanks so much!</textarea>
+    <div class="row">
+      <button class="primary" id="ask">Run full round trip</button>
+      <button id="encode">Encode only</button>
+      <button class="ghost" id="run">Execute payload</button>
+      <span class="muted" id="hint">encode → execute → decode, all local</span>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid" style="margin-top:16px">
+    <div class="panel">
+      <h2>Zeno payload</h2>
+      <textarea id="zeno" rows="4" spellcheck="false">@LOC[TYO] -> ?WX : { $WX.state == RAIN => !GEN[INDOOR, 3] | !GEN[OUTDOOR, 3] }</textarea>
+      <div class="row">
+        <button id="check">Validate</button>
+        <span class="muted" id="check-out"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Human answer (decoder)</h2>
+      <pre id="answer">—</pre>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <div class="tabs">
+      <div class="tab active" data-tab="frame">result frame</div>
+      <div class="tab" data-tab="trace">execution trace</div>
+      <div class="tab" data-tab="transcript">transcript</div>
+      <div class="tab" data-tab="bench">benchmarks</div>
+    </div>
+    <pre id="out">—</pre>
+  </div>
+</main>
+
+<footer>
+  Zeno Protocol · MIT · <span id="provider">provider: …</span>
+</footer>

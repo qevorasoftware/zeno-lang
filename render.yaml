@@ -1,0 +1,52 @@
+# Render blueprint — the deployment as code.
+# https://render.com/docs/blueprint-spec
+#
+# New > Blueprint > pick this repo, and the service below is created exactly as
+# written. The env var marked "sync: false" is a secret you paste in Render's
+# dashboard; nothing secret belongs in a file.
+#
+# POSTURE: this blueprint starts the server in the development posture — the
+# site works for anyone who opens it, no grant asked. The owner chose this
+# for now. To return to the production posture, add --production back to
+# startCommand: the env vars below are already shaped for it (GUIDE.md §6).
+services:
+  - type: web
+    name: zeno
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: python -m pip install -e .[aegis]
+    startCommand: python -m zeno serve --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      # Dormant while the startCommand above runs the development posture;
+      # it matters the moment --production returns. Production for a surface
+      # driven by web pages: grants, nonces, the
+      # audited ledger, the sentinel, the PQC backend and opaque refusals are
+      # all mandatory; the four layers a page cannot physically satisfy
+      # (biometric, zkp, polymorphic, device lock) are not required and
+      # /api/health says so. Set to "strict" (or delete) for machine callers
+      # that can satisfy all eight layers.
+      - key: ZENO_PRODUCTION_PROFILE
+        value: browser
+      # The owner's PUBLIC half, from `python -m aegis owner export-public`.
+      # Without it, production mode refuses every grant: the dashboard still
+      # renders and reads, but the agent, the settings page and the admin
+      # console cannot do anything effectful. Paste the export JSON (or a
+      # path to it) here.
+      - key: ZENO_OWNER_PUBLIC
+        sync: false
+      # A conversation is a burst of requests against a baseline that starts
+      # empty; the guardian's machine-tuned rate feature would freeze a
+      # talking human. 0 turns that one feature off for this deployment —
+      # every other guardian feature stays at its default. Delete this to
+      # keep the library default instead.
+      - key: ZENO_SENTINEL_RATE_WEIGHT
+        value: "0"
+      # Optional, and a real decision: the JSON of a `zeno memory init-key`
+      # file, inline. Seals conversation memory and provider keys at rest on
+      # the server. The free plan's filesystem is replaced on every deploy,
+      # so sealed or not, keys and memory do not survive a deploy — attach a
+      # persistent disk (paid) if you need them to.
+      # - key: ZENO_MEMORY_KEY_DATA
+      #   sync: false

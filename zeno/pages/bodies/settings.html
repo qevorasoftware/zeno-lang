@@ -1,0 +1,158 @@
+<header class="q-header">
+      <button class="q-header__toggle" type="button" data-sidebar-toggle
+              aria-expanded="false" aria-controls="qevora-sidebar" aria-label="Toggle navigation">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <div class="q-header__search d-none d-md-block">
+        <i class="bi bi-plug q-header__search-icon" aria-hidden="true"></i>
+        <label class="visually-hidden" for="active-name">Active provider</label>
+        <input type="search" class="form-control" id="active-name" placeholder="no provider yet" disabled>
+      </div>
+
+      <div class="q-header__actions">
+        <span class="badge badge-soft-secondary badge-pill d-none d-sm-inline-flex" id="pill-provider" hidden></span>
+        <span class="badge badge-soft-success badge-pill" id="pill-sealed" hidden></span>
+        <button class="q-icon-btn" type="button" id="grant-btn" title="Owner grant" aria-label="Owner grant">
+          <i class="bi bi-key" aria-hidden="true"></i>
+        </button>
+        <button class="q-icon-btn" type="button" data-theme-toggle aria-pressed="false"
+                title="Switch to dark mode" aria-label="Toggle colour mode">
+          <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ================= Content ================= -->
+    <main class="q-content" id="q-content">
+      <div class="q-page-head">
+        <div>
+          <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="dashboard.html">Dashboard</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Settings</li>
+            </ol>
+          </nav>
+          <h1 class="q-page-head__title mt-2">AI providers</h1>
+          <p class="q-page-head__subtitle">
+            Keep several providers — each with its own key, model and endpoint — and switch the active
+            one when you want. The agent answers through exactly one at a time.
+          </p>
+        </div>
+      </div>
+
+      <!-- needs a live server -->
+      <div class="alert alert-warning q-section" id="offline-note" hidden>
+        <i class="bi bi-cloud-slash me-1"></i>
+        This page manages a live server's configuration, and this page is being served statically —
+        there is no server to configure here. Start one with <code>zeno voice</code> and open
+        <code>/settings</code> on it.
+      </div>
+
+      <!-- locked store -->
+      <div class="alert alert-danger q-section" id="locked-note" hidden>
+        <i class="bi bi-lock me-1"></i>
+        <span id="locked-reason"></span>
+      </div>
+
+      <!-- ============ providers ============ -->
+      <div class="card q-section">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Your providers</h2>
+            <p class="card-subtitle">One is active; the rest are kept for when you switch</p>
+          </div>
+          <span class="fs-8 text-muted-2" id="store-file"></span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th></th><th>Name</th><th>Provider</th><th>Model</th><th>Key</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+            <tbody id="provider-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ add / update ============ -->
+      <div class="card q-section">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Add or update a provider</h2>
+            <p class="card-subtitle">Same name updates the profile; a blank key keeps the one already stored</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-name">Name</label>
+              <input id="f-name" class="form-control" placeholder="your own label, e.g. openai-main" spellcheck="false">
+              <p class="fs-8 text-muted-2 mt-1 mb-0">Your label for this profile — any name you like; the provider is chosen beside it.</p>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-provider">Provider</label>
+              <select id="f-provider" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-model">Model</label>
+              <input id="f-model" class="form-control" placeholder="preset default" spellcheck="false">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-base">Base URL</label>
+              <input id="f-base" class="form-control" placeholder="preset default" spellcheck="false">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-600 text-uppercase text-faint" for="f-key">API key</label>
+              <input id="f-key" type="password" class="form-control" placeholder="sk-…" autocomplete="off">
+              <p class="fs-8 text-muted-2 mt-1 mb-0">Stored server-side; never shown again after this.</p>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
+            <button class="btn btn-primary" id="f-save"><i class="bi bi-save me-1"></i>Save and make active</button>
+            <span class="fs-8 text-muted-2">in production, saving needs an owner grant (settings:write)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ test ============ -->
+      <div class="card q-section">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Test a provider</h2>
+            <p class="card-subtitle">Sends one tiny real completion through it — that is the whole test</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="d-flex gap-2 flex-wrap">
+            <select id="t-name" class="form-select form-select-sm" style="width: auto"></select>
+            <button class="btn btn-sm btn-primary" id="t-go"><i class="bi bi-play-fill me-1"></i>Run the test</button>
+          </div>
+          <pre id="t-out" class="code-chip mt-3 mb-0" hidden style="max-height: 10rem; overflow: auto;"></pre>
+        </div>
+      </div>
+
+      <!-- ============ honesty ============ -->
+      <div class="card q-section">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">What this page is, honestly</h2>
+            <p class="card-subtitle">Where your keys live, and what this is not</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <ul class="timeline mb-0" id="limits"></ul>
+        </div>
+      </div>
+
+      <footer class="q-footer">
+        <div class="q-footer__inner">
+          <span>Zeno · keys stay server-side, sealed when an owner key is configured · UI kit vendored locally (assets/CREDITS.md)</span>
+          <nav class="d-flex flex-wrap gap-3" aria-label="Footer">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="admin.html">Admin console</a>
+            <a href="voice.html">Talk to the agent</a>
+          </nav>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>

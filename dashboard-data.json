@@ -1,0 +1,483 @@
+{
+  "benchmark": {
+    "corpus_cases": 16,
+    "note": "token counts are excluded on purpose: they depend on the counter in use (tiktoken vs estimate), so they are only reported by a live backend",
+    "targets": {
+      "conversation_pct": 75.0,
+      "density_pct": 75.0
+    }
+  },
+  "canonical_example": "@LOC[TYO] -> ?WX : { $WX.state == RAIN => !GEN[INDOOR, 3] | !GEN[OUTDOOR, 3] }",
+  "generated_by": "zeno dashboard --write",
+  "grammar": {
+    "card": "ZENO GRAMMAR v0.1\n\nSIGILS   @TARGET scope    ?QUERY fetch state    !ACTION run/generate    $VAR latent state\n         @LOC[TYO]  ?WX  ?SEARCH[\"topic\"]  !GEN[INDOOR, 3]  $WX.state  $PRICE\n\nCONTROL  ->  pipeline: left output feeds the right step\n         :   evaluator, braces optional      =>  then-branch (test TRUE)\n         |   else-branch (test FALSE)        ~ || &&  not / or / and\n         ==  !=  ~=  equal / not-equal / contains     > >= < <=  ordered\n         + - * / %  arithmetic        ^ power, right-associative\n         ( ) group      [ ] args or list      , separator\n\nRULES\n1. Payload only \u2014 no prose, no fences, no commentary.\n2. One statement per line (';' also separates). Use these exact tokens.\n3. A step binds its own name: `?WX` makes $WX readable later. The previous\n   step's value is always $PREV. Repeats bind $ALIAS: `!HOOK[?A]`.\n4. Bare atoms are symbols (RAIN, INDOOR, HIGH) compared case-insensitively.\n5. Always quote free text: !GEN[\"indoor activity\", 3].\n6. Emit symbols, never prose \u2014 the decoder expands symbols for humans.\n7. Fewer, denser steps beat restating context the receiver already holds.\n8. Close with a real action: !GEN[...] !RET[...] !PRINT[...] !LOG[...] !SEND[...].\n",
+    "spec": {
+      "canonical_example": {
+        "human": "Check the weather in Tokyo. If it is raining, suggest 3 indoor activities, otherwise suggest 3 outdoor activities.",
+        "zeno": "@LOC[TYO] -> ?WX : { $WX.state == RAIN => !GEN[INDOOR, 3] | !GEN[OUTDOOR, 3] }"
+      },
+      "comments": [
+        {
+          "role": "Line comment. Everything to end of line is ignored.",
+          "token": "#"
+        },
+        {
+          "role": "Line comment (alias).",
+          "token": "//"
+        }
+      ],
+      "delimiters": [
+        {
+          "name": "LPAREN",
+          "role": "Grouping",
+          "token": "("
+        },
+        {
+          "name": "RPAREN",
+          "role": "Grouping",
+          "token": ")"
+        },
+        {
+          "name": "LBRACKET",
+          "role": "Argument list / index / list literal",
+          "token": "["
+        },
+        {
+          "name": "RBRACKET",
+          "role": "Argument list / index / list literal",
+          "token": "]"
+        },
+        {
+          "name": "LBRACE",
+          "role": "Evaluator body / scope block",
+          "token": "{"
+        },
+        {
+          "name": "RBRACE",
+          "role": "Evaluator body / scope block",
+          "token": "}"
+        },
+        {
+          "name": "COMMA",
+          "role": "Argument separator",
+          "token": ","
+        },
+        {
+          "name": "DOT",
+          "role": "Property path access",
+          "token": "."
+        },
+        {
+          "name": "SEMI",
+          "role": "Statement separator",
+          "token": ";"
+        },
+        {
+          "name": "NEWLINE",
+          "role": "Statement separator",
+          "token": "\\n"
+        }
+      ],
+      "description": "Machine-readable token table for the Zeno Protocol Grammar v0.1. This file is the single source of truth for sigils, operators, delimiters and keyword literals. zeno/spec.py loads it and tests/test_spec.py asserts that the implementation agrees with it.",
+      "diagnostics": {
+        "ZL0001": "Undefined variable: the payload reads a $VARIABLE that nothing binds.",
+        "ZL0002": "Unused binding: a query or action result is never read.",
+        "ZL0003": "Empty scope: '@TARGET' applies to nothing.",
+        "ZL0004": "No terminal action: the payload produces no observable output.",
+        "ZL0005": "Atom shadows a binding: a bare name matches a variable name exactly.",
+        "ZL0006": "Suspicious atom: a bare name is very long (probably unquoted free text).",
+        "ZL0007": "Redundant braces: the conditional body is a single statement.",
+        "ZN0001": "Lexical error: unexpected character.",
+        "ZN0002": "Unterminated string literal.",
+        "ZN0003": "Parse error: unexpected token.",
+        "ZN0004": "Parse error: unbalanced delimiter.",
+        "ZN0005": "Parse error: conditional requires a '=>' branch.",
+        "ZN0006": "Parse error: '|' else-branch used outside a conditional.",
+        "ZN1001": "Encode error: model output did not parse as Zeno after the repair budget was exhausted.",
+        "ZN2001": "Runtime error: unresolved query target.",
+        "ZN2002": "Runtime error: unknown action.",
+        "ZN2003": "Runtime error: undefined variable.",
+        "ZN2004": "Runtime error: type mismatch in operator.",
+        "ZN2005": "Runtime error: division by zero.",
+        "ZN3001": "Provider error: no LLM provider is configured or reachable."
+      },
+      "expression_operators": [
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "OR",
+          "precedence": 1,
+          "role": "Logical OR",
+          "token": "||"
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "AND",
+          "precedence": 2,
+          "role": "Logical AND",
+          "token": "&&"
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "EQ",
+          "precedence": 3,
+          "role": "Equality",
+          "token": "=="
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "NEQ",
+          "precedence": 3,
+          "role": "Inequality",
+          "token": "!="
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "MATCH",
+          "precedence": 3,
+          "role": "Substring / set membership match",
+          "token": "~="
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "GT",
+          "precedence": 3,
+          "role": "Greater than",
+          "token": ">"
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "GTE",
+          "precedence": 3,
+          "role": "Greater than or equal",
+          "token": ">="
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "LT",
+          "precedence": 3,
+          "role": "Less than",
+          "token": "<"
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "LTE",
+          "precedence": 3,
+          "role": "Less than or equal",
+          "token": "<="
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "ADD",
+          "precedence": 4,
+          "role": "Addition / concatenation",
+          "token": "+"
+        },
+        {
+          "arity": "binary+unary",
+          "associativity": "left",
+          "name": "SUB",
+          "precedence": 4,
+          "role": "Subtraction; also unary negation when it precedes a term",
+          "token": "-"
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "MUL",
+          "precedence": 5,
+          "role": "Multiplication / repetition",
+          "token": "*"
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "DIV",
+          "precedence": 5,
+          "role": "Division",
+          "token": "/"
+        },
+        {
+          "arity": "binary",
+          "associativity": "left",
+          "name": "MOD",
+          "precedence": 5,
+          "role": "Modulo",
+          "token": "%"
+        },
+        {
+          "arity": "binary",
+          "associativity": "right",
+          "name": "POW",
+          "precedence": 6,
+          "role": "Exponentiation",
+          "token": "^"
+        },
+        {
+          "arity": "unary",
+          "associativity": "right",
+          "name": "NOT",
+          "precedence": 7,
+          "role": "Logical negation",
+          "token": "~"
+        }
+      ],
+      "flow_operators": [
+        {
+          "associativity": "left",
+          "meaning": "Passes the output of the left operation to the right operation.",
+          "name": "ARROW",
+          "precedence": null,
+          "role": "Pipeline / Flow",
+          "token": "->"
+        },
+        {
+          "associativity": null,
+          "meaning": "Begins a conditional evaluation block.",
+          "name": "COLON",
+          "precedence": null,
+          "role": "Evaluator",
+          "token": ":"
+        },
+        {
+          "associativity": null,
+          "meaning": "Action to take if the condition evaluates to true.",
+          "name": "THEN",
+          "precedence": null,
+          "role": "Then (Implies)",
+          "token": "=>"
+        },
+        {
+          "associativity": null,
+          "meaning": "Action to take if the condition evaluates to false. Also the separator between branches of a conditional.",
+          "name": "ELSE",
+          "precedence": null,
+          "role": "Else",
+          "token": "|"
+        }
+      ],
+      "grammar_version": "v0.1",
+      "keywords": [
+        {
+          "canonical": "TRUE",
+          "role": "Boolean literal true",
+          "token": "TRUE"
+        },
+        {
+          "canonical": "FALSE",
+          "role": "Boolean literal false",
+          "token": "FALSE"
+        },
+        {
+          "canonical": "NIL",
+          "role": "Null / absent value",
+          "token": "NIL"
+        },
+        {
+          "canonical": "NIL",
+          "role": "Alias of NIL",
+          "token": "NULL"
+        },
+        {
+          "canonical": "NIL",
+          "role": "Alias of NIL",
+          "token": "NONE"
+        },
+        {
+          "canonical": "LET",
+          "role": "Explicit variable binding prefix",
+          "token": "LET"
+        }
+      ],
+      "literals": [
+        {
+          "name": "NUMBER",
+          "pattern": "(?:[0-9]+\\.?[0-9]*|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?",
+          "role": "Integer, decimal or scientific number. A leading '-' is unary negation, not part of the literal."
+        },
+        {
+          "name": "STRING",
+          "pattern": "\"(?:[^\"\\\\]|\\\\.)*\"",
+          "role": "Double quoted string with backslash escapes"
+        },
+        {
+          "name": "NAME",
+          "pattern": "[A-Za-z_][A-Za-z0-9_]*",
+          "role": "Identifier. Uppercase-by-convention for protocol verbs, atoms and enums; case-insensitive on comparison."
+        },
+        {
+          "name": "PATH",
+          "pattern": "NAME(\\.NAME)+",
+          "role": "Dotted property path, e.g. $WX.state"
+        }
+      ],
+      "protocol": "zeno",
+      "sigils": [
+        {
+          "example": "@LOC[AMD] @AGENT[Coder]",
+          "meaning": "Defines context, entity, location, or system target.",
+          "name": "TARGET",
+          "role": "Target / Scope",
+          "scope_kinds": [
+            "AGENT",
+            "LOC",
+            "ORG",
+            "SYS",
+            "USER",
+            "TIME",
+            "CTX",
+            "ANY"
+          ],
+          "token": "@"
+        },
+        {
+          "example": "?WEATHER ?USER_NAME ?WX",
+          "meaning": "Requests information or fetches state.",
+          "name": "QUERY",
+          "role": "Query / Input",
+          "token": "?"
+        },
+        {
+          "example": "!GEN[Report] !RUN[Script]",
+          "meaning": "Executes an action or generates output.",
+          "name": "ACTION",
+          "role": "Action / Output",
+          "token": "!"
+        },
+        {
+          "example": "$PRICE $TEMP $WX.state",
+          "meaning": "References a stored latent state or variable. Supports property paths.",
+          "name": "VARIABLE",
+          "role": "Variable",
+          "token": "$"
+        }
+      ],
+      "spec_version": "0.1.0",
+      "statement_separators": [
+        "\n",
+        ";"
+      ]
+    }
+  },
+  "portable": true,
+  "tools": {
+    "actions": [
+      "ACK",
+      "ALERT",
+      "APPEND",
+      "ARCHIVE",
+      "ASSERT",
+      "BOOK",
+      "CLOSE",
+      "ESCALATE",
+      "FLAG",
+      "GEN",
+      "LOG",
+      "MSG",
+      "NOOP",
+      "OPEN",
+      "PAGE",
+      "PRINT",
+      "PUBLISH",
+      "REFUND",
+      "RET",
+      "ROUTE",
+      "RUN",
+      "SEND",
+      "SET"
+    ],
+    "builtin": {
+      "actions": [
+        "ACK",
+        "ALERT",
+        "APPEND",
+        "ARCHIVE",
+        "ASSERT",
+        "BOOK",
+        "CLOSE",
+        "ESCALATE",
+        "FLAG",
+        "GEN",
+        "LOG",
+        "MSG",
+        "NOOP",
+        "OPEN",
+        "PAGE",
+        "PRINT",
+        "PUBLISH",
+        "REFUND",
+        "RET",
+        "ROUTE",
+        "RUN",
+        "SEND",
+        "SET"
+      ],
+      "queries": [
+        "ABS",
+        "ALERT",
+        "COUNT",
+        "DEPLOY",
+        "DOC",
+        "DOCS",
+        "ECHO",
+        "ENV",
+        "ETA",
+        "LEN",
+        "LOWER",
+        "MAX",
+        "MIN",
+        "NOW",
+        "ORDER",
+        "PRICE",
+        "ROUND",
+        "SLOTS",
+        "STR",
+        "SUM",
+        "TICKET",
+        "TYPE",
+        "UPPER",
+        "WX"
+      ]
+    },
+    "queries": [
+      "ABS",
+      "ALERT",
+      "COUNT",
+      "DEPLOY",
+      "DOC",
+      "DOCS",
+      "ECHO",
+      "ENV",
+      "ETA",
+      "LEN",
+      "LOWER",
+      "MAX",
+      "MIN",
+      "NOW",
+      "ORDER",
+      "PRICE",
+      "ROUND",
+      "SLOTS",
+      "STR",
+      "SUM",
+      "TICKET",
+      "TYPE",
+      "UPPER",
+      "WX"
+    ]
+  },
+  "version": {
+    "library": "zeno-lang",
+    "protocol": "Zeno Grammar v0.1",
+    "version": "0.1.0"
+  }
+}

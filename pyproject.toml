@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zeno-lang"
+version = "0.1.0"
+description = "Zeno — a dense, unambiguous protocol language for agent-to-agent communication"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Qevora Software" }]
+keywords = ["agents", "a2a", "protocol", "llm", "tokens", "dsl"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Interpreters",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+# Exact BPE token counts. Without it the tokenizer falls back to a clearly
+# labelled sub-word estimator, so Zeno never hard-depends on a network download.
+tiktoken = ["tiktoken>=0.5"]
+# AEGIS (aegis/) is the only part of the repository that wants third-party
+# wheels. Both are optional: cryptographic capability is detected at runtime and
+# reported, so a missing wheel downgrades the CLAIM rather than faking it.
+aegis = ["cryptography>=42", "pqcrypto>=0.3"]
+# `dev` deliberately does NOT include the AEGIS wheels: the main test job must
+# keep exercising the capability-gated (no-wheel) path so the degradation stays
+# honest. CI installs .[aegis] in its own job.
+dev = ["pytest>=7", "tiktoken>=0.5"]
+
+[project.urls]
+Homepage = "https://github.com/qevorasoftware/zeno-lang"
+Issues = "https://github.com/qevorasoftware/zeno-lang/issues"
+
+[project.scripts]
+zeno = "zeno.cli:main"
+
+[tool.setuptools]
+packages = ["zeno", "zeno.pages"]
+
+[tool.setuptools.package-data]
+# quoted on purpose: an unquoted `zeno.pages` key would nest a table, not
+# name a package, and the whole install fails with "must be array"
+"zeno.pages" = ["heads/*.html", "bodies/*.html", "scripts/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["error::DeprecationWarning:zeno.*"]

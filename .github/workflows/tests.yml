@@ -1,0 +1,201 @@
+name: tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  test:
+    name: python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .[dev]
+
+      # The library must work with zero dependencies installed. tiktoken is
+      # optional and degrades to the labelled estimator when it is unavailable.
+      - name: No third-party imports at import time
+        run: python -c "import zeno; print(zeno.__version__, zeno.__protocol__)"
+
+      - name: Spec drift
+        run: |
+          python - <<'PY'
+          from zeno import drift_report
+          problems = drift_report()
+          assert not problems, problems
+          print("spec and implementation agree")
+          PY
+
+      - name: Grammar and conformance suite
+        run: python -m agents.tester --intent-check
+
+      - name: Unit tests
+        run: python -m pytest tests/ -q
+
+      # dashboard.html ships in this repository and is served by GitHub Pages, so
+      # it must stay in step with the data it reads. Depending on one node job
+      # (not a Python test) keeps the dependency honest: without node the
+      # generated file is still checked, the page itself is not.
+      - name: Committed dashboard snapshot is up to date
+        run: python -m zeno dashboard --check
+
+      - name: Dashboard script against a live server
+        if: matrix.python-version == '3.11'
+        run: |
+          # Bounded on purpose: a stalled apt mirror once hung this step for
+          # hours. Failing fast beats hanging slow; the step can be re-run.
+          sudo timeout 180 apt-get update -qq && sudo timeout 180 apt-get install -y -qq nodejs
+          node --version
+          python - <<'PY'
+          import subprocess, sys
+
+          # Run the page's own script twice: against a live server, and against a
+          # plain static server with no API (that is GitHub Pages). A skip *for
+          # want of node* would quietly reduce this step to nothing, so that is a
+          # failure. Tests that skip for a different stated reason (this job
+          # installs no crypto wheels) are fine: they run in the aegis job, and
+          # the e2e/benchmark jobs are unaffected.
+          result = subprocess.run(
+              [sys.executable, "-m", "pytest", "tests/test_dashboard.py", "-q", "-rs"],
+              text=True, capture_output=True,
+          )
+          sys.stdout.write(result.stdout[-6000:])
+          sys.stderr.write(result.stderr[-2000:])
+          assert "node is not installed" not in result.stdout, "node is missing: the page went unexercised"
+          if result.returncode != 0:
+              raise SystemExit(result.returncode)
+          print("the dashboard booted, ran commands, and degraded to the snapshot")
+          PY
+
+      - name: Encoder/decoder round trip without a provider
+        run: python -m zeno ask --no-decode "total 3 * 129.99 + 2 * 45.5"
+
+      - name: Latency benchmark
+        run: python -m benchmarks.latency_test --repeat 5
+
+      - name: Token density benchmark (informational)
+        run: python -m benchmarks.token_comparison || true
+
+  conversation:
+    name: multi-turn A2A cost
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e .[dev]
+      # This benchmark enforces the brief's per-hop target and fails the build
+      # when the protocol regresses, so it is not allowed to fail.
+      - run: python -m benchmarks.conversation_test
+
+  # AEGIS is the only part of the repository that can use third-party crypto
+  # wheels. This job installs them and runs the real-crypto paths. If a wheel is
+  # unavailable on a runner, the job warns and the capability-gated tests skip
+  # with a stated reason -- the build never goes red for a missing wheel, but it
+  # only passes the crypto checks when the crypto is actually there.
+  aegis:
+    name: aegis (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .[dev]
+          if python -m pip install -e .[aegis]; then
+            echo "AEGIS_CRYPTO=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::cryptography/pqcrypto unavailable on $(python -V); the AEGIS crypto checks will be skipped, not faked"
+          fi
+
+      - name: Report which backends are present
+        run: python -m aegis capabilities
+
+      - name: AEGIS self-test (real attacks, one per layer)
+        if: env.AEGIS_CRYPTO == '1'
+        run: |
+          python -m aegis selftest
+          python -m aegis selftest --json
+
+      - name: AEGIS and VAJRA tests
+        run: python -m pytest tests/test_aegis.py tests/test_vajra.py tests/test_boundary.py -p no:cacheprovider
+
+      # P0 of the hardening plan, asserted from outside the process: a production
+      # server must refuse an unauthorized effectful request, with a code and no
+      # explanation. Gated on the wheel having installed, so the job keeps its
+      # "warn, never fail, if the backend is unavailable" contract.
+      - name: Production mode refuses effectful execution over HTTP
+        if: env.AEGIS_CRYPTO == '1'
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys, time, urllib.error, urllib.request
+
+          server = subprocess.Popen(
+              [sys.executable, "-m", "zeno", "serve", "--host", "127.0.0.1", "--port", "8123", "--production"],
+              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+          )
+          try:
+              for _ in range(60):
+                  try:
+                      urllib.request.urlopen("http://127.0.0.1:8123/api/health", timeout=1)
+                      break
+                  except Exception:
+                      if server.poll() is not None:
+                          raise SystemExit("server exited early:\n" + server.stdout.read())
+                      time.sleep(0.5)
+              request = urllib.request.Request(
+                  "http://127.0.0.1:8123/api/run",
+                  data=json.dumps({"payload": "?WX"}).encode(),
+                  headers={"Content-Type": "application/json"},
+              )
+              try:
+                  urllib.request.urlopen(request, timeout=10)
+              except urllib.error.HTTPError as error:
+                  body = json.loads(error.read())
+                  assert error.code == 403, (error.code, body)
+                  assert body["error"]["code"].startswith("ZN-SEC-"), body
+                  assert set(body["error"]) == {"code"}, "the refusal explained itself"
+                  print("production refused an unauthorized run:", body)
+              else:
+                  raise SystemExit("production mode executed an unauthorized payload")
+          finally:
+              server.terminate()
+              server.wait(timeout=10)
+          PY
+
+      # A YAML plain scalar cannot contain ": ", so this step is a block scalar.
+      - name: The VAJRA wrap must be decodable without a key
+        run: |
+          python -m aegis vajra "@LOC[TYO] -> ?WX" | tee /tmp/vajra.txt
+          grep -q "is a cipher  : False" /tmp/vajra.txt

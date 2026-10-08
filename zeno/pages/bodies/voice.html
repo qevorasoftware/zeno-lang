@@ -1,0 +1,105 @@
+<header>
+  <div class="brand"><span class="mark">Z</span> talk to your agent</div>
+  <span class="pill" id="pill-enforcement">enforcement: …</span>
+  <span class="pill" id="pill-memory">memory: …</span>
+  <span class="pill" id="pill-provider">answerer: …</span>
+  <span class="pill" id="pill-lang">lang: en</span>
+  <div class="spacer"></div>
+  <a class="pill" href="admin.html" style="border-color:#4f46e5; color:#6366f1; font-weight:600">⚙ admin</a>
+  <a class="pill" href="dashboard.html">dashboard</a>
+  <a class="pill" href="playground.html">playground</a>
+</header>
+
+<main>
+  <div class="layout">
+    <div>
+      <section class="card">
+        <h2>Speak <span class="sub">— or type; the reply is spoken back</span></h2>
+        <div class="row" style="margin-bottom:10px">
+          <select id="lang" title="anything the browser can pronounce">
+            <option value="gu-IN">ગુજરાતી (gu-IN)</option>
+            <option value="hi-IN">हिन्दी (hi-IN)</option>
+            <option value="en-US">English (en-US)</option>
+            <option value="en-IN">English India (en-IN)</option>
+            <option value="mr-IN">मराठी (mr-IN)</option>
+            <option value="bn-IN">বাংলা (bn-IN)</option>
+            <option value="ta-IN">தமிழ் (ta-IN)</option>
+            <option value="te-IN">తెలుగు (te-IN)</option>
+            <option value="es-ES">Español (es-ES)</option>
+            <option value="pt-BR">Português (pt-BR)</option>
+            <option value="fr-FR">Français (fr-FR)</option>
+            <option value="de-DE">Deutsch (de-DE)</option>
+            <option value="ar-SA">العربية (ar-SA)</option>
+            <option value="zh-CN">中文 (zh-CN)</option>
+            <option value="ja-JP">日本語 (ja-JP)</option>
+            <option value="ru-RU">Русский (ru-RU)</option>
+          </select>
+          <input id="lang-free" placeholder="or any BCP-47 tag, e.g. sw-KE" spellcheck="false" style="width:200px">
+          <label class="muted"><input type="checkbox" id="speak" checked> speak replies</label>
+        </div>
+        <button class="mic primary" id="mic">🎙 hold a conversation — press to start</button>
+        <div class="row" style="margin-top:10px">
+          <input id="typed" placeholder="…or type here and press Enter" style="flex:1 1 260px">
+          <button class="primary" id="send">Send</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="ghost" id="new-session">new session</button>
+          <span class="muted" id="session-label"></span>
+        </div>
+        <div id="log" style="margin-top:12px"></div>
+      </section>
+
+      <section class="card">
+        <h2>Connected agents <span class="sub">— no cap on how many</span></h2>
+        <div class="row">
+          <input id="peer-name" placeholder="name" style="width:130px">
+          <input id="peer-url" placeholder="https://agent.example/ask-base" style="flex:1 1 240px">
+          <input id="peer-grant" placeholder="that agent's grant (optional)" type="password" style="flex:1 1 200px">
+          <button id="peer-add">connect</button>
+          <button id="peer-broadcast" title="ask every connected agent">broadcast</button>
+        </div>
+        <div id="peers" style="margin-top:10px"></div>
+        <pre id="broadcast-out" hidden></pre>
+      </section>
+    </div>
+
+    <div>
+      <section class="card">
+        <h2>Posture</h2>
+        <div id="posture"></div>
+      </section>
+
+      <section class="card">
+        <h2>Your memory <span class="sub">— sealed to your key</span></h2>
+        <div class="row">
+          <input id="search" placeholder="search what was said…" style="flex:1 1 160px">
+          <button id="search-go">search</button>
+          <button id="verify">verify</button>
+        </div>
+        <div id="sessions" style="margin-top:10px"></div>
+        <pre id="search-out" hidden></pre>
+        <pre id="verify-out" hidden></pre>
+      </section>
+
+      <section class="card">
+        <h2>What this honestly does</h2>
+        <div class="warning">
+          Speech-in and speech-out are the <b>browser's</b> engines: whether your language is
+          recognised or pronounced depends on the browser and the operating system, not on this
+          page. The turn itself always carries the language tag unchanged, and it is stored with
+          the record.
+        </div>
+        <p class="muted" style="margin:10px 0 0">
+          A voiceprint (when audio is attached) is measured by the server and kept as a
+          <b>signal</b>: recorded speech replays, so it never authorizes anything by itself.
+          Memory is sealed with the AEGIS hybrid sealer when <code>ZENO_MEMORY_KEY</code> is set —
+          the Posture panel says which mode you are in. The guardian watches the <b>rate</b> of
+          requests: a burst far above your own baseline is refused as anomalous, which is the
+          layer working, not a bug. Talk at a human pace, or raise the ceiling deliberately with
+          <code>ZENO_SENTINEL_MAX_EVENTS_PER_MINUTE=…</code> when a fast client is expected. Connected-agent replies are stored with
+          the peer's name attached, because a peer's answer is that peer's claim, not a fact.
+        </p>
+      </section>
+    </div>
+  </div>
+</main>

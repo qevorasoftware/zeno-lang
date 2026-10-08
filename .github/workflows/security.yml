@@ -1,0 +1,199 @@
+name: security
+
+# AEGIS posture check, run continuously rather than when somebody remembers to.
+#
+# Three jobs, deliberately separated:
+#
+#   red-team   the attack cases from spec §11, on a schedule and on demand
+#   posture    the owner's own key handling, capability lifecycle and watchtower
+#   drift      does the *shipped* security documentation still match the code
+#
+# None of these can see production secrets, and none of them needs to: they run
+# against keys generated inside the job and thrown away with the runner.
+
+on:
+  schedule:
+    # 02:17 UTC every day — off the hour, so it is not queued behind every
+    # other project's midnight cron.
+    - cron: "17 2 * * *"
+  push:
+    paths:
+      - "aegis/**"
+      - "tests/test_capability.py"
+      - "tests/test_watchtower.py"
+      - "tests/test_boundary.py"
+      - ".github/workflows/security.yml"
+  pull_request:
+    paths:
+      - "aegis/**"
+      - "tests/**"
+      - "specs/aegis_security.md"
+      - "SECURITY.md"
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  # Refusals are tarpitted; a real deployment wants the delay, the test runner
+  # does not need to wait for it.
+  ZENO_WATCHTOWER_TARPIT_BASE_MS: "1"
+  ZENO_WATCHTOWER_TARPIT_MAX_MS: "2"
+
+jobs:
+  red-team:
+    name: §11 attack cases
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          # Owner grants are hybrid-signed: without the crypto wheels they cannot
+          # be minted at all, and the point of this job is to exercise them.
+          python -m pip install -e .[dev,aegis]
+
+      - name: Capability and token lifecycle
+        run: python -m pytest tests/test_capability.py -q
+
+      - name: Bypass, replay and delegation at the boundary
+        run: python -m pytest tests/test_boundary.py -q
+
+      - name: Telemetry, tarpit and decoys
+        run: python -m pytest tests/test_watchtower.py -q
+
+      - name: Owner CLI end to end
+        run: |
+          set -euo pipefail
+          export ZENO_OWNER_KEY="$RUNNER_TEMP/owner/owner.json"
+          mkdir -p "$RUNNER_TEMP/owner"
+          python -m aegis owner init --audience zeno-ci
+          python -m aegis owner issue --subject agent://ci --capability execute:zeno --out "$RUNNER_TEMP/owner/token.txt"
+          python -m aegis owner verify --token "$RUNNER_TEMP/owner/token.txt" --action execute:zeno
+          # and prove the same token is refused for something it was not granted
+          if python -m aegis owner verify --token "$RUNNER_TEMP/owner/token.txt" --action execute:banking; then
+            echo "::error::a token was accepted for an action it was never granted"; exit 1
+          fi
+          python -m aegis owner rotate-epoch
+          echo "owner lifecycle ok"
+
+      - name: The whole suite
+        run: python -m pytest tests/ -q
+
+  posture:
+    name: fail-closed posture
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .[dev]
+
+      # The property that matters most, checked from outside the process: a
+      # production server never executes for a caller without a valid grant, and
+      # never explains why in public.
+      - name: Production refuses an unauthorized request (and says nothing useful)
+        run: |
+          python - <<'PY'
+          import json, threading, urllib.error, urllib.request
+          from http.server import ThreadingHTTPServer
+
+          import zeno.server as server
+          from aegis.gate import Policy
+
+          playground = server.Playground(policy=Policy.strict_policy(), mode="production")
+          playground.watchtower.tarpit_base_ms = 1
+          playground.watchtower.tarpit_max_ms = 2
+          handler = type("H", (server._Handler,), {"playground": playground, "allowed_origins": []})
+          httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+          threading.Thread(target=httpd.serve_forever, daemon=True).start()
+          base = f"http://{httpd.server_address[0]}:{httpd.server_address[1]}"
+
+          request = urllib.request.Request(
+              base + "/api/run",
+              data=json.dumps({"payload": "@LOC[TYO] -> ?WX"}).encode(),
+              headers={"Content-Type": "application/json"},
+          )
+          try:
+              urllib.request.urlopen(request, timeout=30)
+              raise SystemExit("::error::a production server executed an unauthorized payload")
+          except urllib.error.HTTPError as error:
+              body = json.loads(error.read())
+              status = error.code
+          finally:
+              httpd.shutdown()
+
+          assert status == 403, status
+          assert set(body) == {"error"}, body
+          message = json.dumps(body)
+          for leak in ("payload", "typo", "unexpected", "Traceback", "line "):
+              assert leak not in message, (leak, message)
+          print("refused:", message)
+          PY
+
+      - name: A refusal cannot be replayed into an execution
+        run: python -m pytest tests/test_boundary.py -q -k "replay or bypass or downgrade"
+
+      - name: Watchtower self-check
+        run: python -m aegis.watchtower
+
+  drift:
+    name: documentation drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .[dev]
+
+      # Claiming a guarantee the code does not make is the one failure mode this
+      # project has explicitly promised to avoid. A plain grep cannot tell a claim
+      # from a disclaimer -- the honest docstrings *do* say the word "unbreakable",
+      # in order to deny it -- so the words are allowed only on lines that also
+      # deny, attribute or quote them.
+      - name: No unearned guarantees
+        run: python -m tools.no_overclaim
+
+      - name: Owner-only operations are named owner-only
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from aegis import capability
+          codes = capability.CAPABILITY_CODES
+          for name in ("malformed", "signature", "downgrade", "audience", "epoch", "expired",
+                       "revoked", "capability", "policy", "scope", "issuer", "chain", "unconfigured"):
+              assert name in codes, name
+          print(len(codes), "refusal codes documented")
+          PY

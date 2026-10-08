@@ -1,0 +1,138 @@
+{
+  "description": "Payloads that must be rejected (or at least flagged) by Grammar v0.1. Every case pins the diagnostic code the implementation is expected to raise, so this file doubles as the negative half of the conformance suite.",
+  "cases": [
+    {
+      "id": "trailing-arrow",
+      "payload": "@LOC[TYO] ->",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "a flow may not end on '->'"
+    },
+    {
+      "id": "unclosed-conditional",
+      "payload": "@LOC[TYO] -> ?WX : { $WX.state == RAIN => !GEN[INDOOR, 3]",
+      "ok": false,
+      "code": "ZN0004",
+      "note": "braced conditional without its closing brace"
+    },
+    {
+      "id": "conditional-without-then",
+      "payload": "@LOC[TYO] -> ?WX : { $WX.state == RAIN !GEN[INDOOR, 3] }",
+      "ok": false,
+      "code": "ZN0005",
+      "note": "conditional body needs '=>'"
+    },
+    {
+      "id": "unterminated-string",
+      "payload": "$X = \"unterminated",
+      "ok": false,
+      "code": "ZN0002",
+      "note": "string literal never closed"
+    },
+    {
+      "id": "dangling-sigil",
+      "payload": "$ = 3",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "'$' with no name"
+    },
+    {
+      "id": "scope-without-name",
+      "payload": "@LOC[ -> ?WX",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "unclosed target argument list"
+    },
+    {
+      "id": "undefined-variable",
+      "payload": "$MISSING == 1 => !X",
+      "ok": false,
+      "code": "ZL0001",
+      "note": "reads a variable that no earlier step bound"
+    },
+    {
+      "id": "double-target",
+      "payload": "@@SYS[x] -> ?A",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "only one target per flow"
+    },
+    {
+      "id": "double-arrow",
+      "payload": "?A -> -> !B",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "an arrow must be followed by an operation"
+    },
+    {
+      "id": "bare-atom-step",
+      "payload": "RAIN",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "a step must be a call or an expression, not a bare atom"
+    },
+    {
+      "id": "unclosed-argument-list",
+      "payload": "?LEN[[1,2]",
+      "ok": false,
+      "code": "ZN0004",
+      "note": "nested list never closed"
+    },
+    {
+      "id": "stray-closing-brace",
+      "payload": "!RET[1]]",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "content after a complete statement"
+    },
+    {
+      "id": "binding-without-value",
+      "payload": "$X = \n!RET[1]",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "binding needs an expression on the right"
+    },
+    {
+      "id": "trailing-operator",
+      "payload": "!RET[[1,2]] + ",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "expression ends on a binary operator"
+    },
+    {
+      "id": "conditional-outside-flow",
+      "payload": "?A -> !B | !C",
+      "ok": false,
+      "code": "ZN0006",
+      "note": "an else branch needs a conditional to belong to"
+    },
+    {
+      "id": "conditional-on-a-value",
+      "payload": "@LOC[TYO] -> ?WX : 1 + 2",
+      "ok": false,
+      "code": "ZN0003",
+      "note": "the test of a conditional must be a comparison, and it needs a branch"
+    },
+    {
+      "id": "empty-scope-block",
+      "payload": "@A[x] { }",
+      "ok": true,
+      "code": "ZL0003",
+      "note": "linted: a scope block with no statements"
+    },
+    {
+      "id": "block-without-terminal",
+      "payload": "@A[x] { }",
+      "ok": true,
+      "code": "ZL0004",
+      "note": "linted: no terminal action such as !RET"
+    },
+    {
+      "id": "shadowed-atom",
+      "payload": "$RAIN = 1\n!RET[$RAIN, RAIN]",
+      "ok": true,
+      "code": "ZL0005",
+      "note": "linted: bare atom shares a name with a binding"
+    }
+  ]
+}

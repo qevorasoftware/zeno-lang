@@ -1,0 +1,342 @@
+{
+  "_meta": {
+    "name": "aegis/vajra Sanskrit lexicon",
+    "version": 2,
+    "authority": "curated for this project; glosses are short English equivalents, not philological definitions",
+    "not_a_translation_engine": true,
+    "not_sanskrit_ai": "no model, no corpus statistics: a hand-checked list of terms used by the VAJRA codec",
+    "conventions": {
+      "iast": "IAST romanisation with macrons: ā ī ū ṛ ṝ ḷ ṃ ḥ ś ṣ ṭ ḍ ṇ ñ ṅ",
+      "kind": "root (dhātu) | noun | verb | particle | indeclinable",
+      "confidence": "high = widely attested and unambiguous; medium = attested, gloss is an approximation",
+      "sutras": "sūtra numbers from Aegis vajra.paninian_grammar.IMPLEMENTED_SUTRAS that apply when joining"
+    },
+    "honesty": "Some 'bīja frequency' numbers circulating online are 20th-century attributions, not Vedic claims; see aegis.vajra.bija_mantra_keys.provenance_report()"
+  },
+  "terms": [
+    {
+      "iast": "vajra",
+      "devanagari": "वज्र",
+      "gloss": "thunderbolt; adamantine, unbreakable",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "sthā",
+      "devanagari": "स्था",
+      "gloss": "to stand, to remain, to be established",
+      "kind": "root",
+      "confidence": "high",
+      "sutras": [
+        "6.1.101"
+      ]
+    },
+    {
+      "iast": "jñāna",
+      "devanagari": "ज्ञान",
+      "gloss": "knowledge, knowing",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "śabda",
+      "devanagari": "शब्द",
+      "gloss": "sound, word, utterance",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "vāc",
+      "devanagari": "वाच्",
+      "gloss": "speech, voice",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "svara",
+      "devanagari": "स्वर",
+      "gloss": "sound, tone, pitch, vowel",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "kāla",
+      "devanagari": "काल",
+      "gloss": "time, moment",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "dvāra",
+      "devanagari": "द्वार",
+      "gloss": "door, gate, entrance",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "rakṣā",
+      "devanagari": "रक्षा",
+      "gloss": "protection, guarding",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "mārga",
+      "devanagari": "मार्ग",
+      "gloss": "path, route, way",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "kriyā",
+      "devanagari": "क्रिया",
+      "gloss": "action, operation, doing",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "phala",
+      "devanagari": "फल",
+      "gloss": "fruit, result, outcome",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "sūtra",
+      "devanagari": "सूत्र",
+      "gloss": "thread; an aphoristic rule",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "akṣara",
+      "devanagari": "अक्षर",
+      "gloss": "syllable; imperishable",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "chandas",
+      "devanagari": "छन्दस्",
+      "gloss": "metre, metrical science",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "bīja",
+      "devanagari": "बीज",
+      "gloss": "seed; a single-syllable mantra",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "pada",
+      "devanagari": "पद",
+      "gloss": "word; foot; step; position",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "sandhi",
+      "devanagari": "सन्धि",
+      "gloss": "junction; the sound changes between word boundaries",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "samāsa",
+      "devanagari": "समास",
+      "gloss": "compounding of words into one",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "gaṇita",
+      "devanagari": "गणित",
+      "gloss": "mathematics, reckoning",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "ājñā",
+      "devanagari": "आज्ञा",
+      "gloss": "command, order, instruction",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "nīti",
+      "devanagari": "नीति",
+      "gloss": "policy, guidance, right conduct",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "pramāṇa",
+      "devanagari": "प्रमाण",
+      "gloss": "proof, evidence, measure",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "anumati",
+      "devanagari": "अनुमति",
+      "gloss": "permission, consent, approval",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "niyama",
+      "devanagari": "नियम",
+      "gloss": "restriction, rule, discipline",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "vidhi",
+      "devanagari": "विधि",
+      "gloss": "rule, method, injunction",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "saṃjñā",
+      "devanagari": "संज्ञा",
+      "gloss": "name, designation, definition",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": [
+        "8.3.23"
+      ]
+    },
+    {
+      "iast": "pratyaya",
+      "devanagari": "प्रत्यय",
+      "gloss": "affix; also: trust, conviction",
+      "kind": "noun",
+      "confidence": "medium",
+      "sutras": []
+    },
+    {
+      "iast": "mauna",
+      "devanagari": "मौन",
+      "gloss": "silence",
+      "kind": "noun",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "oṃ",
+      "devanagari": "ओं",
+      "gloss": "the sacred syllable; a single-syllable invocation",
+      "kind": "particle",
+      "confidence": "high",
+      "sutras": [],
+      "variants": [
+        "ॐ"
+      ],
+      "note": "ॐ (U+0950) is the traditional ligature; ओं is the analytic spelling the transliterator produces"
+    },
+    {
+      "iast": "iti",
+      "devanagari": "इति",
+      "gloss": "thus; marks the end of a quotation",
+      "kind": "indeclinable",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "eva",
+      "devanagari": "एव",
+      "gloss": "indeed, precisely, only",
+      "kind": "indeclinable",
+      "confidence": "high",
+      "sutras": []
+    },
+    {
+      "iast": "na",
+      "devanagari": "न",
+      "gloss": "not; negation",
+      "kind": "particle",
+      "confidence": "high",
+      "sutras": []
+    }
+  ],
+  "compound_types": {
+    "tatpurusa": {
+      "devanagari": "तत्पुरुष",
+      "gloss": "determinative: the last member is the head"
+    },
+    "dvandva": {
+      "devanagari": "द्वन्द्व",
+      "gloss": "coordinative: both members are heads"
+    },
+    "karmadharaya": {
+      "devanagari": "कर्मधारय",
+      "gloss": "appositional: the first member describes the second"
+    },
+    "bahuvrihi": {
+      "devanagari": "बहुव्रीहि",
+      "gloss": "exocentric: the compound names something possessing the members"
+    },
+    "avyayibhava": {
+      "devanagari": "अव्ययीभाव",
+      "gloss": "indeclinable compound headed by a prefix"
+    }
+  },
+  "vajra_phrases": [
+    {
+      "iast": "vajra-dvāra-rakṣā",
+      "members": [
+        "vajra",
+        "dvāra",
+        "rakṣā"
+      ],
+      "gloss": "adamantine gate-protection",
+      "kind": "karmadharaya"
+    },
+    {
+      "iast": "jñāna-mārga",
+      "members": [
+        "jñāna",
+        "mārga"
+      ],
+      "gloss": "path of knowledge",
+      "kind": "tatpurusa"
+    },
+    {
+      "iast": "sūtra-kāla",
+      "members": [
+        "sūtra",
+        "kāla"
+      ],
+      "gloss": "rule-time (the rotation clock)",
+      "kind": "tatpurusa"
+    }
+  ]
+}

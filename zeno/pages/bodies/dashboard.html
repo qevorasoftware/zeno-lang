@@ -1,0 +1,171 @@
+<header class="q-header">
+      <button class="q-header__toggle" type="button" data-sidebar-toggle
+              aria-expanded="false" aria-controls="qevora-sidebar" aria-label="Toggle navigation">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <div class="q-header__search d-none d-md-block">
+        <i class="bi bi-plug q-header__search-icon" aria-hidden="true"></i>
+        <label class="visually-hidden" for="backend">Backend address</label>
+        <input type="search" class="form-control" id="backend" placeholder="http://localhost:8000 — a zeno serve to drive" autocomplete="off" spellcheck="false">
+        <span class="q-header__kbd" aria-hidden="true">↵</span>
+      </div>
+
+      <div class="q-header__actions">
+        <span id="mode-pill" class="pill text-nowrap">connecting…</span>
+        <span class="d-inline-flex align-items-center gap-2 fs-8 text-muted-2" title="backend status">
+          <span class="dot" id="dot"></span><span id="status-text" class="d-none d-sm-inline">starting…</span>
+        </span>
+        <!-- The header is one fixed-height row with no wrap (the kit's design),
+             so on phones the button says it with an icon and keeps its label
+             from sm up, where there is room for it. -->
+        <button class="btn btn-sm btn-primary" type="button" id="connect" aria-label="Connect to the backend" title="Connect">
+          <i class="bi bi-plug-fill d-sm-none" aria-hidden="true"></i><span class="d-none d-sm-inline">Connect</span>
+        </button>
+        <button class="btn btn-sm btn-white d-none d-md-inline-flex" type="button" id="use-local" title="Use the host this page was served from">Use this host</button>
+        <button class="q-icon-btn" type="button" data-theme-toggle aria-pressed="false"
+                title="Switch to dark mode" aria-label="Toggle colour mode">
+          <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ================= Content ================= -->
+    <main class="q-content" id="q-content">
+      <div class="q-page-head">
+        <div>
+          <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+            </ol>
+          </nav>
+          <h1 class="q-page-head__title mt-2">Zeno, at a glance</h1>
+          <p class="q-page-head__subtitle">
+            The protocol's status, benchmarks, grammar and adversary feed — live from a backend you
+            connect, or the committed snapshot when there is none. Real figures only: nothing on this
+            page is demo data.
+          </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-white" href="settings.html"><i class="bi bi-key"></i> Settings</a>
+          <a class="btn btn-white" href="admin.html"><i class="bi bi-gear"></i> Admin console</a>
+          <a class="btn btn-primary" href="voice.html"><i class="bi bi-mic"></i> Talk to the agent</a>
+        </div>
+      </div>
+
+      <div class="card q-section">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Command palette</h2>
+            <p class="card-subtitle">The commands people actually reach for — <code>help</code> has the rest</p>
+          </div>
+        </div>
+        <div class="card-body"><div id="palette"></div></div>
+      </div>
+
+      <div class="card q-section" id="card-console">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Console</h2>
+            <p class="card-subtitle">Commands run on the backend you connect</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="console"></div>
+          <div class="inputrow mt-3">
+            <span class="prompt">zeno&gt;</span>
+            <input type="text" id="command" class="form-control form-control-sm" style="flex:1 1 220px"
+                   placeholder="run @LOC[TYO] -> ?WX : { $WX.state == RAIN => !GEN[INDOOR, 3] }" spellcheck="false" autocomplete="off">
+            <button class="btn btn-sm btn-primary" type="button" id="run">Run</button>
+          </div>
+          <p class="fs-8 text-muted-2 mt-2 mb-0" id="hint">Start one with <code>zeno serve</code> — the dashboard works offline too.</p>
+        </div>
+      </div>
+
+      <div class="row g-3 q-section">
+        <div class="col-xl-7">
+          <div class="card h-100">
+            <div class="card-header"><div>
+              <h2 class="card-title">Status</h2>
+              <p class="card-subtitle">Backend, provider and enforcement, as the backend reports them</p>
+            </div></div>
+            <div class="card-body"><div id="panel-status"></div></div>
+          </div>
+        </div>
+        <div class="col-xl-5">
+          <div class="card h-100">
+            <div class="card-header"><div>
+              <h2 class="card-title">Your grant</h2>
+              <p class="card-subtitle">The owner-issued capability this page sends with every effectful call</p>
+            </div></div>
+            <div class="card-body"><div id="panel-capability"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 q-section">
+        <div class="col-12">
+          <div class="card" id="card-watchtower">
+            <div class="card-header"><div>
+              <h2 class="card-title">Adversary feed</h2>
+              <p class="card-subtitle">Who has been refused, and what was done about it — the owner's panel, so it needs a grant</p>
+            </div></div>
+            <div class="card-body"><div id="panel-watchtower"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 q-section">
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header"><div>
+              <h2 class="card-title">Token density</h2>
+              <p class="card-subtitle">Against the brief's targets, honestly</p>
+            </div></div>
+            <div class="card-body"><div id="panel-density"></div></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header"><div>
+              <h2 class="card-title">Conversation cost</h2>
+              <p class="card-subtitle">Multi-turn A2A reduction, the brief's other target</p>
+            </div></div>
+            <div class="card-body"><div id="panel-conversation"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 q-section">
+        <div class="col-xl-7">
+          <div class="card h-100" id="card-grammar">
+            <div class="card-header"><div>
+              <h2 class="card-title">Grammar</h2>
+              <p class="card-subtitle">Grammar v0.1 as a table</p>
+            </div></div>
+            <div class="card-body"><div id="panel-grammar"></div></div>
+          </div>
+        </div>
+        <div class="col-xl-5">
+          <div class="card h-100" id="card-tools">
+            <div class="card-header"><div>
+              <h2 class="card-title">Tools</h2>
+              <p class="card-subtitle">The kernel's registered vocabulary</p>
+            </div></div>
+            <div class="card-body"><div id="panel-tools"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="q-footer">
+        <div class="q-footer__inner">
+          <span>Zeno · live figures from the connected backend, or the committed snapshot · UI kit vendored locally (assets/CREDITS.md)</span>
+          <nav class="d-flex flex-wrap gap-3" aria-label="Footer">
+            <a href="admin.html">Admin console</a>
+            <a href="voice.html">Talk to the agent</a>
+            <a href="playground.html">Playground</a>
+          </nav>
+        </div>
+      </footer>
+    </main>
+  </div>
