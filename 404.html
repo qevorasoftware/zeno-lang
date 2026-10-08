@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#4f46e5">
+  <title>Page not found | Zeno</title>
+  <meta name="description" content="This page does not exist on the Zeno Pages site.">
+
+  <!-- Apply the stored colour mode before first paint to avoid a theme flash -->
+  <script>(function(){try{var s=localStorage.getItem("qevora-theme");var d=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-bs-theme",(s==="dark"||s==="light")?s:(d?"dark":"light"));}catch(e){}})();</script>
+
+  <!-- UI kit, vendored at the repository root (see assets/CREDITS.md) -->
+  <link rel="stylesheet" href="assets/css/fonts.css">
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/icons/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/dark.css">
+</head>
+
+<body class="q-app">
+  <main class="q-content d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="card" style="max-width: 460px; width: 100%;">
+      <div class="card-body text-center p-4">
+        <p class="fs-1 fw-700 text-primary-2 mb-1" aria-hidden="true">404</p>
+        <h1 class="q-page-head__title" style="font-size: 1.25rem;">This page does not exist</h1>
+        <p class="q-page-head__subtitle mb-4">
+          The Pages site carries the dashboard and its assets. The talking agent and the admin
+          console are served by a local <code>zeno voice</code> — they cannot run on a static site,
+          and this page does not pretend otherwise.
+        </p>
+        <a class="btn btn-primary w-100 mb-2" href="dashboard.html">
+          <i class="bi bi-speedometer2"></i> Open the dashboard
+        </a>
+        <a class="btn btn-white w-100" href="https://github.com/qevorasoftware/zeno-lang">
+          <i class="bi bi-github"></i> The repository
+        </a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

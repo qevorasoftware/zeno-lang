@@ -329,3 +329,34 @@ def test_live_panels_render_numbers_not_placeholders():
     assert "@LOC[TYO] -> ?WX" in as_text(panels["grammar"]), "the canonical example must be formatted"
     assert "[object Object]" not in panels["grammar"]
     assert "20 operators" in panels["grammar"]  # 4 flow + 16 expression
+
+
+# ---------------------------------------------------------------------------
+# The Pages site root
+# ---------------------------------------------------------------------------
+def test_the_site_root_is_a_doorway_to_the_dashboard():
+    """https://qevorasoftware.github.io/zeno-lang/ must be a real page.
+
+    The repo has no natural root index (the local server serves the playground
+    at /), so the Pages root used to be a bare 404 while the dashboard lived one
+    hop away. The root is now a small kit-styled page that opens the dashboard,
+    and this pins every part of that contract.
+    """
+    from zeno.server import ROOT
+
+    index = ROOT / "index.html"
+    assert index.is_file(), "the Pages site root has no index.html"
+    page = index.read_text(encoding="utf-8")
+    # it opens the dashboard without JavaScript (meta refresh), and even without
+    # that it still links there
+    assert 'http-equiv="refresh"' in page and "url=dashboard.html" in page
+    assert 'href="dashboard.html"' in page
+    # the kit loads with relative paths, so the same files serve the root page,
+    # the dashboard, and the local server's copy
+    assert 'href="assets/css/bootstrap.min.css"' in page
+    assert "cdn.jsdelivr.net" not in page
+    # no Jekyll: the site serves the files exactly as committed
+    assert (ROOT / ".nojekyll").is_file()
+    # a wrong URL lands on a styled page, not GitHub's default 404
+    missing = ROOT / "404.html"
+    assert missing.is_file() and "dashboard.html" in missing.read_text(encoding="utf-8")

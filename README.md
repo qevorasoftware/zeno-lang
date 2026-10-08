@@ -8,7 +8,7 @@ fraction of the tokens. This repository is a complete, dependency-free
 implementation of Grammar v0.1: lexer, parser, emitter, validator, kernel,
 encoder/decoder agents, benchmarks, CLI and a web playground.
 
-> ### ▶ [Open the dashboard](https://qevorasoftware.github.io/zeno-lang/dashboard.html)
+> ### ▶ [Open the dashboard](https://qevorasoftware.github.io/zeno-lang/)
 >
 > The dashboard drives a Zeno server running on your own machine: type commands,
 > encode text, run payloads, and watch the benchmarks. If no server is reachable it
