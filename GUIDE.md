@@ -112,7 +112,10 @@ Every command, one line each:
   [qevorasoftware.github.io/zeno-lang](https://qevorasoftware.github.io/zeno-lang/)
   and the local `zeno voice` server show the same pages from one source. On
   the static site every page opens, but it is a read-only copy: live figures
-  and the talking agent need your own server.
+  and the talking agent need your own server.  URLs: the live server links
+  clean routes (`/settings`, `/voice` — no `.html` in the address bar); the
+  Pages mirror links file names, because that host resolves files. Both
+  dialects come from the one generator.
 
 ## 4. Is it working? (verified 2026-10-08, commit `df33660`)
 

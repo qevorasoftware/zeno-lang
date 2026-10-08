@@ -41,6 +41,32 @@ __all__ = [
 PKG = Path(__file__).resolve().parent
 
 
+#: The five surfaces, in the two forms they are ever linked with. The live
+#: server answers clean routes (``/settings`` — the address bar reads like a
+#: place, not a file); the static GitHub Pages site needs file names, because
+#: a static host has nothing but files. One generator, two dialects.
+_CLEAN_LINKS = {
+    'href="dashboard.html"': 'href="dashboard"',
+    'href="settings.html"': 'href="settings"',
+    'href="admin.html"': 'href="admin"',
+    'href="voice.html"': 'href="voice"',
+    'href="playground.html"': 'href="playground"',
+}
+
+
+def _pretty_links(page: str) -> str:
+    """Rewrite the file-form page links into the clean routes.
+
+    Only these five exact attribute strings are touched: assets keep their
+    relative paths, the snapshot keeps its file name, and the page scripts
+    carry no ``href=`` patterns at all (the sidebar link ids, the breadcrumbs
+    and the footer links are all that ever reference another surface).
+    """
+    for file_form, clean_form in _CLEAN_LINKS.items():
+        page = page.replace(file_form, clean_form)
+    return page
+
+
 def _fragment(kind: str, name: str) -> str:
     """A body or head fragment, exactly as committed."""
     return (PKG / kind / f"{name}.html").read_text(encoding="utf-8").rstrip("\n")
@@ -372,11 +398,16 @@ _ADMIN_SIDEBAR = _sidebar(
 )
 
 
-def render_dashboard() -> str:
+def render_dashboard(*, pretty: bool = False) -> str:
     """The operator dashboard. Its figures stay client-side by design: the
     page connects to a backend (or reads the committed snapshot) and never
-    ships numbers it cannot vouch for in static HTML."""
-    return _app_page(
+    ships numbers it cannot vouch for in static HTML.
+
+    ``pretty`` links the other surfaces by their clean routes (``/settings``)
+    instead of their file names — the form the live server serves. The static
+    copy keeps file links, because a static host resolves files.
+    """
+    page = _app_page(
         title="Dashboard | Zeno · AEGIS",
         description="Zeno dashboard — the protocol's status, benchmarks, grammar and "
                     "adversary feed, live from a backend you connect.",
@@ -385,11 +416,12 @@ def render_dashboard() -> str:
         script=_script("dashboard"),
         head_extra=_fragment("heads", "dashboard"),
     )
+    return _pretty_links(page) if pretty else page
 
 
-def render_admin() -> str:
+def render_admin(*, pretty: bool = False) -> str:
     """The admin console: a view over the live posture, filled route by route."""
-    return _app_page(
+    page = _app_page(
         title="Admin | Zeno · AEGIS",
         description="Zeno admin console — live posture of the AEGIS gateway: decisions, "
                     "adversary feed, sealed memory, connected agents.",
@@ -400,6 +432,7 @@ def render_admin() -> str:
         wrapper_id=None,
         extra_kit_js='  <script src="assets/js/chart.umd.js"></script>',
     )
+    return _pretty_links(page) if pretty else page
 
 
 def _esc(value: Any) -> str:
@@ -463,7 +496,9 @@ def _replace_once(page: str, anchor: str, replacement: str, what: str) -> str:
     return page.replace(anchor, replacement, 1)
 
 
-def render_settings(view: Optional[Mapping[str, Any]] = None, *, static: bool = False) -> str:
+def render_settings(
+    view: Optional[Mapping[str, Any]] = None, *, static: bool = False, pretty: bool = False
+) -> str:
     """The provider & API-key settings page.
 
     ``view`` is a :class:`zeno.settings.ProviderStore` ``describe()`` dict.
@@ -556,10 +591,10 @@ def render_settings(view: Optional[Mapping[str, Any]] = None, *, static: bool = 
             f'<p class="fs-8 text-muted-2 mb-0" id="store-state">{_esc(state)} at rest</p>',
             "store state",
         )
-    return page
+    return _pretty_links(page) if pretty else page
 
 
-def render_voice(status: Optional[Mapping[str, Any]] = None) -> str:
+def render_voice(status: Optional[Mapping[str, Any]] = None, *, pretty: bool = False) -> str:
     """The talking page. ``status`` carries the request-time pills
     (enforcement, memory, answerer); without a server they stay ellipses —
     the honest placeholder — until the page's script connects."""
@@ -576,22 +611,24 @@ def render_voice(status: Optional[Mapping[str, Any]] = None) -> str:
                 f'<span class="pill" id="{pill}">{value}: {_esc(status[value])}</span>',
                 f"{value} pill",
             )
-    return _plain_page(
+    page = _plain_page(
         title="Zeno — talk to your agent",
         head_extra=_fragment("heads", "voice"),
         body=body,
         script=_script("voice"),
     )
+    return _pretty_links(page) if pretty else page
 
 
-def render_playground() -> str:
+def render_playground(*, pretty: bool = False) -> str:
     """The language playground: encode, run, decode, by hand."""
-    return _plain_page(
+    page = _plain_page(
         title="Zeno Protocol — playground",
         head_extra=_fragment("heads", "playground"),
         body=_fragment("bodies", "playground"),
         script=_script("playground"),
     )
+    return _pretty_links(page) if pretty else page
 
 
 def render_index() -> str:
@@ -605,13 +642,14 @@ def render_index() -> str:
     )
 
 
-def render_404() -> str:
+def render_404(*, pretty: bool = False) -> str:
     """The styled missing page: what exists, and what does not."""
-    return _bare_page(
+    page = _bare_page(
         title="Zeno · not found",
         description="This page does not exist. The five that do are one click away.",
         body=_fragment("bodies", "404"),
     )
+    return _pretty_links(page) if pretty else page
 
 
 # ---------------------------------------------------------------------------

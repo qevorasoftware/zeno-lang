@@ -254,7 +254,8 @@ def test_a_wrong_page_gets_the_styled_404_and_a_wrong_api_stays_a_code(site):
     assert status == 404
     assert "text/html" in headers.get("Content-Type", "")
     assert "This page does not exist" in page
-    assert 'href="dashboard.html"' in page
+    # the 404 links the clean route, like every page this server serves
+    assert 'href="dashboard"' in page and 'href="dashboard.html"' not in page
     status, body, _ = _get(base, "/api/nope")
     assert status == 404 and "ZN0000" in body
 
@@ -268,3 +269,31 @@ def test_the_live_settings_page_matches_the_store_it_serves(site):
         assert profile["name"] in page, f"{profile['name']} is in the store but not the HTML"
         if profile.get("has_key"):
             assert profile["key_hint"] in page
+
+
+def test_live_pages_link_clean_routes_and_every_link_answers(site):
+    """The address bar reads like a place, not a file: ``/settings``.
+
+    The live server serves every page with clean links (``href="settings"``,
+    never ``settings.html``), because it answers those routes directly. The
+    static GitHub Pages copies keep file links — a static host resolves files
+    — so the two dialects are a deliberate contract, not drift.
+    """
+    import re
+
+    base, _ = site
+    pages = ("/", "/dashboard", "/settings", "/admin", "/voice")
+    linked = set()
+    for path in pages:
+        status, page, _ = _get(base, path)
+        assert status == 200, path
+        for form in ("settings.html", "dashboard.html", "admin.html", "voice.html", "playground.html"):
+            assert f'href="{form}"' not in page, f"{path} still links the file form {form}"
+        linked.update(m.group(1) for m in re.finditer(r'href="([a-z]+)"', page))
+    # every clean link on a page is a route this server answers
+    for target in sorted(linked):
+        status, _, _ = _get(base, f"/{target}")
+        assert status == 200, f"the clean link /{target} does not answer"
+    # the styled 404 links clean routes too
+    status, page, _ = _get(base, "/nope")
+    assert status == 404 and 'href="dashboard"' in page and "dashboard.html" not in page

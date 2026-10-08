@@ -980,10 +980,10 @@ class _Handler(BaseHTTPRequestHandler):
         path = posixpath.normpath(self.path.split("?", 1)[0])
         try:
             if path in ("/", "/index.html", "/playground", "/playground.html"):
-                self._html(render_playground())
+                self._html(render_playground(pretty=True))
                 return
             if path in ("/dashboard", "/dashboard/", "/dashboard.html"):
-                self._html(render_dashboard())
+                self._html(render_dashboard(pretty=True))
                 return
             if path == "/dashboard-data.json":
                 self._root_file("dashboard-data.json")
@@ -1027,7 +1027,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             if path in ("/settings", "/settings/", "/settings.html"):
                 # rendered with the store's current truth, server-side
-                self._html(render_settings(self.playground.provider_store.describe()))
+                self._html(render_settings(self.playground.provider_store.describe(), pretty=True))
                 return
             if path == "/api/settings":
                 if self._permit(path, action="read:settings", read=True):
@@ -1037,12 +1037,12 @@ class _Handler(BaseHTTPRequestHandler):
             if path in ("/admin", "/admin/", "/admin.html"):
                 # The admin console is a page: downloading it needs no grant, and
                 # every panel it can fill is authorized route by route.
-                self._html(render_admin())
+                self._html(render_admin(pretty=True))
                 return
             if path in ("/voice", "/voice/", "/voice.html"):
                 # The page is a page: it needs no authorization to be downloaded,
                 # and everything it can *do* is authorized route by route.
-                self._html(render_voice(self._voice_status()))
+                self._html(render_voice(self._voice_status(), pretty=True))
                 return
             if path == "/api/memory/sessions":
                 if self._permit(path, action="read:memory", read=True):
@@ -1157,8 +1157,9 @@ class _Handler(BaseHTTPRequestHandler):
             if path.startswith("/api/"):
                 self._json({"error": {"code": "ZN0000", "message": f"no route {path}"}}, 404)
             else:
-                # a wrong page URL gets the same styled 404 the static site has
-                self._html(render_404(), 404)
+                # a wrong page URL gets the same styled 404 the static site has; its
+                # links are clean routes, like every other page this server serves
+                self._html(render_404(pretty=True), 404)
         except Exception as exc:  # pragma: no cover - defensive
             self._error(exc)
 
